@@ -1,15 +1,13 @@
 import { CSSProperties } from 'react';
-import Logic from '../logic/Logic';
 import allImages from './Images';
 import keyDownWrapper from '../KeyDownWrapper';
-import { ItemClickCallback } from '../callbacks';
+import { useDispatch, useTrackerState } from '../newApp/Context';
+import { Items } from '../newApp/State';
 
 type ItemProps = {
-    logic: Logic;
     images?: string[];
-    itemName: string;
+    itemName: Items;
     imgWidth?: number;
-    onChange: ItemClickCallback;
     ignoreItemClass?: boolean;
     styleProps?: CSSProperties;
     grid?: boolean;
@@ -17,17 +15,16 @@ type ItemProps = {
 
 const Item = (props: ItemProps) => {
     const {
-        logic,
         itemName,
         ignoreItemClass,
         images,
         styleProps,
         grid,
-        onChange,
         imgWidth,
     } = props;
 
-    const current = logic.getItem(itemName);
+    const dispatch = useDispatch();
+    const count = useTrackerState().state.acquiredItems[itemName] ?? 0;
     const className = ignoreItemClass ? '' : 'item';
 
     let itemImages: string[];
@@ -45,10 +42,10 @@ const Item = (props: ItemProps) => {
 
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
-            onChange(itemName, true);
+            dispatch({type: 'onItemClick', item: itemName, take: true });
             e.preventDefault();
         } else {
-            onChange(itemName, false);
+            dispatch({type: 'onItemClick', item: itemName, take: false });
         }
     };
 
@@ -62,7 +59,7 @@ const Item = (props: ItemProps) => {
             role="button"
             tabIndex={0}
         >
-            <img src={itemImages[current]} alt={itemName} width={imgWidth} />
+            <img src={itemImages[count]} alt={itemName} width={imgWidth} />
         </div>
     );
 };

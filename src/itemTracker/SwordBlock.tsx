@@ -3,22 +3,21 @@ import Item from './Item';
 import allImages from './Images';
 import swordBlock from '../assets/Sword_Block.png';
 
-import Logic from '../logic/Logic';
 import CrystalCounter from './items/sidequest/CrystalCounter';
 import ColorScheme from '../customization/ColorScheme';
 import keyDownWrapper from '../KeyDownWrapper';
-import { ItemClickCallback } from '../callbacks';
+import { useDispatch, useTrackerState } from '../newApp/Context';
 
 type SwordBlockProperties = {
-    logic: Logic;
-    handleItemClick: ItemClickCallback;
     styleProps: CSSProperties;
     colorScheme: ColorScheme;
 };
 
 const SwordBlock = (props: SwordBlockProperties) => {
+    const dispatch = useDispatch();
+    const state = useTrackerState();
     const handleExtraWalletClick = () => {
-        props.handleItemClick('Extra Wallet', false);
+        dispatch({ type: 'onItemClick', item: 'Extra Wallet', take: false });
     };
 
     const wid = Number(props.styleProps.width || 0);
@@ -66,19 +65,12 @@ const SwordBlock = (props: SwordBlockProperties) => {
         <div id="BWheel">
             <img src={swordBlock} alt="" width={wid} />
             <div id="sword" style={swordStyle}>
-                <Item
-                    itemName="Progressive Sword"
-                    logic={props.logic}
-                    onChange={props.handleItemClick}
-                    imgWidth={swordWidth}
-                />
+                <Item itemName="Progressive Sword" imgWidth={swordWidth} />
             </div>
             <div id="faroresFlame" style={faroresFlameStyle}>
                 <Item
                     itemName="Progressive Sword"
                     images={allImages["Farore's Flame"]}
-                    logic={props.logic}
-                    onChange={props.handleItemClick}
                     imgWidth={flameWidth}
                 />
             </div>
@@ -86,8 +78,6 @@ const SwordBlock = (props: SwordBlockProperties) => {
                 <Item
                     itemName="Progressive Sword"
                     images={allImages["Nayru's Flame"]}
-                    logic={props.logic}
-                    onChange={props.handleItemClick}
                     imgWidth={flameWidth}
                 />
             </div>
@@ -95,18 +85,11 @@ const SwordBlock = (props: SwordBlockProperties) => {
                 <Item
                     itemName="Progressive Sword"
                     images={allImages["Din's Flame"]}
-                    logic={props.logic}
-                    onChange={props.handleItemClick}
                     imgWidth={flameWidth}
                 />
             </div>
             <div id="wallets" style={walletStyle}>
-                <Item
-                    itemName="Progressive Wallet"
-                    logic={props.logic}
-                    onChange={props.handleItemClick}
-                    imgWidth={walletWidth}
-                />
+                <Item itemName="Progressive Wallet" imgWidth={walletWidth} />
             </div>
             <div
                 id="wallets"
@@ -117,7 +100,7 @@ const SwordBlock = (props: SwordBlockProperties) => {
                 role="button"
             >
                 <CrystalCounter
-                    current={`+${props.logic.getItem('Extra Wallet') * 300}`}
+                    current={`+${(state.state.acquiredItems['Extra Wallet'] ?? 0) * 300}`}
                     colorScheme={props.colorScheme}
                     fontSize={wid * 0.12}
                 />

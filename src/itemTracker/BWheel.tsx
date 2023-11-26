@@ -1,16 +1,12 @@
 import { CSSProperties } from 'react';
 import Item from './Item';
-import Logic from '../logic/Logic';
-import { ItemClickCallback } from '../callbacks';
 import wheel from '../assets/b wheel.png';
 
 type BWheelProps = {
-    logic: Logic;
-    handleItemClick: ItemClickCallback;
     styleProps: CSSProperties;
 };
 
-const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
+const BWheel = ({ styleProps }: BWheelProps) => {
     const wid = Number(styleProps.width || 0);
 
     const beetleWidth = wid / 5.2;
@@ -33,12 +29,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 1.33,
                 }}
             >
-                <Item
-                    itemName="Progressive Beetle"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={beetleWidth}
-                />
+                <Item itemName="Progressive Beetle" imgWidth={beetleWidth} />
             </div>
             <div
                 id="slingshot"
@@ -50,8 +41,6 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
             >
                 <Item
                     itemName="Progressive Slingshot"
-                    logic={logic}
-                    onChange={handleItemClick}
                     imgWidth={slingshotWidth}
                 />
             </div>
@@ -63,12 +52,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 1.51,
                 }}
             >
-                <Item
-                    itemName="Bomb Bag"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={bombsWidth}
-                />
+                <Item itemName="Bomb Bag" imgWidth={bombsWidth} />
             </div>
             <div
                 id="bugnet"
@@ -78,12 +62,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 1.51,
                 }}
             >
-                <Item
-                    itemName="Progressive Bug Net"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={bugNetWidth}
-                />
+                <Item itemName="Progressive Bug Net" imgWidth={bugNetWidth} />
             </div>
             <div
                 id="bow"
@@ -93,12 +72,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 2.4,
                 }}
             >
-                <Item
-                    itemName="Progressive Bow"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={bowWidth}
-                />
+                <Item itemName="Progressive Bow" imgWidth={bowWidth} />
             </div>
             <div
                 id="clawshots"
@@ -108,12 +82,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 6.8,
                 }}
             >
-                <Item
-                    itemName="Clawshots"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={clawshotsWidth}
-                />
+                <Item itemName="Clawshots" imgWidth={clawshotsWidth} />
             </div>
             <div
                 id="whip"
@@ -123,12 +92,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 13,
                 }}
             >
-                <Item
-                    itemName="Whip"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={whipWidth}
-                />
+                <Item itemName="Whip" imgWidth={whipWidth} />
             </div>
             <div
                 id="gustBellows"
@@ -138,12 +102,7 @@ const BWheel = ({ logic, handleItemClick, styleProps }: BWheelProps) => {
                     left: wid / 6,
                 }}
             >
-                <Item
-                    itemName="Gust Bellows"
-                    logic={logic}
-                    onChange={handleItemClick}
-                    imgWidth={bellowsWidth}
-                />
+                <Item itemName="Gust Bellows" imgWidth={bellowsWidth} />
             </div>
         </div>
     );

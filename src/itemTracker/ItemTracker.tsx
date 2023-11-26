@@ -5,20 +5,14 @@ import SwordBlock from './SwordBlock';
 import SongBlock from './SongBlock';
 import QuestItems from './QuestItems';
 import AdditionalItems from './AdditionalItems';
-import Logic from '../logic/Logic';
 import ColorScheme from '../customization/ColorScheme';
-import { ItemClickCallback } from '../callbacks';
 
 type ItemTrackerProps = {
-    logic: Logic;
-    handleItemClick: ItemClickCallback;
     styleProps: CSSProperties;
     colorScheme: ColorScheme;
 };
 
 const ItemTracker = ({
-    logic,
-    handleItemClick,
     styleProps,
     colorScheme,
 }: ItemTrackerProps) => {
@@ -75,27 +69,27 @@ const ItemTracker = ({
                 <tr>
                     <td style={swordBlockStyle}>
                         <div id="swordBlock">
-                            <SwordBlock styleProps={swordBlockStyle} logic={logic} handleItemClick={handleItemClick} colorScheme={colorScheme} />
+                            <SwordBlock styleProps={swordBlockStyle} colorScheme={colorScheme} />
                         </div>
                     </td>
                     <td style={songBlockStyle}>
                         <div id="songBlock">
-                            <SongBlock styleProps={songBlockStyle} logic={logic} handleItemClick={handleItemClick} />
+                            <SongBlock styleProps={songBlockStyle} />
                         </div>
                     </td>
                 </tr>
                 <tr>
                     <td style={questItemsStyle}>
-                        <QuestItems styleProps={questItemsStyle} logic={logic} handleItemClick={handleItemClick} colorScheme={colorScheme} />
+                        <QuestItems styleProps={questItemsStyle} colorScheme={colorScheme} />
                     </td>
                     <td style={additionalItemsStyle}>
-                        <AdditionalItems styleProps={additionalItemsStyle} logic={logic} handleItemClick={handleItemClick} colorScheme={colorScheme} />
+                        <AdditionalItems styleProps={additionalItemsStyle} colorScheme={colorScheme} />
                     </td>
                 </tr>
                 <tr>
                     <td colSpan={2} style={bWheelStyle}>
                         <div id="bWheel">
-                            <BWheel styleProps={bWheelStyle} logic={logic} handleItemClick={handleItemClick} />
+                            <BWheel styleProps={bWheelStyle} />
                         </div>
                     </td>
                 </tr>

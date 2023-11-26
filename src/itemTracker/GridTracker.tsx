@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import Logic from '../logic/Logic';
 import ColorScheme from '../customization/ColorScheme';
 import Item from './Item';
 import CrystalCounter from './items/sidequest/CrystalCounter';
@@ -7,23 +6,17 @@ import GratitudeCrystals from './items/sidequest/GratitudeCrystals';
 
 import noTablets from '../assets/tablets/no_tablets.png';
 import CounterItem from './items/CounterItem';
-import { ItemClickCallback } from '../callbacks';
+import { useDispatch, useTrackerState } from '../newApp/Context';
 
 type GridTrackerProps = {
-    logic: Logic;
-    handleItemClick: ItemClickCallback;
     styleProps: CSSProperties;
     colorScheme: ColorScheme;
 };
 
-const GridTracker = ({
-    logic,
-    handleItemClick,
-    styleProps,
-    colorScheme,
-}: GridTrackerProps) => {
+const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
+    const dispatch = useDispatch();
     const handleExtraWalletClick = () => {
-        handleItemClick('Extra Wallet', false);
+        dispatch({ type: 'onItemClick', item: 'Extra Wallet', take: false });
     };
 
     const emeraldTabletStyle: CSSProperties = {
@@ -46,7 +39,7 @@ const GridTracker = ({
         top: '0%',
     };
 
-    let imgWidth = styleProps.width as number / 10;
+    let imgWidth = (styleProps.width as number) / 10;
     const maxHeight = styleProps.height as number;
     if (maxHeight < imgWidth * 8) {
         imgWidth = maxHeight / 8;
@@ -56,6 +49,10 @@ const GridTracker = ({
     const rubyWidth = emptyTabWidth * 0.74;
     const amberWidth = emptyTabWidth * 0.505;
 
+    const items = useTrackerState().state.acquiredItems;
+    const crystalCount = (items['Gratitude Crystal Pack'] ?? 0) * 5 + (items['Gratitude Crystal'] ?? 0);
+    const walletCount = (items['Extra Wallet'] ?? 0) * 300;
+
     return (
         <table>
             <tbody>
@@ -63,8 +60,6 @@ const GridTracker = ({
                     <td rowSpan={2}>
                         <Item
                             itemName="Progressive Sword"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -72,8 +67,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Progressive Beetle"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -81,8 +74,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Progressive Slingshot"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -90,8 +81,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Bomb Bag"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -99,8 +88,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Progressive Bug Net"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -112,22 +99,16 @@ const GridTracker = ({
                                 styleProps={amberTabletStyle}
                                 imgWidth={amberWidth}
                                 itemName="Amber Tablet"
-                                logic={logic}
-                                onChange={handleItemClick}
                             />
                             <Item
                                 styleProps={emeraldTabletStyle}
                                 imgWidth={emeraldWidth}
                                 itemName="Emerald Tablet"
-                                logic={logic}
-                                onChange={handleItemClick}
                             />
                             <Item
                                 styleProps={rubyTabletStyle}
                                 imgWidth={rubyWidth}
                                 itemName="Ruby Tablet"
-                                logic={logic}
-                                onChange={handleItemClick}
                             />
                         </div>
                     </td>
@@ -136,8 +117,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Progressive Bow"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -145,8 +124,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Clawshots"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -154,8 +131,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Whip"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -163,8 +138,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Gust Bellows"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -183,8 +156,6 @@ const GridTracker = ({
                         </p>
                         <Item
                             itemName="Lanayru Caves Small Key"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -192,8 +163,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Sea Chart"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -201,8 +170,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Spiral Charge"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -210,8 +177,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Progressive Pouch"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -219,8 +184,6 @@ const GridTracker = ({
                     <td>
                         <CounterItem
                             itemName="Empty Bottle"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             fontSize={imgWidth * 0.5}
                             colorScheme={colorScheme}
@@ -231,8 +194,6 @@ const GridTracker = ({
                         <div style={{ position: 'relative', top: '-5px' }}>
                             <Item
                                 itemName="Progressive Wallet"
-                                logic={logic}
-                                onChange={handleItemClick}
                                 imgWidth={imgWidth}
                             />
                         </div>
@@ -248,9 +209,7 @@ const GridTracker = ({
                             role="button"
                         >
                             <CrystalCounter
-                                current={`+${
-                                    logic.getItem('Extra Wallet') * 300
-                                }`}
+                                current={`+${walletCount}`}
                                 colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.4}
                             />
@@ -259,8 +218,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Progressive Mitts"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -271,8 +228,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Goddess's Harp"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -281,8 +236,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Ballad of the Goddess"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -291,8 +244,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Farore's Courage"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -301,8 +252,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Nayru's Wisdom"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -311,8 +260,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Din's Power"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -322,8 +269,6 @@ const GridTracker = ({
                         <div style={{ position: 'relative' }}>
                             <CounterItem
                                 itemName="Song of the Hero"
-                                logic={logic}
-                                onChange={handleItemClick}
                                 imgWidth={imgWidth}
                                 colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.5}
@@ -335,8 +280,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Triforce"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -347,8 +290,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Water Dragon's Scale"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -357,8 +298,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Fireshield Earrings"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -367,8 +306,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Cawlin's Letter"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -377,8 +314,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Horned Colossus Beetle"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -387,8 +322,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Baby Rattle"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             grid
                             ignoreItemClass
@@ -396,12 +329,7 @@ const GridTracker = ({
                     </td>
                     <td>
                         <div>
-                            <GratitudeCrystals
-                                logic={logic}
-                                onChange={handleItemClick}
-                                imgWidth={imgWidth}
-                                grid
-                            />
+                            <GratitudeCrystals imgWidth={imgWidth} grid />
                         </div>
                         <div
                             style={{
@@ -411,7 +339,7 @@ const GridTracker = ({
                             }}
                         >
                             <CrystalCounter
-                                current={logic.getCrystalCount()}
+                                current={crystalCount}
                                 colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.5}
                             />
@@ -420,8 +348,6 @@ const GridTracker = ({
                     <td>
                         <Item
                             itemName="Life Tree Fruit"
-                            logic={logic}
-                            onChange={handleItemClick}
                             imgWidth={imgWidth}
                             ignoreItemClass
                         />
@@ -431,8 +357,6 @@ const GridTracker = ({
                     <td>
                         <CounterItem
                             itemName="Group of Tadtones"
-                            logic={logic}
-                            onChange={handleItemClick}
                             colorScheme={colorScheme}
                             fontSize={imgWidth / 2}
                             imgWidth={imgWidth}
@@ -440,7 +364,11 @@ const GridTracker = ({
                         />
                     </td>
                     <td>
-                        <Item itemName="Scrapper" logic={logic} onChange={handleItemClick} imgWidth={imgWidth} ignoreItemClass />
+                        <Item
+                            itemName="Scrapper"
+                            imgWidth={imgWidth}
+                            ignoreItemClass
+                        />
                     </td>
                 </tr>
             </tbody>

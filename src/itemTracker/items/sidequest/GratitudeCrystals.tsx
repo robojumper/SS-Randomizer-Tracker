@@ -1,29 +1,31 @@
 import Logic from '../../../logic/Logic';
 import allImages from '../../Images';
 import keyDownWrapper from '../../../KeyDownWrapper';
-import { ItemClickCallback } from '../../../callbacks';
+import { useDispatch, useTrackerState } from '../../../newApp/Context';
 
 type GratitudeCrystalsProps = {
-    onChange: ItemClickCallback;
     images?: string[];
     imgWidth: number;
-    logic: Logic;
     ignoreItemClass?: boolean;
     grid?: boolean;
 };
 
 const GratitudeCrystals = (props: GratitudeCrystalsProps) => {
-    const { onChange, images, imgWidth, logic, ignoreItemClass, grid } = props;
+    const { images, imgWidth, ignoreItemClass, grid } = props;
+    const dispatch = useDispatch();
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'click') {
-            onChange('5 Gratitude Crystal', false);
+            dispatch({ type: 'onItemClick', item: 'Gratitude Crystal Pack', take: false });
         } else if (e.type === 'contextmenu') {
-            onChange('5 Gratitude Crystal', true);
+            dispatch({ type: 'onItemClick', item: 'Gratitude Crystal Pack', take: true });
             e.preventDefault();
         }
     };
 
-    const current = logic.getCrystalCount() >= 1 ? 1 : 0;
+    const items = useTrackerState().state.acquiredItems;
+    const count = (items['Gratitude Crystal Pack'] ?? 0) * 5 + (items['Gratitude Crystal'] ?? 0);
+
+    const current = count >= 1 ? 1 : 0;
     const className = ignoreItemClass ? '' : 'item';
     let itemImages;
     if (!images) {

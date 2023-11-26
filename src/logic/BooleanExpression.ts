@@ -184,10 +184,9 @@ class BooleanExpression {
     // calculation depends on the type of the containing expression
     // implies is the function for determing if requirements are subsumable (defines the relationship between items)
     static itemIsSubsumed(itemsCollection: Item[], item: string, expressionType: Op, implies: BinOp<string>) {
-        let itemIsSubsumed = false;
-        itemsCollection.forEach((otherItem) => {
-            if (this.isExpression(otherItem)) {
-                return true;
+        return itemsCollection.some((otherItem) => {
+            if (BooleanExpression.isExpression(otherItem)) {
+                return false;
             }
 
             switch (expressionType) {
@@ -195,8 +194,7 @@ class BooleanExpression {
                     // for and logic the subsuming item (the item from the collection) needs to imply the subsumed item
                     // otherwise the logic would lose precision on counted items (i.e. Sword x2 could subsume Sword x3 depending on sequence)
                     if (implies(otherItem, item)) {
-                        itemIsSubsumed = true;
-                        return false;
+                        return true;
                     }
                     break;
                 }
@@ -204,15 +202,11 @@ class BooleanExpression {
                     // for an or expression this precision doesn't matter - Sword x2 is just as good as Sword x3, therefore any implying
                     // item can subsume the item in question
                     if (implies(item, otherItem)) {
-                        itemIsSubsumed = true;
-                        return false;
+                        return true;
                     }
                 }
             }
-
-            return true;
         });
-        return itemIsSubsumed;
     }
 
     getUpdatedParentItems(parentItems: ParentItems) {
@@ -298,10 +292,9 @@ class BooleanExpression {
     }
 
     expressionIsSubsumed(expression: BooleanExpression, index: number, implies: BinOp<string>) {
-        let expressionIsSubsumed = false;
-        this.items.forEach((otherItem, otherIndex) => {
+        return this.items.some((otherItem, otherIndex) => {
             if (otherIndex === index) {
-                return true;
+                return false;
             }
 
             let otherExpression: BooleanExpression;
@@ -311,14 +304,8 @@ class BooleanExpression {
                 otherExpression = BooleanExpression.and(otherItem);
             }
 
-            const isSubsumed = expression.isSubsumedBy(otherExpression, implies, otherIndex < index, this.oppositeType());
-            if (isSubsumed) {
-                expressionIsSubsumed = true;
-                return false;
-            }
-            return true;
+            return expression.isSubsumedBy(otherExpression, implies, otherIndex < index, this.oppositeType());
         });
-        return expressionIsSubsumed;
     }
 
     removeDuplicateExpressionsInChildren(implies: BinOp<string>): BooleanExpression {

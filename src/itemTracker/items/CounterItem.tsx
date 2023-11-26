@@ -1,17 +1,15 @@
 import { CSSProperties } from 'react';
 import _ from 'lodash';
 import ColorScheme from '../../customization/ColorScheme';
-import Logic from '../../logic/Logic';
 import allImages from '../Images';
-import { ItemClickCallback } from '../../callbacks';
 import keyDownWrapper from '../../KeyDownWrapper';
+import { useDispatch, useTrackerState } from '../../newApp/Context';
+import { Items } from '../../newApp/State';
 
 type CounterItemProps = {
-    logic: Logic;
     images?: string[];
-    itemName: string;
+    itemName: Items;
     imgWidth: number;
-    onChange: ItemClickCallback;
     ignoreItemClass: boolean;
     styleProps?: CSSProperties;
     grid?: boolean;
@@ -22,11 +20,9 @@ type CounterItemProps = {
 
 const CounterItem = (props: CounterItemProps) => {
     const {
-        logic,
         images,
         itemName,
         imgWidth,
-        onChange,
         ignoreItemClass,
         grid,
         asSpan,
@@ -34,21 +30,20 @@ const CounterItem = (props: CounterItemProps) => {
         fontSize,
     } = props;
 
+    const dispatch = useDispatch();
+
     const styleProps = props.styleProps || {};
 
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
-            onChange(itemName, true);
+            dispatch({ type: 'onItemClick', item: itemName, take: true });
             e.preventDefault();
         } else {
-            onChange(itemName, false);
+            dispatch({ type: 'onItemClick', item: itemName, take: false });
         }
     };
 
-    let current = logic.getItem(itemName);
-    if (_.isNil(current)) {
-        current = 0;
-    }
+    const current = useTrackerState().state.acquiredItems[itemName] ?? 0;
 
     let itemImages: string[];
     if (!images) {
