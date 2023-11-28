@@ -15,7 +15,6 @@ import 'tippy.js/dist/tippy.css';
 import { OptionDefs, Option, OptionValue } from '../permalink/SettingsTypes';
 import { decodePermalink, encodePermalink } from '../permalink/Settings';
 import Tippy from '@tippyjs/react';
-import { getInitialItems } from './TrackerModifications';
 // import EntranceGraph from './EntranceGraph';
 
 function OptionsMenu({
@@ -92,11 +91,11 @@ function OptionsMenu({
                             <Row key={def.name}>
                                 <Setting
                                     def={def}
-                                    value={tempSettings[def.name]}
+                                    value={tempSettings[def.command]}
                                     setValue={(value) =>
                                         setTempSettings((existing) => ({
                                             ...existing,
-                                            [def.name]: value,
+                                            [def.command]: value,
                                         }))
                                     }
                                 />

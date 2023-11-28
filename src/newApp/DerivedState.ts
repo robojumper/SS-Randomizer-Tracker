@@ -8,7 +8,7 @@ import {
     nonRandomizedExits,
     randomizedExitsToDungeons,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
-import { TypedOptions } from '../permalink/SettingsTypes';
+import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
 
 export interface DerivedState {
     regularAreas: Area[];
@@ -77,24 +77,36 @@ function isDungeon(id: string): id is Dungeon {
     return names.includes(id);
 }
 
-function createIsCheckBannedPredicate(settings: TypedOptions) {
-    const bannedChecks = new Set(settings['Excluded Locations']);
+const trialTreasurePattern = /Relic (\d+)/;
+
+function createIsCheckBannedPredicate(settings: TypedOptions2) {
+    const bannedChecks = new Set(settings['excluded-locations']);
     const rupeesExcluded =
-        settings['Rupeesanity'] === 'Vanilla' ||
-        settings['Rupeesanity'] === false;
+        settings['rupeesanity'] === 'Vanilla' ||
+        settings['rupeesanity'] === false;
+    const maxRelics = settings['treasuresanity-in-silent-realms'] ? settings['trial-treasure-amount'] : 0;
+
     // FIXME this check `type` data is there but not in the dump
+
+    const isExcessRelic = (checkName: string) => {
+        const match = checkName.match(trialTreasurePattern);
+        return match && parseInt(match[1], 10) > maxRelics;
+    }
+
     return (checkName: string) =>
         bannedChecks.has(checkName) ||
+        isExcessRelic(checkName) ||
         (rupeesExcluded && checkName.includes('Rupee'));
 }
 
 export function useComputeDerivedState(
     logic: Logic,
+    options: OptionDefs,
     state: State,
 ): DerivedState {
     const start = performance.now();
 
-    const entranceRandomSetting = state.settings['Randomize Entrances'];
+    const entranceRandomSetting = state.settings['randomize-entrances'];
     const activeVanillaConnections = useMemo(() => {
         if (entranceRandomSetting === 'None') {
             return logic.areaGraph.vanillaConnections;
@@ -112,13 +124,15 @@ export function useComputeDerivedState(
     const resultBits = useMemo(() => {
         const { items, implications } = mapState(
             logic,
+            options,
             state.inventory,
             state.checkedChecks,
             state.mappedExits,
             activeVanillaConnections,
+            state.settings,
         );
         return interpretLogic(logic, items, implications);
-    }, [activeVanillaConnections, logic, state.checkedChecks, state.inventory, state.mappedExits]);
+    }, [activeVanillaConnections, logic, options, state.checkedChecks, state.inventory, state.mappedExits, state.settings]);
 
     const semiLogicResultBits = useMemo(() => {
         const assumedCheckedChecks = [...state.checkedChecks];
@@ -133,20 +147,15 @@ export function useComputeDerivedState(
 
         const { items, implications } = mapState(
             logic,
+            options,
             state.inventory,
             assumedCheckedChecks,
             state.mappedExits,
             activeVanillaConnections,
+            state.settings,
         );
         return interpretLogic(logic, items, implications);
-    }, [
-        activeVanillaConnections,
-        logic,
-        resultBits,
-        state.checkedChecks,
-        state.inventory,
-        state.mappedExits,
-    ]);
+    }, [activeVanillaConnections, logic, options, resultBits, state.checkedChecks, state.inventory, state.mappedExits, state.settings]);
 
     const isCheckBanned = useMemo(
         () => createIsCheckBannedPredicate(state.settings),

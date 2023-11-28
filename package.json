@@ -33,6 +33,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "lint": "npm run lint:ts && npm run lint:eslint",
+    "generate:options": "node ./src/generateOptions.mjs",
     "lint:eslint": "eslint --max-warnings 0 \"src/**/*.ts\" \"src/**/*.js\" \"src/**/*.tsx\"",
     "lint:ts": "tsc --noEmit"
   },

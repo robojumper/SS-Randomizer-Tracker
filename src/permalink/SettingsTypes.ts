@@ -1,7 +1,10 @@
+import { GeneratedOptions } from "../newApp/GeneratedOptions";
+
 export type BaseOption = {
     permalink: boolean | undefined;
     help: string;
     name: keyof TypedOptions;
+    command: keyof TypedOptions2,
 };
 
 export type BooleanOption = BaseOption & {
@@ -41,6 +44,11 @@ export type OptionDefs = Option[];
 export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
 
+export interface TypedOptions2 extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity'> {
+    'rupeesanity': GeneratedOptions['rupeesanity'] | 'Vanilla',
+    'shopsanity': GeneratedOptions['shopsanity'] | 'Vanilla',
+};
+
 export type TypedOptions = {
     'Logic Mode': 'BiTless' | 'Glitched';
 
@@ -51,6 +59,7 @@ export type TypedOptions = {
     'Open Thunderhead': string;
     'Open Earth Temple': boolean;
     'Open Lanayru Mining Facility': string;
+    'Open Lake Floria': 'Vanilla' | 'Talk to Yerbal' | 'Open',
     'Upgraded Skyward Strike': boolean;
     'Empty Unrequired Dungeons': boolean;
     'Triforce Required': boolean;
@@ -66,6 +75,8 @@ export type TypedOptions = {
     'Treasuresanity in Silent Realms': boolean;
     'Trial Treasure Amount': number;
 
+    'Place Scrap Shop Upgrades': boolean;
+    'BiT Changes': 'Disable BiT' | 'Vanilla' | 'Fix BiT Crashes';
 
     'Excluded Locations': string[];
     'Enabled Tricks': string[];

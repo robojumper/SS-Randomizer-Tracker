@@ -1,4 +1,4 @@
-import { TypedOptions } from "../permalink/SettingsTypes";
+import { TypedOptions, TypedOptions2 } from "../permalink/SettingsTypes";
 import { Items, State, isItem } from "./State";
 
 export const sothItems = [
@@ -18,7 +18,7 @@ export const triforceItems = [
 export const triforceItemReplacement = 'Triforce';
 
 export function getInitialItems(
-    settings: Partial<TypedOptions>,
+    settings: Partial<TypedOptions2>,
 ): State['inventory'] {
     const items: State['inventory'] = {};
     const add = (item: Items, count: number = 1) => {
@@ -26,14 +26,14 @@ export function getInitialItems(
         items[item]! += count;
     };
     add('Sailcloth');
-    if (settings['Starting Tablet Count'] === 3) {
+    if (settings['starting-tablet-count'] === 3) {
         add('Emerald Tablet');
         add('Ruby Tablet');
         add('Amber Tablet');
     }
-    add('Gratitude Crystal Pack', settings['Starting Tablet Count'] ?? 0);
-    add('Group of Tadtones', settings['Starting Tadtone Count'] ?? 0);
-    add('Empty Bottle', settings['Starting Empty Bottles'] ?? 0);
+    add('Gratitude Crystal Pack', settings['starting-crystal-packs'] ?? 0);
+    add('Group of Tadtones', settings['starting-tadtones'] ?? 0);
+    add('Empty Bottle', settings['starting-bottles'] ?? 0);
 
     const swordsToAdd: Record<string, number> = {
         Swordless: 0,
@@ -46,9 +46,9 @@ export function getInitialItems(
     };
     add(
         'Progressive Sword',
-        swordsToAdd[settings['Starting Sword'] ?? 'Swordless'],
+        swordsToAdd[settings['starting-sword'] ?? 'Swordless'],
     );
-    const startingItems = settings['Starting Items'] ?? [];
+    const startingItems = settings['starting-items'] ?? [];
     for (const item of startingItems) {
         if (item.includes(sothItemReplacement)) {
             add(sothItemReplacement);

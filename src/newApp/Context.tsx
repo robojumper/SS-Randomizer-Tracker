@@ -15,7 +15,7 @@ const DerivedStateContext = React.createContext<DerivedState | null>(null);
 
 export function WithContext({
     logic,
-    options: _options,
+    options,
     state,
     dispatch,
     children,
@@ -26,7 +26,7 @@ export function WithContext({
     dispatch: React.Dispatch<TrackerAction>;
     children: React.ReactNode;
 }) {
-    const derivedState = useComputeDerivedState(logic, state.state);
+    const derivedState = useComputeDerivedState(logic, options, state.state);
 
     return (
         <DispatchContext.Provider value={dispatch}>

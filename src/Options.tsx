@@ -101,7 +101,7 @@ export default class Options extends React.Component<Record<string, never>, Stat
 
     changeEntranceRando(e: ChangeEvent<HTMLInputElement>) {
         const { value } = e.target;
-        this.state.settings.setOption('Randomize Entrances', value);
+        this.state.settings.setOption('Randomize Entrances', value as TypedOptions['Randomize Entrances']);
         this.forceUpdate();
     }
 

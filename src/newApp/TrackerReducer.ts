@@ -2,7 +2,7 @@ import { produce } from "immer";
 import ColorScheme from "../customization/ColorScheme";
 import { Layout } from "../customization/CustomizationModal";
 import { Hint, State, isItem, itemMaxes } from "./State";
-import { TypedOptions } from "../permalink/SettingsTypes";
+import { TypedOptions2 } from "../permalink/SettingsTypes";
 import { getInitialItems } from "./TrackerModifications";
 
 export interface TrackerState {
@@ -28,10 +28,10 @@ export type TrackerAction =
     | { type: 'showEntranceDialog', show: boolean }
     | { type: 'showCustomizationDialog', show: boolean }
     | { type: 'showOptionsDialog', show: boolean }
-    | { type: 'acceptSettings', settings: TypedOptions }
+    | { type: 'acceptSettings', settings: TypedOptions2 }
     | { type: 'setLayout', layout: Layout }
     | { type: 'setColorScheme', colorScheme: ColorScheme }
-    | { type: 'reset', settings: TypedOptions | undefined };
+    | { type: 'reset', settings: TypedOptions2 | undefined };
 
 export const trackerReducer = (state: TrackerState, action: TrackerAction): TrackerState => {
     switch (action.type) {

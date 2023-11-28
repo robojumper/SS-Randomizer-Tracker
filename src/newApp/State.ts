@@ -1,11 +1,12 @@
 import _ from 'lodash';
-import { TypedOptions } from '../permalink/SettingsTypes';
+import { OptionDefs, TypedOptions, TypedOptions2 } from '../permalink/SettingsTypes';
 import { BitVector } from './BitVector';
 import { DerivedState } from './DerivedState';
 import { LogicalExpression } from './LogicalExpression';
 import { Logic, makeDay, makeNight } from './NewLogic';
 import { sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
+import { runtimeOptions } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
 export const itemMaxes = {
     'Progressive Sword': 6,
@@ -106,7 +107,7 @@ export interface State {
     /**
      * Fully decoded settings.
      */
-    settings: TypedOptions;
+    settings: TypedOptions2;
 }
 
 export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']): DerivedState['itemCount'] {
@@ -120,10 +121,12 @@ export function mapInventory(logic: Logic, inventory: State['inventory'], checke
 
 export function mapState(
     logic: Logic,
+    options: OptionDefs,
     inventory: State['inventory'],
     checkedChecks: State['checkedChecks'],
     mappedExits: State['mappedExits'],
     activeVanillaConnections: Record<string, string>,
+    settings: TypedOptions2,
 ): {
     items: BitVector;
     implications: { [bitIndex: number]: LogicalExpression };
@@ -132,6 +135,14 @@ export function mapState(
     const implications: { [bitIndex: number]: LogicalExpression } = {};
 
     const set = (id: string) => items.setBit(logic.items[id][1]);
+    const trySet = (id: string) => {
+        const item = logic.items[id];
+        if (!item) {
+            console.warn('invalid item', id)
+            return;
+        }
+        items.setBit(item[1])
+    };
 
     const itemsList = Object.entries(mapInventory(logic, inventory, checkedChecks));
 
@@ -155,6 +166,33 @@ export function mapState(
                     set(`${item} x ${i}`);
                 }
             }
+        }
+    }
+
+    for (const option of runtimeOptions) {
+        const [item, command, expect] = option;
+        const val = settings[command];
+        const match = typeof expect === 'function' ? expect(val) : expect === val;
+        if (match) {
+            trySet(item);
+        }
+    }
+
+    for (const option of options) {
+        if (option.type === 'multichoice') {
+            if (option.name === 'Starting Items') {
+                break;
+            }
+            const vals = settings[option.command] as string[];
+            const trick = option.name === 'Enabled Tricks Glitched' || option.name === 'Enabled Tricks';
+            for (const option of vals) {
+                if (trick) {
+                    trySet(`${option} Trick`)
+                } else {
+                    trySet(`${option} option`)
+                }
+            }
+            break;
         }
     }
 

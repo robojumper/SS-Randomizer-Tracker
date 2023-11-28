@@ -20,7 +20,7 @@ import { WithContext, useDispatch, useTrackerState } from './Context';
 import { NewLocationTracker } from './NewLocationTracker';
 import DungeonTracker from '../itemTracker/DungeonTracker';
 import BasicCounters from '../BasicCounters';
-import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
 import { defaultSettings } from '../permalink/Settings';
 import { Button } from 'react-bootstrap';
 import EntranceTracker from '../entranceTracker/EntranceTracker';
@@ -38,10 +38,7 @@ function initTrackerState(options: OptionDefs): TrackerState {
     const layout =
         (localStorage.getItem('ssrTrackerLayout') as Layout | null) ??
         'inventory';
-    const settings: TypedOptions = {
-        ...defaultSettings(options),
-        'Randomize Entrances': 'All Surface Dungeons',
-    };
+    const settings: TypedOptions2 = defaultSettings(options);
     return {
         state: {
             inventory: getInitialItems(settings),
