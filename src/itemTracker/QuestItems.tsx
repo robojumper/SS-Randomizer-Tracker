@@ -5,9 +5,8 @@ import CrystalCounter from './items/sidequest/CrystalCounter';
 
 import questItemBlock from '../assets/quest_items_block.png';
 
-import Logic from '../logic/Logic';
 import ColorScheme from '../customization/ColorScheme';
-import { useTrackerState } from '../newApp/Context';
+import { useDerivedState } from '../newApp/Context';
 
 type QuestItemProps = {
     styleProps: CSSProperties;
@@ -49,8 +48,7 @@ const QuestItems = (props: QuestItemProps) => {
         left: width * 0.9,
     };
 
-    const items = useTrackerState().state.acquiredItems;
-    const crystalCount = (items['Gratitude Crystal Pack'] ?? 0) * 5 + (items['Gratitude Crystal'] ?? 0);
+    const crystalCount = useDerivedState().itemCount['Total Gratitude Crystals'] ?? 0;
 
     return (
         <div id="quest-items">

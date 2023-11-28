@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { BitVector } from './BitVector';
 import { LogicalExpression } from './LogicalExpression';
 import { RawLogic, RawArea, TimeOfDay, RawEntrance, RawExit } from './UpstreamTypes';
+import crystalsData from '../data/crystals.json';
 
 export interface Logic {
     numItems: number;
@@ -10,6 +11,8 @@ export interface Logic {
     startingItems: BitVector;
     areaGraph: AreaGraph;
     checks: Record<string, string>;
+    checksByArea: Record<string, string[]>;
+    looseCrystalChecks: string[];
     /**
      * array index is bit index. value at that index is a logical
      * expression that, if evaluated to true, implies the given bit index
@@ -86,9 +89,14 @@ export function preprocessItems(raw: string[]): string[] {
 export function parseLogic(raw: RawLogic): Logic {
     const rawItems = ['False', 'True', ...preprocessItems(raw.items)];
     const numItems = rawItems.length;
+    // Link starts with True
+    const startingItems = new BitVector(numItems).setBit(1);
+
     const items: Logic['items'] = {};
     const vanillaExits: AreaGraph['vanillaConnections'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
+    const checksByArea: Logic['checksByArea'] = {};
+
     const entrancesByShortName: { [shortName: string]: { def: RawEntrance, id: string} } = {};
     let idx = 0;
     for (const rawItem of rawItems) {
@@ -99,8 +107,6 @@ export function parseLogic(raw: RawLogic): Logic {
     const dummy_day_bit = items['Day'][1];
     const dummy_night_bit = items['Night'][1];
 
-    // Link starts with True
-    const startingItems = new BitVector(numItems).setBit(1);
     const allAreas: AreaGraph['areas'] = {};
 
     const implications: LogicalExpression[] = new Array<LogicalExpression>(
@@ -348,9 +354,7 @@ export function parseLogic(raw: RawLogic): Logic {
             ] of Object.entries(rawArea.locations)) {
                 const locName = location.startsWith('\\')
                     ? location
-                    : area.name
-                        ? `${area.name}\\${location}`
-                        : `\\${location}`;
+                    : `${area.name}\\${location}`;
                 const locVec = items[locName];
                 if (!locVec) {
                     throw new Error('bad requirement ' + locName);
@@ -387,6 +391,16 @@ export function parseLogic(raw: RawLogic): Logic {
                 }
                 implications[locVec[1]] = implications[locVec[1]].or(timed_req);
                 area.locations.push([locVec[0], expr]);
+
+                if (!location.startsWith('\\')) {
+                    const check = raw.checks[locName];
+                    if (check) {
+                        if (!rawArea.hint_region) {
+                            throw new Error("check has no region?")
+                        }
+                        (checksByArea[rawArea.hint_region] ??= []).push(locName)
+                    }
+                }
             }
         }
 
@@ -448,12 +462,19 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
+    const looseCrystalChecks = Object.entries(raw.checks).filter(([, checkName]) => {
+        if (checkName.includes('-')) {
+            return checkName.substring(checkName.indexOf('-') + 1).trim() in crystalsData;
+        }
+    }).map(([checkId]) => checkId);
+
     return {
         numItems,
         allItems: rawItems,
         items,
         startingItems,
         checks: raw.checks,
+        checksByArea,
         areaGraph: {
             areas: allAreas,
             rootArea,
@@ -463,6 +484,7 @@ export function parseLogic(raw: RawLogic): Logic {
             exits: raw.exits,
             vanillaConnections,
         },
+        looseCrystalChecks,
         implications,
     };
 }

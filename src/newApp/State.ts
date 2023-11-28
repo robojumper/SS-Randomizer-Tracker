@@ -1,27 +1,31 @@
-import { BitVector } from "./BitVector";
-import { LogicalExpression } from "./LogicalExpression";
-import { Logic, makeDay, makeNight } from "./NewLogic";
-import { TimeOfDay } from "./UpstreamTypes";
+import _ from 'lodash';
+import { TypedOptions } from '../permalink/SettingsTypes';
+import { BitVector } from './BitVector';
+import { DerivedState } from './DerivedState';
+import { LogicalExpression } from './LogicalExpression';
+import { Logic, makeDay, makeNight } from './NewLogic';
+import { sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
+import { TimeOfDay } from './UpstreamTypes';
 
 export const itemMaxes = {
     'Progressive Sword': 6,
     'Progressive Wallet': 4,
     'Extra Wallet': 3,
     'Progressive Mitts': 2,
-    'Water Dragon\'s Scale': 1,
+    "Water Dragon's Scale": 1,
     'Fireshield Earrings': 1,
-    'Goddess\'s Harp': 1,
-    'Farore\'s Courage': 1,
-    'Nayru\'s Wisdom': 1,
-    'Din\'s Power': 1,
+    "Goddess's Harp": 1,
+    "Farore's Courage": 1,
+    "Nayru's Wisdom": 1,
+    "Din's Power": 1,
     'Ballad of the Goddess': 1,
     'Song of the Hero': 3,
-    'Sailcloth': 1,
+    Sailcloth: 1,
     'Stone of Trials': 1,
     'Emerald Tablet': 1,
     'Ruby Tablet': 1,
     'Amber Tablet': 1,
-    'Cawlin\'s Letter': 1,
+    "Cawlin's Letter": 1,
     'Horned Colossus Beetle': 1,
     'Baby Rattle': 1,
     'Gratitude Crystal Pack': 13,
@@ -30,8 +34,8 @@ export const itemMaxes = {
     'Progressive Beetle': 4,
     'Bomb Bag': 1,
     'Gust Bellows': 1,
-    'Whip': 1,
-    'Clawshots': 1,
+    Whip: 1,
+    Clawshots: 1,
     'Progressive Bow': 3,
     'Progressive Bug Net': 2,
     'Sea Chart': 1,
@@ -41,14 +45,14 @@ export const itemMaxes = {
     'Spiral Charge': 1,
     'Life Tree Fruit': 1,
     'Group of Tadtones': 17,
-    'Scrapper': 1,
+    Scrapper: 1,
     'Skyview Boss Key': 1,
     'Earth Temple Boss Key': 1,
-    'Lanayru Mining Facility Boss key': 1,
+    'Lanayru Mining Facility Boss Key': 1,
     'Ancient Cistern Boss Key': 1,
-    'Sandship Boss key': 1,
-    'Fire Sanctuary Boss key': 1,
-    'Triforce': 3,
+    'Sandship Boss Key': 1,
+    'Fire Sanctuary Boss Key': 1,
+    Triforce: 3,
     'Skyview Small Key': 2,
     'Key Piece': 5,
     'Lanayru Mining Facility Small Key': 1,
@@ -64,42 +68,78 @@ export function isItem(id: string): id is Items {
     return id in itemMaxes;
 }
 
-export const sothItems = [
-    'Faron Song of the Hero Part',
-    'Eldin Song of the Hero Part',
-    'Lanayru Song of the Hero Part',
-];
-
-export const triforceItems = [
-    'Triforce of Power',
-    'Triforce of Wisdom',
-    'Triforce of Courage',
-];
+export type Hint =
+    | { type: 'barren' }
+    | { type: 'sots' }
+    | { type: 'path', index: number };
 
 export interface State {
+    /**
+     * Checks we've acquired.
+     * Includes regular checks and fake checks for cubes/crystals.
+     */
     checkedChecks: string[];
-    acquiredItems: Partial<Record<Items, number>>;
-    mappedExits: Record<string, string>;
-    startingEntrance: string;
+    /**
+     * Items we've marked as acquired.
+     */
+    inventory: Partial<Record<Items, number>>;
+    /**
+     * Whether we've modified our inventory since we loaded from starting items.
+     */
+    hasModifiedInventory: boolean;
+    /**
+     * Exits we've has mapped. Later merged with the vanilla connections depending on settings.
+     */
+    mappedExits: Record<string, string | undefined>;
+    /**
+     * Dungeons we've marked as required.
+     */
+    requiredDungeons: string[];
+    /**
+     * Hints by area
+     */
+    hints: Record<string, Hint | undefined>;
+    /**
+     * Fully decoded settings.
+     */
+    settings: TypedOptions;
 }
 
-export function mapState(logic: Logic, state: State): {
-    items: BitVector,
-    implications: { [bitIndex: number]: LogicalExpression },
+export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']): DerivedState['itemCount'] {
+    const result: DerivedState['itemCount'] = _.clone(inventory);
+    const looseCrystalsCount = logic.looseCrystalChecks.filter((checkId) => checkedChecks.includes(checkId)).length;
+    result['Gratitude Crystal'] = looseCrystalsCount;
+    const crystalCount = (result['Gratitude Crystal Pack'] ?? 0) * 5 + looseCrystalsCount;
+    result['Total Gratitude Crystals'] = crystalCount;
+    return result;
+}
+
+export function mapState(
+    logic: Logic,
+    inventory: State['inventory'],
+    checkedChecks: State['checkedChecks'],
+    mappedExits: State['mappedExits'],
+    activeVanillaConnections: Record<string, string>,
+): {
+    items: BitVector;
+    implications: { [bitIndex: number]: LogicalExpression };
 } {
     const items = new BitVector(logic.numItems);
     const implications: { [bitIndex: number]: LogicalExpression } = {};
 
     const set = (id: string) => items.setBit(logic.items[id][1]);
-    for (const [item, count] of Object.entries(state.acquiredItems)) {
-        if (count === undefined) {
+
+    const itemsList = Object.entries(mapInventory(logic, inventory, checkedChecks));
+
+    for (const [item, count] of itemsList) {
+        if (count === undefined || item === 'Sailcloth' || item === 'Total Gratitude Crystals') {
             continue;
         }
-        if (item === "Song of the Hero") {
+        if (item === sothItemReplacement) {
             for (let i = 1; i <= count; i++) {
                 set(sothItems[i - 1]);
             }
-        } else if (item === "Triforce") {
+        } else if (item === triforceItemReplacement) {
             for (let i = 1; i <= count; i++) {
                 set(triforceItems[i - 1]);
             }
@@ -133,8 +173,8 @@ export function mapState(logic: Logic, state: State): {
             dayReq = exitExpr;
             nightReq = exitExpr;
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.Both) {
-            dayReq = exitExpr.and(dayVec(exitArea.name))
-            nightReq = exitExpr.and(nightVec(exitArea.name))
+            dayReq = exitExpr.and(dayVec(exitArea.name));
+            nightReq = exitExpr.and(nightVec(exitArea.name));
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
             dayReq = exitExpr;
             nightReq = new LogicalExpression([]);
@@ -142,7 +182,7 @@ export function mapState(logic: Logic, state: State): {
             dayReq = new LogicalExpression([]);
             nightReq = exitExpr;
         } else {
-            throw new Error("bad ToD");
+            throw new Error('bad ToD');
         }
 
         const entranceDef = logic.areaGraph.entrances[to];
@@ -151,27 +191,34 @@ export function mapState(logic: Logic, state: State): {
             bitReq = [
                 [dayBit(to), dayReq],
                 [nightBit(to), nightReq],
-            ]
+            ];
         } else if (entranceDef.allowed_time_of_day === TimeOfDay.DayOnly) {
-            bitReq = [
-                [bit(to), dayReq],
-            ]
+            bitReq = [[bit(to), dayReq]];
         } else if (entranceDef.allowed_time_of_day === TimeOfDay.NightOnly) {
-            bitReq = [
-                [bit(to), nightReq],
-            ]
+            bitReq = [[bit(to), nightReq]];
         } else {
-            throw new Error("bad ToD");
+            throw new Error('bad ToD');
         }
 
         for (const [bitIdx, expr] of bitReq) {
-            implications[bitIdx] = (implications[bitIdx] ?? new LogicalExpression([])).or(expr);
+            implications[bitIdx] = (
+                implications[bitIdx] ?? new LogicalExpression([])
+            ).or(expr);
         }
+    };
 
+    for (const [from, to] of Object.entries(
+        activeVanillaConnections,
+    )) {
+        mapConnection(from, to);
     }
 
-    for (const [from, to] of Object.entries(logic.areaGraph.vanillaConnections)) {
-        mapConnection(from, to);
+    for (const [from, to] of Object.entries(
+        mappedExits,
+    )) {
+        if (to !== undefined) {
+            mapConnection(from, to);
+        }
     }
 
     // mapConnection("\\", "\\Skyloft\\Upper Skyloft\\Knight Academy\\Link's Room_DAY");
@@ -190,6 +237,4 @@ export function mapState(logic: Logic, state: State): {
     return { items, implications };
 }
 
-export function mapSettings(logic: Logic, state: State) {
-
-}
+export function mapSettings(logic: Logic, state: State) {}

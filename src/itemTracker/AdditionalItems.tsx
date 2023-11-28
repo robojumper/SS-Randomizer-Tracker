@@ -2,7 +2,7 @@ import { CSSProperties } from 'react';
 import Item from './Item';
 import ColorScheme from '../customization/ColorScheme';
 import miscItemBlock from '../assets/misc_items_block.png';
-import { useTrackerState } from '../newApp/Context';
+import { useDerivedState } from '../newApp/Context';
 
 type AdditionalItemsProps = {
     colorScheme: ColorScheme;
@@ -52,7 +52,7 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
         left: width * 0.785,
     };
 
-    const items = useTrackerState().state.acquiredItems;
+    const items = useDerivedState().itemCount;
 
     const keyWidth = width / 6.5;
     const chartWidth = width / 10;
@@ -64,7 +64,7 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
     const scrapperWidth = width / 6.5;
     return (
         <div id="misc-items">
-            <img src={miscItemBlock} alt="" width={width} />
+            <img src={miscItemBlock} alt="" width="100%" />
             <div style={pouchStyle}>
                 <Item itemName="Progressive Pouch" imgWidth={pouchWidth} />
             </div>

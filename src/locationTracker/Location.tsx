@@ -84,7 +84,7 @@ export default function Location({
                 tabIndex={0}
                 onContextMenu={displayMenu}
             >
-                <Row noGutters>
+                <Row className="g-0">
                     <Col
                         style={style}
                         data-tip={location.needs}

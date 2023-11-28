@@ -2,6 +2,7 @@ import { useState } from 'react';
 import unknown from '../assets/hints/unknown.png';
 import unrequired from '../assets/No_Entrance.png';
 import required from '../assets/Entrance.png';
+import keyDownWrapper from '../KeyDownWrapper';
 
 type HintMarkerProps = {
     width: number;
@@ -21,7 +22,7 @@ const HintMarker = ({ width }: HintMarkerProps) => {
     return (
         <div
             onClick={handleClick}
-            onKeyDown={handleClick}
+            onKeyDown={keyDownWrapper(handleClick)}
             role="button"
             tabIndex={0}
         >

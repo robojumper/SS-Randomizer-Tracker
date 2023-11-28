@@ -10,7 +10,7 @@
 
 .row {
     display: flex;
-  }
+}
   
 .column {
     display: flex;
@@ -24,4 +24,8 @@
 
 .group-container {
     outline-style: none;
+
+    &.selected {
+        background-color: aquamarine;
+    }
 }

@@ -1,17 +1,18 @@
 import { Col, Row } from 'react-bootstrap';
 import keyDownWrapper from '../KeyDownWrapper';
 import { useDispatch, useTrackerState } from './Context';
+import { LogicalState } from './DerivedState';
 
 export default function Location({
     name,
     id,
     checked,
-    inLogic,
+    logicalState,
 }: {
     name: string;
     id: string;
     checked: boolean;
-    inLogic: boolean;
+    logicalState: LogicalState;
 }) {
     const dispatch = useDispatch();
     const colorScheme = useTrackerState().colorScheme;
@@ -26,7 +27,7 @@ export default function Location({
     const style = {
         textDecoration: checked ? 'line-through' : 'none',
         cursor: 'pointer',
-        color: inLogic ? colorScheme.inLogic : colorScheme.outLogic,
+        color: checked ? colorScheme.checked : colorScheme[logicalState],
         paddingLeft: 6,
         paddingRight: 0,
     };
@@ -39,11 +40,10 @@ export default function Location({
             role="button"
             tabIndex={0}
         >
-            <Row noGutters>
+            <Row className="g-0">
                 <Col
                     style={style}
                     id={id}
-                    sm={8}
                 >
                     {name}
                 </Col>

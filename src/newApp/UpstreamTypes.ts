@@ -8,8 +8,8 @@ export interface RawArea {
     name: string;
     abstract: boolean;
     can_sleep: boolean;
+    hint_region: string | null;
     allowed_time_of_day: TimeOfDay;
-    'hint-region': string | undefined;
     entrances: string[] | undefined;
     exits: Record<string, string> | undefined;
     sub_areas: {

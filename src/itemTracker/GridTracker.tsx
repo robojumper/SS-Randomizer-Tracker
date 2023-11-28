@@ -6,7 +6,7 @@ import GratitudeCrystals from './items/sidequest/GratitudeCrystals';
 
 import noTablets from '../assets/tablets/no_tablets.png';
 import CounterItem from './items/CounterItem';
-import { useDispatch, useTrackerState } from '../newApp/Context';
+import { useDerivedState, useDispatch } from '../newApp/Context';
 
 type GridTrackerProps = {
     styleProps: CSSProperties;
@@ -49,8 +49,8 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
     const rubyWidth = emptyTabWidth * 0.74;
     const amberWidth = emptyTabWidth * 0.505;
 
-    const items = useTrackerState().state.acquiredItems;
-    const crystalCount = (items['Gratitude Crystal Pack'] ?? 0) * 5 + (items['Gratitude Crystal'] ?? 0);
+    const items = useDerivedState().itemCount;
+    const crystalCount = (items['Total Gratitude Crystals'] ?? 0);
     const walletCount = (items['Extra Wallet'] ?? 0) * 300;
 
     return (

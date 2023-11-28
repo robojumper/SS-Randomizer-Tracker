@@ -12,7 +12,7 @@ import logicFileNames from '../data/logicModeFiles.json';
 import Settings from '../permalink/Settings';
 import BooleanExpression from './BooleanExpression';
 import { RawLocations } from './UpstreamTypes';
-import { RawOptions } from '../permalink/SettingsTypes';
+import { TypedOptions } from '../permalink/SettingsTypes';
 
 const max = {
     progressiveSword: 6,
@@ -697,7 +697,7 @@ class Logic {
         this.updateCountersForItem();
     }
 
-    getOptionValue(option: keyof RawOptions) {
+    getOptionValue(option: keyof TypedOptions) {
         return this.settings.getOption(option);
     }
 

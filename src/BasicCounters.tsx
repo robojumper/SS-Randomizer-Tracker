@@ -1,21 +1,17 @@
 import ColorScheme from './customization/ColorScheme';
+import { useDerivedState } from './newApp/Context';
 
 export default function BasicCounters({
-    locationsChecked,
-    totalAccessible,
-    checksRemaining,
     colorScheme,
 }: {
-    locationsChecked: number;
-    totalAccessible: number;
-    checksRemaining: number;
     colorScheme: ColorScheme;
 }) {
+    const state = useDerivedState();
     return (
         <div className="Counters" style={{ color: colorScheme.text }}>
-            <p>{`Locations Checked: ${locationsChecked}`}</p>
-            <p>{`Locations Accessible: ${totalAccessible}`}</p>
-            <p>{`Locations Remaining: ${checksRemaining}`}</p>
+            <p>{`Locations Checked: ${state.numChecked}`}</p>
+            <p>{`Locations Accessible: ${state.numAccessible}`}</p>
+            <p>{`Locations Remaining: ${state.numRemaining}`}</p>
         </div>
     );
 }

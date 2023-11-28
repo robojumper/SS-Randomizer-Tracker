@@ -4,7 +4,88 @@ import PackedBitsWriter from './PackedBitsWriter';
 import PackedBitsReader from './PackedBitsReader';
 import LogicLoader from '../logic/LogicLoader';
 import { RawLocations } from '../logic/UpstreamTypes';
-import { OptionValue, MultiChoiceOption, Option, RawOptions } from './SettingsTypes';
+import {
+    OptionValue,
+    MultiChoiceOption,
+    Option,
+    TypedOptions,
+    OptionDefs,
+} from './SettingsTypes';
+
+export function decodePermalink(
+    optionDefs: OptionDefs,
+    permalink: string,
+): TypedOptions {
+    const permaNoSeed = permalink.split('#')[0];
+    const settings: Record<string, OptionValue> = {};
+    const reader = PackedBitsReader.fromBase64(permaNoSeed);
+    _.forEach(optionDefs, (option) => {
+        if (option.permalink !== false) {
+            if (option.type === 'boolean') {
+                settings[option.name] = reader.read(1) === 1;
+            } else if (option.type === 'int') {
+                settings[option.name] = reader.read(option.bits);
+            } else if (option.type === 'multichoice') {
+                const values: string[] = [];
+                _.forEach(option.choices, (choice) => {
+                    if (reader.read(1)) {
+                        values.push(choice);
+                    }
+                });
+                settings[option.name] = values;
+            } else if (option.type === 'singlechoice') {
+                settings[option.name] =
+                    option.choices[reader.read(option.bits)];
+            }
+        }
+    });
+    return settings as TypedOptions;
+}
+
+export function defaultSettings(optionDefs: OptionDefs): TypedOptions {
+    const settings: Record<string, OptionValue> = {};
+    _.forEach(optionDefs, (option) => {
+        if (option.permalink !== false) {
+            settings[option.name] = option.default;
+        }
+    });
+    return settings as TypedOptions;
+}
+
+export function encodePermalink(
+    optionDefs: OptionDefs,
+    settings: TypedOptions,
+): string {
+    const writer = new PackedBitsWriter();
+    _.forEach(optionDefs, (option) => {
+        if (option.permalink !== false) {
+            if (option.type === 'boolean') {
+                writer.write(settings[option.name] ? 1 : 0, 1);
+            } else if (option.type === 'int') {
+                writer.write(settings[option.name] as number, option.bits);
+            } else if (option.type === 'multichoice') {
+                const values = [...(settings[option.name] as string[])];
+                _.forEach(option.choices, (choice) => {
+                    writer.write(values.includes(choice) ? 1 : 0, 1);
+                    // ensure the items are included the correct number of times
+                    if (
+                        values.includes(choice) &&
+                        option.name === 'Starting Items'
+                    ) {
+                        values.splice(values.indexOf(choice), 1);
+                    }
+                });
+            } else if (option.type === 'singlechoice') {
+                writer.write(
+                    option.choices.indexOf(settings[option.name] as string),
+                    option.bits,
+                );
+            }
+        }
+    });
+    writer.flush();
+    return writer.toBase64();
+}
 
 class Settings {
     options: Record<string, OptionValue> = {};
@@ -88,29 +169,28 @@ class Settings {
         return writer.toBase64();
     }
 
-    setOption<K extends keyof RawOptions>(option: K, value: RawOptions[K]) {
+    setOption<K extends keyof TypedOptions>(option: K, value: TypedOptions[K]) {
         _.set(this.options, Settings.convertOptionKey(option), value);
     }
 
-    getOption<K extends keyof RawOptions>(option: K): RawOptions[K] {
+    getOption<K extends keyof TypedOptions>(option: K): TypedOptions[K] {
         const optionKey = Settings.convertOptionKey(option);
         if (optionKey === 'enabledTricks') {
-            const bitlessTricks = this.getOption(
-                'Enabled Tricks BiTless',
-            );
+            const bitlessTricks = this.getOption('Enabled Tricks BiTless');
             if (bitlessTricks.length > 0) {
-                return bitlessTricks as RawOptions[K];
+                return bitlessTricks as TypedOptions[K];
             }
-            const glitchedTricks = this.getOption(
-                'Enabled Tricks Glitched',
-            );
+            const glitchedTricks = this.getOption('Enabled Tricks Glitched');
             if (glitchedTricks.length > 0) {
-                return glitchedTricks as RawOptions[K];
+                return glitchedTricks as TypedOptions[K];
             }
             // there are no enabled tricks so we can just return an empty array
-            return [] as string[] as RawOptions[K];
+            return [] as string[] as TypedOptions[K];
         }
-        return _.get(this.options, Settings.convertOptionKey(option)) as RawOptions[K];
+        return _.get(
+            this.options,
+            Settings.convertOptionKey(option),
+        ) as TypedOptions[K];
     }
 
     loadDefaults() {
@@ -119,7 +199,7 @@ class Settings {
         });
     }
 
-    toggleOption(option: keyof RawOptions) {
+    toggleOption(option: keyof TypedOptions) {
         this.setOption(option, !this.getOption(option));
     }
 
@@ -137,10 +217,10 @@ class Settings {
         const excludedLocsIndex = this.allOptions.findIndex(
             (x) => x.name === 'Excluded Locations',
         );
-        const checks = (await LogicLoader.loadLogicFile<RawLocations>(
+        const checks = await LogicLoader.loadLogicFile<RawLocations>(
             'checks.yaml',
             branch,
-        ));
+        );
         (this.allOptions[excludedLocsIndex] as MultiChoiceOption).choices = [];
         _.forEach(checks, (_data, location) => {
             (

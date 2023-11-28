@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { useCallback } from 'react';
 import { Menu, Item, Separator, Submenu, ItemParams } from 'react-contexify';
 import { LocationGroupContextMenuProps } from './LocationGroupHeader';
+import { useDispatch } from '../newApp/Context';
 
 const bosses = {
     0: 'Ghirahim 1',
@@ -19,32 +20,43 @@ interface BossData {
 }
 
 function LocationGroupContextMenu() {
-    const checkAll = useCallback((params: CtxProps) => {
-        params.props!.setAllLocationsChecked(true);
-    }, []);
+    const dispatch = useDispatch();
+    
+    const checkAll = useCallback((params: CtxProps) => dispatch({
+        type: 'bulkEditChecks',
+        checks: params.props!.area.checks.map((check) => check.checkId),
+        check: true,
+    }), [dispatch]);
 
-    const uncheckAll = useCallback((params: CtxProps) => {
-        params.props!.setAllLocationsChecked(false);
-    }, []);
+    const uncheckAll = useCallback((params: CtxProps) => dispatch({
+        type: 'bulkEditChecks',
+        checks: params.props!.area.checks.map((check) => check.checkId),
+        check: false,
+    }), [dispatch]);
 
-    const handlePathClick = useCallback((params: CtxProps<BossData>) => {
-        params.props!.setPath(params.data!.boss);
-    }, []);
+    const handlePathClick = useCallback((params: CtxProps<BossData>) => dispatch({
+        type: 'setHint',
+        area: params.props!.area.name,
+        hint: { type: 'path', index: params.data!.boss },
+    }), [dispatch]);
 
-    const handleSotsClick = useCallback((params: CtxProps) => {
-        params.props!.setSots(true);
-    }, []);
+    const handleSotsClick = useCallback((params: CtxProps) => dispatch({
+        type: 'setHint',
+        area: params.props!.area.name,
+        hint: { type: 'sots' },
+    }), [dispatch]);
 
-    const handleBarrenClick = useCallback((params: CtxProps) => {
-        params.props!.setBarren(true);
-    }, []);
+    const handleBarrenClick = useCallback((params: CtxProps) => dispatch({
+        type: 'setHint',
+        area: params.props!.area.name,
+        hint: { type: 'barren' },
+    }), [dispatch]);
 
-    const handleClearCheck = useCallback((params: CtxProps) => {
-        const locProps = params.props!;
-        locProps.setSots(false);
-        locProps.setBarren(false);
-        locProps.setPath(6);
-    }, []);
+    const handleClearCheck = useCallback((params: CtxProps) => dispatch({
+        type: 'setHint',
+        area: params.props!.area.name,
+        hint: undefined,
+    }), [dispatch]);
 
     return (
         <Menu id="group-context">
@@ -54,7 +66,7 @@ function LocationGroupContextMenu() {
             <Submenu label="Set Path">
                 {
                     _.map(bosses, (bossName, bossIndex) => (
-                        <Item onClick={handlePathClick} data={{ boss: parseInt(bossIndex, 10) } satisfies BossData}>{bossName}</Item>
+                        <Item key={bossName} onClick={handlePathClick} data={{ boss: parseInt(bossIndex, 10) } satisfies BossData}>{bossName}</Item>
                     ))
                 }
             </Submenu>

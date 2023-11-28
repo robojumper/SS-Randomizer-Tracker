@@ -8,6 +8,7 @@
     "@react-hook/resize-observer": "^1.2.6",
     "@tippyjs/react": "^4.2.6",
     "bootstrap": "^5.2.3",
+    "clsx": "^2.0.0",
     "immer": "^10.0.3",
     "js-base64": "^3.7.4",
     "js-yaml": "^4.1.0",

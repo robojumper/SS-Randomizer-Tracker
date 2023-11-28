@@ -3,7 +3,7 @@ import _ from 'lodash';
 import ColorScheme from '../../customization/ColorScheme';
 import allImages from '../Images';
 import keyDownWrapper from '../../KeyDownWrapper';
-import { useDispatch, useTrackerState } from '../../newApp/Context';
+import { useDerivedState, useDispatch } from '../../newApp/Context';
 import { Items } from '../../newApp/State';
 
 type CounterItemProps = {
@@ -43,7 +43,7 @@ const CounterItem = (props: CounterItemProps) => {
         }
     };
 
-    const current = useTrackerState().state.acquiredItems[itemName] ?? 0;
+    const current = useDerivedState().itemCount[itemName] ?? 0;
 
     let itemImages: string[];
     if (!images) {

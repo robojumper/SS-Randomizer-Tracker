@@ -1,14 +1,12 @@
-import { BitVector } from "./BitVector";
-import { LogicalExpression } from "./LogicalExpression";
-import { Logic } from "./NewLogic";
-import { State, mapState } from "./State";
+import { BitVector } from './BitVector';
+import { LogicalExpression } from './LogicalExpression';
+import { Logic } from './NewLogic';
 
-export function interpretLogic(logic: Logic, state: State) {
-    const {
-        items,
-        implications
-    } = mapState(logic, state);
-
+export function interpretLogic(
+    logic: Logic,
+    items: BitVector,
+    implications: Record<number, LogicalExpression>,
+) {
     const startingItems = logic.startingItems.or(items);
 
     const bits = startingItems;
@@ -32,13 +30,12 @@ export function interpretLogic(logic: Logic, state: State) {
                     bits.setBit(idx);
                     changed = true;
                 }
-            }
+            };
 
             const runtimeExpr = implications[idx];
             if (runtimeExpr && !bits.test(idx)) {
-                evaluate(runtimeExpr)
+                evaluate(runtimeExpr);
             }
-
 
             if (expr.isTriviallyFalse()) {
                 continue;
@@ -54,11 +51,11 @@ export function interpretLogic(logic: Logic, state: State) {
 }
 
 export function fmtVec(logic: Logic, items: BitVector) {
-    let str = "[";
+    let str = '[';
     for (let i = 0; i < logic.numItems; i++) {
         if (items.test(i)) {
-            str += logic.allItems[i] + ", ";
+            str += logic.allItems[i] + ', ';
         }
     }
-    return str + "]";
+    return str + ']';
 }

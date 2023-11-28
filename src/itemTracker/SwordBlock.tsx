@@ -100,7 +100,7 @@ const SwordBlock = (props: SwordBlockProperties) => {
                 role="button"
             >
                 <CrystalCounter
-                    current={`+${(state.state.acquiredItems['Extra Wallet'] ?? 0) * 300}`}
+                    current={`+${(state.state.inventory['Extra Wallet'] ?? 0) * 300}`}
                     colorScheme={props.colorScheme}
                     fontSize={wid * 0.12}
                 />

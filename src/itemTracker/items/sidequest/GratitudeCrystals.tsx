@@ -1,7 +1,6 @@
-import Logic from '../../../logic/Logic';
 import allImages from '../../Images';
 import keyDownWrapper from '../../../KeyDownWrapper';
-import { useDispatch, useTrackerState } from '../../../newApp/Context';
+import { useDerivedState, useDispatch } from '../../../newApp/Context';
 
 type GratitudeCrystalsProps = {
     images?: string[];
@@ -22,8 +21,8 @@ const GratitudeCrystals = (props: GratitudeCrystalsProps) => {
         }
     };
 
-    const items = useTrackerState().state.acquiredItems;
-    const count = (items['Gratitude Crystal Pack'] ?? 0) * 5 + (items['Gratitude Crystal'] ?? 0);
+    const items = useDerivedState().itemCount;
+    const count = (items['Total Gratitude Crystals'] ?? 0);
 
     const current = count >= 1 ? 1 : 0;
     const className = ignoreItemClass ? '' : 'item';

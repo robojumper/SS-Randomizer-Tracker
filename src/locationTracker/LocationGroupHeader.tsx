@@ -1,13 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
-import { TriggerEvent } from 'react-contexify';
+import { useCallback } from 'react';
 import { Col, Row } from 'react-bootstrap';
 
 import AreaCounters from './AreaCounters';
-import Logic from '../logic/Logic';
-import ColorScheme from '../customization/ColorScheme';
-
-import sotsImage from '../assets/hints/sots.png';
-import barrenImage from '../assets/hints/barren.png';
 
 import g1 from '../assets/hints/g1.png';
 import scaldera from '../assets/hints/scaldera.png';
@@ -15,106 +9,72 @@ import moldarach from '../assets/hints/moldarach.png';
 import koloktos from '../assets/hints/koloktos.png';
 import tentalus from '../assets/hints/tentalus.png';
 import g2 from '../assets/hints/g2.png';
+import sotsImage from '../assets/hints/sots.png';
+import barrenImage from '../assets/hints/barren.png';
 
 import 'react-contexify/dist/ReactContexify.css';
+import { useDispatch, useTrackerState } from '../newApp/Context';
+import clsx from 'clsx';
+import keyDownWrapper from '../KeyDownWrapper';
+import { TriggerEvent } from 'react-contexify';
 import { useContextMenu } from './context-menu';
+import { Area } from '../newApp/DerivedState';
 
-const pathImages = [
-    g1,
-    scaldera,
-    moldarach,
-    koloktos,
-    tentalus,
-    g2,
-];
+const pathImages = [g1, scaldera, moldarach, koloktos, tentalus, g2];
 
 export interface LocationGroupContextMenuProps {
-    setAllLocationsChecked: (checked: boolean) => void;
-    setSots: (checked: boolean) => void;
-    setBarren: (checked: boolean) => void;
-    setPath: (path: number) => void;
+    area: Area,
 }
 
 export default function LocationGroupHeader({
-    colorScheme,
-    logic,
-    onCheckAll,
-    onClick,
-    title,
+    area,
+    selected,
 }: {
-    logic: Logic,
-    colorScheme: ColorScheme,
-    title: string,
-    onClick: () => void,
-    onCheckAll: (group: string, value: boolean) => void
+    area: Area,
+    selected: boolean,
 }) {
-    const [sots, setSots] = useState(false);
-    const [barren, setBarren] = useState(false);
-    const [inEffect, setInEffect] = useState(false);
-    const [pathIndex, setPath] = useState(6);
-    const setAllLocationsChecked = (value: boolean) => {
-        onCheckAll(title, value);
-    };
+    const dispatch = useDispatch();
+    const colorScheme = useTrackerState().colorScheme;
+    const onClick = useCallback(
+        () => dispatch({ type: 'onAreaClick', area: area.name }),
+        [dispatch, area.name],
+    );
 
     const { show } = useContextMenu<LocationGroupContextMenuProps>({
         id: 'group-context',
     });
 
-    const displayMenu = useCallback((e: TriggerEvent) => {
-        show({ event: e, props: { setAllLocationsChecked, setSots, setBarren, setPath } });
-    }, []);
-
-    useEffect(() => {
-        if (inEffect) {
-            setInEffect(false);
-        } else {
-            setBarren(false);
-            setSots(false);
-            setInEffect(true);
-        }
-    }, [pathIndex]);
-
-    useEffect(() => {
-        if (inEffect) {
-            setInEffect(false);
-        } else {
-            setBarren(false);
-            setPath(6);
-            setInEffect(true);
-        }
-    }, [sots]);
-
-    useEffect(() => {
-        if (inEffect) {
-            setInEffect(false);
-        } else {
-            setSots(false);
-            setPath(6);
-            setInEffect(true);
-        }
-    }, [barren]);
+    const displayMenu = useCallback(
+        (e: TriggerEvent) => {
+            show({
+                event: e,
+                props: { area },
+            });
+        },
+        [area, show],
+    );
 
     let image;
-    if (pathIndex < 6) {
-        image = <img src={pathImages[pathIndex]} alt="path" />;
-    } else if (sots) {
+    if (area.hint?.type === 'path') {
+        image = <img src={pathImages[area.hint.index]} alt="path" />;
+    } else if (area.hint?.type === 'sots') {
         image = <img src={sotsImage} alt="sots" />;
-    } else if (barren) {
+    } else if (area.hint?.type === 'barren') {
         image = <img src={barrenImage} alt="barren" />;
     }
 
     return (
         <Row
-            className="group-container"
+            className={clsx('group-container', { selected })}
             onClick={onClick}
-            onKeyDown={onClick}
+            onKeyDown={keyDownWrapper(onClick)}
             role="button"
             tabIndex={0}
             onContextMenu={displayMenu}
         >
             <Col sm={7}>
                 <h3 style={{ cursor: 'pointer', color: colorScheme.text }}>
-                    {title}
+                    {area.name}
                 </h3>
             </Col>
             <Col sm={2} style={{ color: colorScheme.text }}>
@@ -123,8 +83,8 @@ export default function LocationGroupHeader({
             <Col sm={1}>
                 <h3>
                     <AreaCounters
-                        totalChecksLeftInArea={logic.getTotalCountForArea(title)}
-                        totalChecksAccessible={logic.getInLogicCountForArea(title)}
+                        totalChecksLeftInArea={area.numChecksRemaining}
+                        totalChecksAccessible={area.numChecksAccessible}
                         colorScheme={colorScheme}
                     />
                 </h3>

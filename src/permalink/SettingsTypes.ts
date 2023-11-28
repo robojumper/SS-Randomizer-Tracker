@@ -1,6 +1,7 @@
 export type BaseOption = {
-    permalink: boolean;
-    name: keyof RawOptions;
+    permalink: boolean | undefined;
+    help: string;
+    name: keyof TypedOptions;
 };
 
 export type BooleanOption = BaseOption & {
@@ -23,6 +24,8 @@ export type MultiChoiceOption = BaseOption & {
 
 export type IntOption = BaseOption & {
     type: 'int';
+    min: number;
+    max: number;
     bits: number;
     default: number;
 };
@@ -33,17 +36,18 @@ export type Option =
     | MultiChoiceOption
     | IntOption;
 
+export type OptionDefs = Option[];
+
 export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
 
-export type RawOptions = {
+export type TypedOptions = {
     'Logic Mode': 'BiTless' | 'Glitched';
 
     Rupeesanity: boolean | string;
     Tadtonesanity: boolean;
-    'Randomize Entrances': string;
+    'Randomize Entrances': 'None' | 'Required Dungeons Separately' | 'All Surface Dungeons' | 'All Surface Dungeons + Sky Keep';
     'Starting Sword': string;
-    'Starting Tabled Count': number;
     'Open Thunderhead': string;
     'Open Earth Temple': boolean;
     'Open Lanayru Mining Facility': string;
@@ -70,9 +74,6 @@ export type RawOptions = {
 
     'Gate of Time Sword Requirement': string;
 
-    'open-et': boolean;
-    'open-lmf': string;
-
     // deprecated
     'Shop Mode': string;
     'Max Batreaux Reward': number;
@@ -84,6 +85,4 @@ export type RawOptions = {
     'Beedle Shopsanity': boolean;
     'Gear Shopsanity': boolean;
     'Potion Shopsanity': boolean;
-
-
-}
+};

@@ -77,4 +77,7 @@ export class BitVector {
         return str;
     }
 
+    clone() {
+        return new BitVector(this.#size, this.#data);
+    }
 }

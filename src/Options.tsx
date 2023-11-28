@@ -7,7 +7,7 @@ import './options.css';
 import { Link } from 'react-router-dom';
 import Settings from './permalink/Settings';
 import Acknowledgement from './Acknowledgment';
-import { RawOptions } from './permalink/SettingsTypes';
+import { TypedOptions } from './permalink/SettingsTypes';
 
 interface State {
     settings: Settings;
@@ -79,7 +79,7 @@ export default class Options extends React.Component<Record<string, never>, Stat
         return await releaseData.json() as { tag_name: string }[];
     }
 
-    changeBinaryOption(option: keyof RawOptions) {
+    changeBinaryOption(option: keyof TypedOptions) {
         // for some reason this correct method of setting state does not work correctly in our case
         // as such we must revert to the incorrect method which may result in unexpected/undefined behavior
         // also need to disable the eslint error for it to allow the code to compile

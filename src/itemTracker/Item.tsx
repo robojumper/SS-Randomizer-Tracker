@@ -1,13 +1,13 @@
 import { CSSProperties } from 'react';
 import allImages from './Images';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDispatch, useTrackerState } from '../newApp/Context';
+import { useDerivedState, useDispatch } from '../newApp/Context';
 import { Items } from '../newApp/State';
 
 type ItemProps = {
     images?: string[];
     itemName: Items;
-    imgWidth?: number;
+    imgWidth?: number | string;
     ignoreItemClass?: boolean;
     styleProps?: CSSProperties;
     grid?: boolean;
@@ -24,7 +24,7 @@ const Item = (props: ItemProps) => {
     } = props;
 
     const dispatch = useDispatch();
-    const count = useTrackerState().state.acquiredItems[itemName] ?? 0;
+    const count = useDerivedState().itemCount[itemName] ?? 0;
     const className = ignoreItemClass ? '' : 'item';
 
     let itemImages: string[];
