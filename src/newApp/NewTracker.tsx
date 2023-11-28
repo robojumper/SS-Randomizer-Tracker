@@ -51,6 +51,7 @@ function initTrackerState(options: OptionDefs): TrackerState {
             settings,
             hasModifiedInventory: false,
             hints: {},
+            checkHints: {},
         },
         width: window.innerWidth,
         height: window.innerHeight,

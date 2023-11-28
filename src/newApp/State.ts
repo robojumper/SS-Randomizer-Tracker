@@ -100,6 +100,10 @@ export interface State {
      */
     hints: Record<string, Hint | undefined>;
     /**
+     * Hints by check name
+     */
+    checkHints: Record<string, string | undefined>;
+    /**
      * Fully decoded settings.
      */
     settings: TypedOptions;
@@ -236,5 +240,3 @@ export function mapState(
 
     return { items, implications };
 }
-
-export function mapSettings(logic: Logic, state: State) {}

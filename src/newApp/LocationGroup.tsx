@@ -2,19 +2,14 @@ import _ from 'lodash';
 import Location from './Location';
 import ColorScheme from '../customization/ColorScheme';
 import { Col, Row } from 'react-bootstrap';
-import { LogicalState } from './DerivedState';
+import { Check } from './DerivedState';
 
 export default function LocationGroup({
     colorScheme,
     locations,
 }: {
     /* the list of locations this group contains */
-    locations: {
-        checkId: string,
-        logicalState: LogicalState,
-        checked: boolean,
-        checkName: string,
-    }[],
+    locations: Check[],
     colorScheme: ColorScheme,
 }) {
     const locationRows = locations.map((location) => (
@@ -24,6 +19,7 @@ export default function LocationGroup({
                 checked={location.checked}
                 id={location.checkId}
                 logicalState={location.logicalState}
+                hintItem={location.hintItem}
             />
         </Row>
     ));

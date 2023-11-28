@@ -5,6 +5,7 @@ import LocationGroup from "./LocationGroup";
 import '../locationTracker/locationTracker.css'
 import { Col, Row } from "react-bootstrap";
 import LocationGroupContextMenu from "../locationTracker/LocationGroupContextMenu";
+import LocationContextMenu from "../locationTracker/LocationContextMenu";
 
 export function NewLocationTracker({ containerHeight }: { containerHeight: number; }) {
     const state = useTrackerState();
@@ -13,6 +14,7 @@ export function NewLocationTracker({ containerHeight }: { containerHeight: numbe
 
     return (
         <Col className="location-tracker">
+            <LocationContextMenu />
             <LocationGroupContextMenu />
             <Row style={{ height: containerHeight / 2, overflowY: 'auto', overflowX: 'visible' }}>
                 <ul style={{ padding: '2%' }}>

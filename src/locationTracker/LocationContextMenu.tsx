@@ -3,7 +3,8 @@ import { useCallback } from 'react';
 import { Menu, Item, Separator, Submenu, ItemParams } from 'react-contexify';
 
 import hintItems from '../data/hintItems.json';
-import { LocationContextMenuProps } from './Location';
+import { useDispatch } from '../newApp/Context';
+import { LocationContextMenuProps } from '../newApp/Location';
 
 type CtxProps<T = void> = ItemParams<LocationContextMenuProps, T>;
 interface ItemData {
@@ -11,25 +12,47 @@ interface ItemData {
 }
 
 export default function LocationContextMenu() {
-    const handleCheckClick = useCallback((params: CtxProps) => {
-        const locProps = params.props!;
-        locProps.handler(locProps.group, locProps.location, true);
-    }, []);
+    const dispatch = useDispatch();
 
-    const handleUncheckClick = useCallback((params: CtxProps) => {
-        const locProps = params.props!;
-        locProps.handler(locProps.group, locProps.location, false);
-    }, []);
+    const handleCheckClick = useCallback(
+        (params: CtxProps) =>
+            dispatch({
+                type: 'onCheckClick',
+                check: params.props!.checkId,
+                markChecked: true,
+            }),
+        [dispatch],
+    );
 
-    const handleSetItemClick = useCallback((params: CtxProps<ItemData>) => {
-        const locProps = params.props!;
-        locProps.setItem(params.data!.item);
-    }, []);
+    const handleUncheckClick = useCallback(
+        (params: CtxProps) =>
+            dispatch({
+                type: 'onCheckClick',
+                check: params.props!.checkId,
+                markChecked: false,
+            }),
+        [dispatch],
+    );
 
-    const handleClearItemClick = useCallback((params: CtxProps) => {
-        const locProps = params.props!;
-        locProps.setItem('');
-    }, []);
+    const handleSetItemClick = useCallback(
+        (params: CtxProps<ItemData>) =>
+            dispatch({
+                type: 'setCheckHint',
+                checkId: params.props!.checkId,
+                hintItem: params.data!.item,
+            }),
+        [dispatch],
+    );
+
+    const handleClearItemClick = useCallback(
+        (params: CtxProps<ItemData>) =>
+            dispatch({
+                type: 'setCheckHint',
+                checkId: params.props!.checkId,
+                hintItem: undefined,
+            }),
+        [dispatch],
+    );
 
     return (
         <Menu id="location-context">
@@ -37,17 +60,19 @@ export default function LocationContextMenu() {
             <Item onClick={handleUncheckClick}>Uncheck</Item>
             <Separator />
             <Submenu label="Set Item">
-                {
-                    _.map(hintItems, (items, category) => (
-                        <Submenu label={category}>
-                            {
-                                _.map(items, (listItem) => (
-                                    <Item onClick={handleSetItemClick} data={{ item: listItem } satisfies ItemData}>{listItem}</Item>
-                                ))
-                            }
-                        </Submenu>
-                    ))
-                }
+                {_.map(hintItems, (items, category) => (
+                    <Submenu key={category} label={category}>
+                        {_.map(items, (listItem) => (
+                            <Item
+                                key={listItem}
+                                onClick={handleSetItemClick}
+                                data={{ item: listItem } satisfies ItemData}
+                            >
+                                {listItem}
+                            </Item>
+                        ))}
+                    </Submenu>
+                ))}
             </Submenu>
             <Item onClick={handleClearItemClick}>Clear Item</Item>
         </Menu>

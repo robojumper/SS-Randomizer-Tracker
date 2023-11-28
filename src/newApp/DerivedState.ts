@@ -42,6 +42,7 @@ export interface Check {
     checkName: string;
     logicalState: LogicalState;
     checked: boolean;
+    hintItem: string | undefined;
 }
 
 export interface ExitMapping {
@@ -91,6 +92,8 @@ export function useComputeDerivedState(
     logic: Logic,
     state: State,
 ): DerivedState {
+    const start = performance.now();
+
     const entranceRandomSetting = state.settings['Randomize Entrances'];
     const activeVanillaConnections = useMemo(() => {
         if (entranceRandomSetting === 'None') {
@@ -174,6 +177,7 @@ export function useComputeDerivedState(
                     logicalState: inLogic ? 'inLogic' : inSemilogic ? 'semiLogic' : 'outLogic',
                     checked,
                     checkName: shortCheckName,
+                    hintItem: state.checkHints[checkId],
                 };
             });
 
@@ -198,7 +202,7 @@ export function useComputeDerivedState(
                 hint: state.hints[regionName],
             } satisfies Area;
         });
-    }, [isCheckBanned, logic, resultBits, semiLogicResultBits, state.checkedChecks, state.hints]);
+    }, [isCheckBanned, logic, resultBits, semiLogicResultBits, state.checkHints, state.checkedChecks, state.hints]);
 
     const [regularAreas, silentRealms, dungeons] = useMemo(() => {
         const [silentRealms, areasAndDungeons] = _.partition(areas, (a) =>
@@ -281,6 +285,8 @@ export function useComputeDerivedState(
                 name: def.short_name,
             }));
     }, [exits, logic]);
+
+    console.log('state derivation took:', performance.now() - start, 'ms');
 
     return {
         regularAreas,

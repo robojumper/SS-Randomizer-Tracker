@@ -19,18 +19,19 @@ export interface TrackerState {
 
 export type TrackerAction =
     | { type: 'onItemClick', item: string, take: boolean }
-    | { type: 'onCheckClick', check: string }
+    | { type: 'onCheckClick', check: string, markChecked?: boolean }
     | { type: 'bulkEditChecks', checks: string[], check: boolean }
     | { type: 'onAreaClick', area: string }
     | { type: 'mapEntrance', from: string, to: string | undefined }
     | { type: 'setHint', area: string, hint: Hint | undefined }
+    | { type: 'setCheckHint', checkId: string, hintItem: string | undefined }
     | { type: 'showEntranceDialog', show: boolean }
     | { type: 'showCustomizationDialog', show: boolean }
     | { type: 'showOptionsDialog', show: boolean }
     | { type: 'acceptSettings', settings: TypedOptions }
     | { type: 'setLayout', layout: Layout }
     | { type: 'setColorScheme', colorScheme: ColorScheme }
-    | { type: 'reset', settings: TypedOptions | undefined }
+    | { type: 'reset', settings: TypedOptions | undefined };
 
 export const trackerReducer = (state: TrackerState, action: TrackerAction): TrackerState => {
     switch (action.type) {
@@ -84,10 +85,11 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
         }
         case 'onCheckClick': {
             return produce(state, (draft) => {
-                if (draft.state.checkedChecks.includes(action.check)) {
-                    draft.state.checkedChecks = draft.state.checkedChecks.filter((c) => c !== action.check);
-                } else {
+                const add = action.markChecked !== undefined ? action.markChecked : !draft.state.checkedChecks.includes(action.check);
+                if (add) {
                     draft.state.checkedChecks.push(action.check);
+                } else {
+                    draft.state.checkedChecks = draft.state.checkedChecks.filter((c) => c !== action.check);
                 }
             });
         }
@@ -121,6 +123,11 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
                 draft.state.hints[action.area] = action.hint;
             })
         }
+        case 'setCheckHint': {
+            return produce(state, (draft) => {
+                draft.state.checkHints[action.checkId] = action.hintItem;
+            })
+        }
         case 'setLayout': {
             return {
                 ...state,
@@ -145,6 +152,7 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
                     mappedExits: {},
                     requiredDungeons: [],
                     hints: {},
+                    checkHints: {},
                     settings,
                 }
             };
