@@ -40,6 +40,17 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
         return entrances;
     }, [state.remainingEntrances]);
 
+    const startingEntranceOptions: Entrance[] = useMemo(() => {
+        const entrances = state.allowedStartingEntrances.map(({
+            id, name
+        }) => ({
+            value: id,
+            label: name
+        }));
+        entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
+        return entrances;
+    }, [state.allowedStartingEntrances]);
+
     const [exitSearch, setExitSearch] = useState('');
     const [entranceSearch, setEntranceSeach] = useState('');
     const [clickthrough, setClickthrough] = useState(true);
@@ -81,7 +92,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                     <Select
                         value={exit.entrance && { label: exit.entrance.name, value: exit.entrance.id }}
                         onChange={(...args) => onEntranceChange(exit.exit.id, ...args)}
-                        options={entranceOptions}
+                        options={exit.exit.id === '\\Start' ? startingEntranceOptions : entranceOptions}
                         name={exit.entrance?.name}
                         isDisabled={!exit.canAssign}
                     />

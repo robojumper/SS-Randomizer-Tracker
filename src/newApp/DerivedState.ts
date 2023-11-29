@@ -14,6 +14,7 @@ import {
     cubeCheckToGoddessChestCheck,
     mapToCanAccessCubeRequirement,
 } from './TrackerModifications';
+import { produce } from 'immer';
 
 export interface DerivedState {
     regularAreas: Area[];
@@ -23,6 +24,7 @@ export interface DerivedState {
     itemCount: Partial<Record<Items | 'Total Gratitude Crystals', number>>;
     exits: ExitMapping[];
     remainingEntrances: { id: string; name: string }[];
+    allowedStartingEntrances: { id: string; name: string }[];
     completedDungeons: string[];
     numChecked: number;
     numAccessible: number;
@@ -151,11 +153,13 @@ export function useComputeDerivedState(
     const start = performance.now();
 
     const entranceRandomSetting = state.settings['randomize-entrances'];
+    const startingEntranceSetting = state.settings['random-start-entrance'];
     const activeVanillaConnections = useMemo(() => {
+        let connections: Record<string, string>;
         if (entranceRandomSetting === 'None') {
-            return logic.areaGraph.vanillaConnections;
+            connections = logic.areaGraph.vanillaConnections;
         } else {
-            return Object.fromEntries(
+            connections = Object.fromEntries(
                 Object.entries(logic.areaGraph.vanillaConnections).filter(
                     ([from]) =>
                         !randomizedExitsToDungeons.includes(from) &&
@@ -163,7 +167,15 @@ export function useComputeDerivedState(
                 ),
             );
         }
-    }, [entranceRandomSetting, logic]);
+
+        if (startingEntranceSetting !== 'Vanilla') {
+            connections = produce(connections, (draft) => {
+                delete draft['\\Start'];
+            })
+        }
+
+        return connections;
+    }, [entranceRandomSetting, logic.areaGraph.vanillaConnections, startingEntranceSetting]);
 
     const resultBits = useMemo(() => {
         const { items, implications } = mapState(
@@ -389,7 +401,7 @@ export function useComputeDerivedState(
 
     const remainingEntrances = useMemo(() => {
         const usedEntrances = new Set(
-            _.compact(exits.map((exit) => exit.entrance?.id)),
+            _.compact(exits.map((exit) => exit.exit.id !== '\\Start' && exit.entrance?.id)),
         );
         return Object.entries(logic.areaGraph.entrances)
             .filter((e) => !usedEntrances.has(e[0]))
@@ -398,6 +410,15 @@ export function useComputeDerivedState(
                 name: def.short_name,
             }));
     }, [exits, logic]);
+
+    // TODO Filter based on setting
+    const allowedStartingEntrances = useMemo(() => {
+        return Object.entries(logic.areaGraph.entrances)
+            .map(([id, def]) => ({
+                id,
+                name: def.short_name,
+            }));
+    }, [logic]);
 
     console.log('state derivation took:', performance.now() - start, 'ms');
 
@@ -408,6 +429,7 @@ export function useComputeDerivedState(
         areas: _.keyBy(areas, (a) => a.name),
         exits,
         remainingEntrances,
+        allowedStartingEntrances,
         completedDungeons,
         itemCount,
         numChecked,
