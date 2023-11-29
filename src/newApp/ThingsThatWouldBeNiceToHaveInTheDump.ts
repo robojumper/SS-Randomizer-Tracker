@@ -1,4 +1,4 @@
-import { OptionValue, TypedOptions, TypedOptions2 } from "../permalink/SettingsTypes";
+import { OptionType, OptionValue, TypedOptions2 } from "../permalink/SettingsTypes";
 import { RegularDungeon } from "./DerivedState";
 
 export const dungeonCompletionRequirements: Record<RegularDungeon, string> = {
@@ -28,7 +28,7 @@ export const nonRandomizedExits = [
 ];
 
 type OptionMapping = [string, keyof TypedOptions2, OptionValue | ((val: OptionValue) => boolean)];
-const m = <K extends keyof TypedOptions2>(item: string, settingsKey: K, value: TypedOptions2[K] | ((value: TypedOptions2[K]) => boolean)): OptionMapping => [item, settingsKey, value];
+const m = <K extends keyof TypedOptions2>(item: string, settingsKey: K, value: TypedOptions2[K] | ((value: TypedOptions2[K]) => boolean)): OptionMapping => [item, settingsKey, value as OptionType];
 
 export const runtimeOptions: OptionMapping[] = [
     m('Open Thunderhead option', 'open-thunderhead', 'Open'),
@@ -45,5 +45,3 @@ export const runtimeOptions: OptionMapping[] = [
     m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),
     m('FS Lava Flow option', 'fs-lava-flow', true),
 ];
-
-// Check type for loose crystals, rupeesanity checks, ...

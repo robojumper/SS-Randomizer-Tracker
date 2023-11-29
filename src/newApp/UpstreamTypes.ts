@@ -33,9 +33,14 @@ export interface RawExit {
     short_name: string;
 }
 
+export interface RawCheck {
+    type: string | null;
+    short_name: string;
+}
+
 export interface RawLogic {
     items: string[];
-    checks: Record<string, string>;
+    checks: Record<string, RawCheck>;
     /** LocationId -> Area - Location Name */
     gossip_stones: Record<string, string>;
     exits: Record<string, RawExit>,

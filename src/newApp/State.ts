@@ -1,10 +1,10 @@
 import _ from 'lodash';
-import { OptionDefs, TypedOptions, TypedOptions2 } from '../permalink/SettingsTypes';
+import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
 import { BitVector } from './BitVector';
 import { DerivedState } from './DerivedState';
 import { LogicalExpression } from './LogicalExpression';
 import { Logic, makeDay, makeNight } from './NewLogic';
-import { sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
+import { cubeCheckToCanAccessCube, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
 import { runtimeOptions } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
@@ -112,7 +112,7 @@ export interface State {
 
 export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']): DerivedState['itemCount'] {
     const result: DerivedState['itemCount'] = _.clone(inventory);
-    const looseCrystalsCount = logic.looseCrystalChecks.filter((checkId) => checkedChecks.includes(checkId)).length;
+    const looseCrystalsCount = checkedChecks.filter((check) => logic.checks[check].type === 'loose_crystal').length;
     result['Gratitude Crystal'] = looseCrystalsCount;
     const crystalCount = (result['Gratitude Crystal Pack'] ?? 0) * 5 + looseCrystalsCount;
     result['Total Gratitude Crystals'] = crystalCount;
@@ -144,6 +144,13 @@ export function mapState(
         items.setBit(item[1])
     };
 
+    /** Mark checked things */
+    for (const check of checkedChecks) {
+        if (cubeCheckToCanAccessCube[check]) {
+            set(check);
+        }
+    }
+
     const itemsList = Object.entries(mapInventory(logic, inventory, checkedChecks));
 
     for (const [item, count] of itemsList) {
@@ -172,7 +179,7 @@ export function mapState(
     for (const option of runtimeOptions) {
         const [item, command, expect] = option;
         const val = settings[command];
-        const match = typeof expect === 'function' ? expect(val) : expect === val;
+        const match = val !== undefined && (typeof expect === 'function' ? expect(val) : expect === val);
         if (match) {
             trySet(item);
         }

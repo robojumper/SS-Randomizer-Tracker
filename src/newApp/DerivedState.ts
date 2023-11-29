@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Logic } from './NewLogic';
+import { Logic, LogicalCheck } from './NewLogic';
 import { Hint, Items, State, mapInventory, mapState } from './State';
 import { interpretLogic } from './LogicInterpretation';
 import _ from 'lodash';
@@ -9,6 +9,7 @@ import {
     randomizedExitsToDungeons,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
+import { canAccessCubeToCubeCheck, cubeCheckToCanAccessCube, cubeCheckToGoddessChestCheck, mapToCanAccessCubeRequirement } from './TrackerModifications';
 
 export interface DerivedState {
     regularAreas: Area[];
@@ -37,7 +38,7 @@ export interface Area<N extends string = string> {
 export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic';
 
 export interface Check {
-    type: 'regular' | 'exit' | 'cube' | 'loose_crystal';
+    type: LogicalCheck['type'] | 'cube' | 'exit';
     checkId: string;
     checkName: string;
     logicalState: LogicalState;
@@ -79,24 +80,47 @@ function isDungeon(id: string): id is Dungeon {
 
 const trialTreasurePattern = /Relic (\d+)/;
 
-function createIsCheckBannedPredicate(settings: TypedOptions2) {
+function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions2) {
     const bannedChecks = new Set(settings['excluded-locations']);
     const rupeesExcluded =
         settings['rupeesanity'] === 'Vanilla' ||
         settings['rupeesanity'] === false;
-    const maxRelics = settings['treasuresanity-in-silent-realms'] ? settings['trial-treasure-amount'] : 0;
+    const maxRelics = settings['treasuresanity-in-silent-realms']
+        ? settings['trial-treasure-amount']
+        : 0;
+    const banBeedle =
+        settings['shopsanity'] === 'Vanilla' ||
+        settings['shopsanity'] === false;
 
-    // FIXME this check `type` data is there but not in the dump
+    const isExcessRelic = (check: LogicalCheck) => {
+        if (check.type === 'trial_treasure') {
+            const match = check.name.match(trialTreasurePattern);
+            return match && parseInt(match[1], 10) > maxRelics;
+        }
+    };
 
-    const isExcessRelic = (checkName: string) => {
-        const match = checkName.match(trialTreasurePattern);
-        return match && parseInt(match[1], 10) > maxRelics;
-    }
+    const isBannedCubeCheckViaChest = (checkId: string, check: LogicalCheck) => {
+        return check.type === 'tr_cube' && bannedChecks.has(logic.checks[cubeCheckToGoddessChestCheck[checkId]].name);
+    };
 
-    return (checkName: string) =>
-        bannedChecks.has(checkName) ||
-        isExcessRelic(checkName) ||
-        (rupeesExcluded && checkName.includes('Rupee'));
+    return (checkId: string, check: LogicalCheck) =>
+        bannedChecks.has(check.name) ||
+        isExcessRelic(check) ||
+        isBannedCubeCheckViaChest(checkId, check) ||
+        (rupeesExcluded && check.type === 'rupee') ||
+        (banBeedle && check.type === 'beedle_shop');
+}
+
+function skyKeepNonprogress(settings: TypedOptions2) {
+    return (
+        settings['empty-unrequired-dungeons'] === true &&
+        (settings['triforce-required'] === false ||
+            settings['triforce-shuffle'] === 'Anywhere')
+    );
+}
+
+function isAreaNonprogress(settings: TypedOptions2, area: string) {
+    return area === 'Sky Keep' && skyKeepNonprogress(settings);
 }
 
 export function useComputeDerivedState(
@@ -132,15 +156,31 @@ export function useComputeDerivedState(
             state.settings,
         );
         return interpretLogic(logic, items, implications);
-    }, [activeVanillaConnections, logic, options, state.checkedChecks, state.inventory, state.mappedExits, state.settings]);
+    }, [
+        activeVanillaConnections,
+        logic,
+        options,
+        state.checkedChecks,
+        state.inventory,
+        state.mappedExits,
+        state.settings,
+    ]);
+
+    const maybeCubeName = (check: string) => check in cubeCheckToGoddessChestCheck ? mapToCanAccessCubeRequirement(check) : check;
 
     const semiLogicResultBits = useMemo(() => {
         const assumedCheckedChecks = [...state.checkedChecks];
-        for (const looseCrystal of logic.looseCrystalChecks) {
-            if (!assumedCheckedChecks.includes(looseCrystal)) {
-                const bit = logic.items[looseCrystal][1];
+        for (const [checkId, check] of Object.entries(logic.checks)) {
+            if (check.type === 'loose_crystal') {
+                const bit = logic.items[checkId][1];
                 if (resultBits.test(bit)) {
-                    assumedCheckedChecks.push(looseCrystal);
+                    assumedCheckedChecks.push(checkId);
+                }
+            }
+            if (check.type === 'tr_cube') {
+                const bit = logic.items[cubeCheckToCanAccessCube[checkId]][1];
+                if (resultBits.test(bit)) {
+                    assumedCheckedChecks.push(checkId);
                 }
             }
         }
@@ -154,36 +194,52 @@ export function useComputeDerivedState(
             activeVanillaConnections,
             state.settings,
         );
-        return interpretLogic(logic, items, implications);
-    }, [activeVanillaConnections, logic, options, resultBits, state.checkedChecks, state.inventory, state.mappedExits, state.settings]);
+        // Monotonicity means we can optimize with this or
+        return interpretLogic(logic, items.or(resultBits), implications);
+    }, [
+        activeVanillaConnections,
+        logic,
+        options,
+        resultBits,
+        state.checkedChecks,
+        state.inventory,
+        state.mappedExits,
+        state.settings,
+    ]);
 
     const isCheckBanned = useMemo(
-        () => createIsCheckBannedPredicate(state.settings),
-        [state.settings],
+        () => createIsCheckBannedPredicate(logic, state.settings),
+        [logic, state.settings],
     );
 
     const areas: Area[] = useMemo(() => {
-        const list = Object.entries(logic.checksByArea);
+        const list = Object.entries(logic.checksByArea).filter(
+            ([area]) => !isAreaNonprogress(state.settings, area),
+        );
         return list.map(([regionName, checksList]) => {
             const progressChecks = checksList.filter(
-                (check) => !isCheckBanned(logic.checks[check]),
+                (check) => !isCheckBanned(check, logic.checks[check]),
             );
             const checkObjs: Check[] = progressChecks.map((checkId) => {
                 const idx = logic.items[checkId][1];
-                const inLogic = resultBits.test(idx);
+                const inLogicIdx = logic.items[maybeCubeName(checkId)][1];
+                const inLogic = resultBits.test(inLogicIdx);
                 const inSemilogic = !inLogic && semiLogicResultBits.test(idx);
                 const checked = state.checkedChecks.includes(checkId);
-                const checkName = logic.checks[checkId];
+                const checkName = logic.checks[checkId].name;
 
                 const shortCheckName = checkName.includes('-')
                     ? checkName.substring(checkName.indexOf('-') + 1).trim()
                     : checkName;
-                const isCrystal = logic.looseCrystalChecks.includes(checkId);
 
                 return {
-                    type: isCrystal ? 'loose_crystal' : 'regular',
+                    type: logic.checks[checkId].type,
                     checkId,
-                    logicalState: inLogic ? 'inLogic' : inSemilogic ? 'semiLogic' : 'outLogic',
+                    logicalState: inLogic
+                        ? 'inLogic'
+                        : inSemilogic
+                            ? 'semiLogic'
+                            : 'outLogic',
                     checked,
                     checkName: shortCheckName,
                     hintItem: state.checkHints[checkId],
@@ -211,7 +267,18 @@ export function useComputeDerivedState(
                 hint: state.hints[regionName],
             } satisfies Area;
         });
-    }, [isCheckBanned, logic, resultBits, semiLogicResultBits, state.checkHints, state.checkedChecks, state.hints]);
+    }, [
+        isCheckBanned,
+        logic.checks,
+        logic.checksByArea,
+        logic.items,
+        resultBits,
+        semiLogicResultBits,
+        state.checkHints,
+        state.checkedChecks,
+        state.hints,
+        state.settings,
+    ]);
 
     const [regularAreas, silentRealms, dungeons] = useMemo(() => {
         const [silentRealms, areasAndDungeons] = _.partition(areas, (a) =>

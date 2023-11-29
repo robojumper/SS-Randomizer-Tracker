@@ -1,5 +1,19 @@
-import { TypedOptions, TypedOptions2 } from "../permalink/SettingsTypes";
+import { TypedOptions2 } from "../permalink/SettingsTypes";
 import { Items, State, isItem } from "./State";
+import goddessCubesList_ from '../data/goddessCubes2.json';
+import _ from "lodash";
+
+const canAccessCubeSuffix = '_TR_Cube_CanAccess';
+
+export const goddessChestCheckToCubeCheck = Object.fromEntries(goddessCubesList_ as [string, string][]);
+export const cubeCheckToGoddessChestCheck = _.invert(goddessChestCheckToCubeCheck);
+export const cubeCheckToCanAccessCube = Object.fromEntries(Object.keys(cubeCheckToGoddessChestCheck).map((check) => [check, mapToCanAccessCubeRequirement(check)]));
+export const canAccessCubeToCubeCheck = _.invert(cubeCheckToCanAccessCube);
+
+export function mapToCanAccessCubeRequirement(check: string) {
+    return `${check}${canAccessCubeSuffix}`;
+}
+
 
 export const sothItems = [
     'Faron Song of the Hero Part',

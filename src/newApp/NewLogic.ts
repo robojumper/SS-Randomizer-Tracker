@@ -1,8 +1,14 @@
 import _ from 'lodash';
 import { BitVector } from './BitVector';
 import { LogicalExpression } from './LogicalExpression';
-import { RawLogic, RawArea, TimeOfDay, RawEntrance, RawExit } from './UpstreamTypes';
-import crystalsData from '../data/crystals.json';
+import {
+    RawLogic,
+    RawArea,
+    TimeOfDay,
+    RawEntrance,
+    RawExit,
+} from './UpstreamTypes';
+import { cubeCheckToCanAccessCube } from './TrackerModifications';
 
 export interface Logic {
     numItems: number;
@@ -10,14 +16,24 @@ export interface Logic {
     items: Record<string, [vec: BitVector, bitIndex: number]>;
     startingItems: BitVector;
     areaGraph: AreaGraph;
-    checks: Record<string, string>;
+    checks: Record<string, LogicalCheck>;
     checksByArea: Record<string, string[]>;
-    looseCrystalChecks: string[];
     /**
      * array index is bit index. value at that index is a logical
      * expression that, if evaluated to true, implies the given bit index
      */
     implications: LogicalExpression[];
+}
+
+export interface LogicalCheck {
+    type:
+        | 'regular'
+        | 'loose_crystal'
+        | 'trial_treasure'
+        | 'rupee'
+        | 'beedle_shop'
+        | 'tr_cube';
+    name: string;
 }
 
 export interface AreaGraph {
@@ -87,7 +103,23 @@ export function preprocessItems(raw: string[]): string[] {
 }
 
 export function parseLogic(raw: RawLogic): Logic {
-    const rawItems = ['False', 'True', ...preprocessItems(raw.items)];
+    const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
+    const rawItems = ['False', 'True', ...preprocessItems(raw.items), ...canAccessCubeReqs];
+
+    const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
+        return {
+            name: check.short_name,
+            type: getCheckType(check.type),
+        } as const;
+    });
+
+    for (const cubeCheck of Object.keys(cubeCheckToCanAccessCube)) {
+        checks[cubeCheck] = {
+            type: 'tr_cube',
+            name: _.last(cubeCheck.split('\\'))!,
+        };
+    }
+
     const numItems = rawItems.length;
     // Link starts with True
     const startingItems = new BitVector(numItems).setBit(1);
@@ -97,7 +129,9 @@ export function parseLogic(raw: RawLogic): Logic {
     const areasByExit: AreaGraph['areasByExit'] = {};
     const checksByArea: Logic['checksByArea'] = {};
 
-    const entrancesByShortName: { [shortName: string]: { def: RawEntrance, id: string} } = {};
+    const entrancesByShortName: {
+        [shortName: string]: { def: RawEntrance; id: string };
+    } = {};
     let idx = 0;
     for (const rawItem of rawItems) {
         items[rawItem] = [new BitVector(numItems).setBit(idx), idx];
@@ -149,6 +183,7 @@ export function parseLogic(raw: RawLogic): Logic {
 
         return area;
     }
+    
 
     function populateArea(rawArea: RawArea): Area {
         const area = allAreas[rawArea.name];
@@ -165,10 +200,12 @@ export function parseLogic(raw: RawLogic): Logic {
 
             const areaDayIdx = dayBit(rawArea.name);
             const areaNightIdx = nightBit(rawArea.name);
-            implications[areaDayIdx] =
-                implications[areaDayIdx].or(nightVec(rawArea.name));
-            implications[areaNightIdx] =
-                implications[areaNightIdx].or(dayVec(rawArea.name));
+            implications[areaDayIdx] = implications[areaDayIdx].or(
+                nightVec(rawArea.name),
+            );
+            implications[areaNightIdx] = implications[areaNightIdx].or(
+                dayVec(rawArea.name),
+            );
         }
 
         if (rawArea.exits) {
@@ -233,19 +270,33 @@ export function parseLogic(raw: RawLogic): Logic {
                         let timedReq: LogicalExpression;
                         let timedArea: () => BitVector;
                         if (destArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
-                            timedReq = expr.drop_unless(dummy_day_bit, dummy_night_bit);
+                            timedReq = expr.drop_unless(
+                                dummy_day_bit,
+                                dummy_night_bit,
+                            );
                             timedArea = () => dayVec(area.name);
-                        } else if (destArea.allowedTimeOfDay === TimeOfDay.NightOnly) {
-                            timedReq = expr.drop_unless(dummy_night_bit, dummy_day_bit);
+                        } else if (
+                            destArea.allowedTimeOfDay === TimeOfDay.NightOnly
+                        ) {
+                            timedReq = expr.drop_unless(
+                                dummy_night_bit,
+                                dummy_day_bit,
+                            );
                             timedArea = () => nightVec(area.name);
                         } else {
                             throw new Error('bad ToD requirement');
                         }
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            implications[areaBit] = implications[areaBit].or(timedReq.and(timedArea()));
-                        } else if (area.allowedTimeOfDay === destArea.allowedTimeOfDay) {
-                            implications[areaBit] = implications[areaBit].or(timedReq.and(vec(area.name)));
+                            implications[areaBit] = implications[areaBit].or(
+                                timedReq.and(timedArea()),
+                            );
+                        } else if (
+                            area.allowedTimeOfDay === destArea.allowedTimeOfDay
+                        ) {
+                            implications[areaBit] = implications[areaBit].or(
+                                timedReq.and(vec(area.name)),
+                            );
                         }
                     }
 
@@ -263,25 +314,35 @@ export function parseLogic(raw: RawLogic): Logic {
                     const exitBit = items[fullExitName][1];
                     if (area.abstract) {
                         if (fullExitName !== '\\Start') {
-                            throw new Error('abstract area can only exit to start');
+                            throw new Error(
+                                'abstract area can only exit to start',
+                            );
                         }
                         implications[exitBit] = expr;
                     } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
                         implications[exitBit] = implications[exitBit].or(
-                            expr.drop_unless(dummy_day_bit, dummy_night_bit).and(dayVec(rawArea.name))
-                        )
+                            expr
+                                .drop_unless(dummy_day_bit, dummy_night_bit)
+                                .and(dayVec(rawArea.name)),
+                        );
                         implications[exitBit] = implications[exitBit].or(
-                            expr.drop_unless(dummy_night_bit, dummy_day_bit).and(nightVec(rawArea.name))
-                        )
-                        vanillaExits[makeDay(rawArea.name)]
+                            expr
+                                .drop_unless(dummy_night_bit, dummy_day_bit)
+                                .and(nightVec(rawArea.name)),
+                        );
+                        vanillaExits[makeDay(rawArea.name)];
                     } else if (area.allowedTimeOfDay === TimeOfDay.DayOnly) {
                         implications[exitBit] = implications[exitBit].or(
-                            expr.drop_unless(dummy_day_bit, dummy_night_bit).and(vec(rawArea.name))
-                        )
+                            expr
+                                .drop_unless(dummy_day_bit, dummy_night_bit)
+                                .and(vec(rawArea.name)),
+                        );
                     } else if (area.allowedTimeOfDay === TimeOfDay.NightOnly) {
                         implications[exitBit] = implications[exitBit].or(
-                            expr.drop_unless(dummy_night_bit, dummy_day_bit).and(vec(rawArea.name))
-                        )
+                            expr
+                                .drop_unless(dummy_night_bit, dummy_day_bit)
+                                .and(vec(rawArea.name)),
+                        );
                     } else {
                         throw new Error('bad ToD requirement');
                     }
@@ -315,33 +376,46 @@ export function parseLogic(raw: RawLogic): Logic {
                 entrancesByShortName[entranceDef.short_name] = {
                     def: entranceDef,
                     id: fullEntranceName,
-                }
+                };
 
                 entrancesByShortName[entrance] = {
                     def: entranceDef,
                     id: fullEntranceName,
-                }
+                };
 
                 if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
                     const areaDayBit = dayBit(area.name);
                     const areaNightBit = nightBit(area.name);
-                    implications[areaDayBit] = implications[areaDayBit].or(dayVec(fullEntranceName));
-                    implications[areaNightBit] = implications[areaNightBit].or(nightVec(fullEntranceName));
+                    implications[areaDayBit] = implications[areaDayBit].or(
+                        dayVec(fullEntranceName),
+                    );
+                    implications[areaNightBit] = implications[areaNightBit].or(
+                        nightVec(fullEntranceName),
+                    );
                 } else {
                     const entranceBit = vec(fullEntranceName);
                     if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                        if (entranceDef.allowed_time_of_day === TimeOfDay.DayOnly) {
+                        if (
+                            entranceDef.allowed_time_of_day ===
+                            TimeOfDay.DayOnly
+                        ) {
                             const bit = dayBit(area.name);
-                            implications[bit] = implications[bit].or(entranceBit);
-                        } else if (entranceDef.allowed_time_of_day === TimeOfDay.NightOnly) {
+                            implications[bit] =
+                                implications[bit].or(entranceBit);
+                        } else if (
+                            entranceDef.allowed_time_of_day ===
+                            TimeOfDay.NightOnly
+                        ) {
                             const bit = nightBit(area.name);
-                            implications[bit] = implications[bit].or(entranceBit);
+                            implications[bit] =
+                                implications[bit].or(entranceBit);
                         } else {
                             throw new Error('bad ToD requirement');
                         }
                     } else {
                         const areaBit = bit(area.name);
-                        implications[areaBit] = implications[areaBit].or(entranceBit);
+                        implications[areaBit] =
+                            implications[areaBit].or(entranceBit);
                     }
                 }
             }
@@ -352,14 +426,38 @@ export function parseLogic(raw: RawLogic): Logic {
                 location,
                 locationRequirementExpression,
             ] of Object.entries(rawArea.locations)) {
-                const locName = location.startsWith('\\')
+                let locName = location.startsWith('\\')
                     ? location
                     : `${area.name}\\${location}`;
+
+                if (!location.startsWith('\\')) {
+                    const check = checks[locName];
+                    if (check) {
+                        let region: string | null | undefined = rawArea.hint_region;
+                        if (locName.includes('Goddess Cube at Ride') && !region) {
+                            region = 'Lanayru Desert';
+                        } 
+                        if (!region) {
+                            throw new Error('check has no region?');
+                        }
+                        (checksByArea[region] ??= []).push(
+                            locName,
+                        );
+                    }
+                }
+
+                // Is this a goddess cube location? Then replace it with the fake "can access" requirement.
+                if (cubeCheckToCanAccessCube[locName]) {
+                    const canAccessReq = cubeCheckToCanAccessCube[locName];
+                    locName = canAccessReq;
+                }
+
                 const locVec = items[locName];
                 if (!locVec) {
                     throw new Error('bad requirement ' + locName);
                 }
                 let timed_req: LogicalExpression;
+
                 const expr = new LogicalExpression(
                     numItems,
                     locationRequirementExpression,
@@ -391,16 +489,6 @@ export function parseLogic(raw: RawLogic): Logic {
                 }
                 implications[locVec[1]] = implications[locVec[1]].or(timed_req);
                 area.locations.push([locVec[0], expr]);
-
-                if (!location.startsWith('\\')) {
-                    const check = raw.checks[locName];
-                    if (check) {
-                        if (!rawArea.hint_region) {
-                            throw new Error("check has no region?")
-                        }
-                        (checksByArea[rawArea.hint_region] ??= []).push(locName)
-                    }
-                }
             }
         }
 
@@ -458,22 +546,17 @@ export function parseLogic(raw: RawLogic): Logic {
     const vanillaConnections: AreaGraph['vanillaConnections'] = {};
     for (const [exitId, exitDef] of Object.entries(raw.exits)) {
         if (exitDef.vanilla) {
-            vanillaConnections[exitId] = entrancesByShortName[exitDef.vanilla].id;
+            vanillaConnections[exitId] =
+                entrancesByShortName[exitDef.vanilla].id;
         }
     }
-
-    const looseCrystalChecks = Object.entries(raw.checks).filter(([, checkName]) => {
-        if (checkName.includes('-')) {
-            return checkName.substring(checkName.indexOf('-') + 1).trim() in crystalsData;
-        }
-    }).map(([checkId]) => checkId);
 
     return {
         numItems,
         allItems: rawItems,
         items,
         startingItems,
-        checks: raw.checks,
+        checks,
         checksByArea,
         areaGraph: {
             areas: allAreas,
@@ -484,7 +567,24 @@ export function parseLogic(raw: RawLogic): Logic {
             exits: raw.exits,
             vanillaConnections,
         },
-        looseCrystalChecks,
         implications,
     };
+}
+
+function getCheckType(checkType: string | null): LogicalCheck['type'] {
+    if (!checkType) {
+        return 'regular';
+    }
+
+    if (checkType.includes('Rupee')) {
+        return 'rupee';
+    } else if (checkType.includes('silent realm')) {
+        return 'trial_treasure';
+    } else if (checkType.includes('Loose Crystals')) {
+        return 'loose_crystal';
+    } else if (checkType.includes("Beedle's Shop Purchases")) {
+        return 'beedle_shop';
+    } else {
+        return 'regular';
+    }
 }

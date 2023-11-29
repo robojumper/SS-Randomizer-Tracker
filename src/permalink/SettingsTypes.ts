@@ -1,10 +1,10 @@
-import { GeneratedOptions } from "../newApp/GeneratedOptions";
+import { GeneratedOptions } from '../newApp/GeneratedOptions';
 
 export type BaseOption = {
     permalink: boolean | undefined;
     help: string;
     name: keyof TypedOptions;
-    command: keyof TypedOptions2,
+    command: keyof TypedOptions2;
 };
 
 export type BooleanOption = BaseOption & {
@@ -44,22 +44,30 @@ export type OptionDefs = Option[];
 export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
 
-export interface TypedOptions2 extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity'> {
-    'rupeesanity': GeneratedOptions['rupeesanity'] | 'Vanilla',
-    'shopsanity': GeneratedOptions['shopsanity'] | 'Vanilla',
-};
+export interface TypedOptions2
+    extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity'> {
+    rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
+    shopsanity: GeneratedOptions['shopsanity'] | 'Vanilla' | undefined;
+    'beedle-shopsanity': boolean | undefined;
+    'rupin-shopsanity': boolean | undefined;
+    'luv-shopsanity': boolean | undefined;
+}
 
 export type TypedOptions = {
     'Logic Mode': 'BiTless' | 'Glitched';
 
     Rupeesanity: boolean | string;
     Tadtonesanity: boolean;
-    'Randomize Entrances': 'None' | 'Required Dungeons Separately' | 'All Surface Dungeons' | 'All Surface Dungeons + Sky Keep';
+    'Randomize Entrances':
+        | 'None'
+        | 'Required Dungeons Separately'
+        | 'All Surface Dungeons'
+        | 'All Surface Dungeons + Sky Keep';
     'Starting Sword': string;
     'Open Thunderhead': string;
     'Open Earth Temple': boolean;
     'Open Lanayru Mining Facility': string;
-    'Open Lake Floria': 'Vanilla' | 'Talk to Yerbal' | 'Open',
+    'Open Lake Floria': 'Vanilla' | 'Talk to Yerbal' | 'Open';
     'Upgraded Skyward Strike': boolean;
     'Empty Unrequired Dungeons': boolean;
     'Triforce Required': boolean;
@@ -71,7 +79,7 @@ export type TypedOptions = {
     'Starting Empty Bottles': number;
     'Starting Items': string[];
 
-    'Randomize Silent Realms': boolean
+    'Randomize Silent Realms': boolean;
     'Treasuresanity in Silent Realms': boolean;
     'Trial Treasure Amount': number;
 
