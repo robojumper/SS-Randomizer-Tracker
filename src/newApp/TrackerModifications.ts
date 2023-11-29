@@ -68,7 +68,7 @@ export function getInitialItems(
             add(sothItemReplacement);
         } else if (item.includes(triforceItemReplacement)) {
             add(triforceItemReplacement);
-        } else if (isItem(item) && (!item.includes('Pouch') || !startingItems.includes('Progressive Pouch'))) {
+        } else if (isItem(item) && (!item.includes('Pouch') || !items['Progressive Pouch'])) {
             add(item);
         }
     }
