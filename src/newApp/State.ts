@@ -1,12 +1,12 @@
 import _ from 'lodash';
 import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
 import { BitVector } from './BitVector';
-import { DerivedState } from './DerivedState';
+import { DerivedState, RegularDungeon } from './DerivedState';
 import { LogicalExpression } from './LogicalExpression';
 import { Logic, makeDay, makeNight } from './NewLogic';
 import { cubeCheckToCanAccessCube, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
-import { runtimeOptions } from './ThingsThatWouldBeNiceToHaveInTheDump';
+import { completeTriforceReq, dungeonCompletionRequirements, gotOpeningReq, gotRaisingReq, hordeDoorReq, impaSongCheck, runtimeOptions, swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
 export const itemMaxes = {
     'Progressive Sword': 6,
@@ -126,6 +126,7 @@ export function mapState(
     checkedChecks: State['checkedChecks'],
     mappedExits: State['mappedExits'],
     activeVanillaConnections: Record<string, string>,
+    requiredDungeons: string[],
     settings: TypedOptions2,
 ): {
     items: BitVector;
@@ -187,8 +188,8 @@ export function mapState(
 
     for (const option of options) {
         if (option.type === 'multichoice') {
-            if (option.name === 'Starting Items') {
-                break;
+            if (option.command === 'starting-items' || option.command === 'excluded-locations') {
+                continue;
             }
             const vals = settings[option.command] as string[];
             const trick = option.name === 'Enabled Tricks Glitched' || option.name === 'Enabled Tricks';
@@ -199,7 +200,6 @@ export function mapState(
                     trySet(`${option} option`)
                 }
             }
-            break;
         }
     }
 
@@ -209,6 +209,26 @@ export function mapState(
     const dayBit = (id: string) => logic.items[makeDay(id)][1];
     const nightVec = (id: string) => logic.items[makeNight(id)][0];
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
+
+    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? vec('True') : vec(impaSongCheck)]);
+    const neededSwords = swordsToAdd[settings['got-sword-requirement']];
+    let openGotExpr = new LogicalExpression([vec(`Progressive Sword x ${neededSwords}`)]);
+    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : vec('True')])
+
+    const validRequiredDungeons = requiredDungeons.filter((d) => d in dungeonCompletionRequirements);
+    const requiredDungeonsCompleted = validRequiredDungeons.length > 0 && validRequiredDungeons.every((d) => checkedChecks.includes(dungeonCompletionRequirements[d as RegularDungeon]));
+
+    const dungeonsExpr = new LogicalExpression(requiredDungeonsCompleted ? [vec('True')]: []);
+
+    if (settings['got-dungeon-requirement'] === 'Required') {
+        openGotExpr = openGotExpr.and(dungeonsExpr);
+    } else if (settings['got-dungeon-requirement'] === 'Unrequired') {
+        hordeDoorExpr = hordeDoorExpr.and(dungeonsExpr);
+    }
+
+    implications[bit(gotOpeningReq)] = openGotExpr;
+    implications[bit(gotRaisingReq)] = raiseGotExpr;
+    implications[bit(hordeDoorReq)] = hordeDoorExpr;
 
     const mapConnection = (from: string, to: string) => {
         // console.log(`connection ${from} -> ${to}`);

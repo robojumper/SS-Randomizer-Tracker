@@ -1,4 +1,4 @@
-import { useDerivedState, useTrackerState } from "./Context";
+import { useDerivedState, useAppState } from "./Context";
 import _ from "lodash";
 import LocationGroupHeader from "../locationTracker/LocationGroupHeader";
 import LocationGroup from "./LocationGroup";
@@ -8,7 +8,7 @@ import LocationGroupContextMenu from "../locationTracker/LocationGroupContextMen
 import LocationContextMenu from "../locationTracker/LocationContextMenu";
 
 export function NewLocationTracker({ containerHeight }: { containerHeight: number; }) {
-    const state = useTrackerState();
+    const state = useAppState();
     const derivedState = useDerivedState();
     const activeArea = state.activeArea ? derivedState.areas[state.activeArea] : undefined;
 

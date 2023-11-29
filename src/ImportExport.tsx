@@ -1,30 +1,29 @@
 import { ChangeEvent } from 'react';
-import Logic from './logic/Logic';
-import ColorScheme from './customization/ColorScheme';
-import Settings from './permalink/Settings';
-import { Layout } from './customization/CustomizationModal';
+import { useDispatch, useAppState } from './newApp/Context';
+import { State } from './newApp/State';
+
+const version = 'SSRANDO-TRACKER-NG-V1';
 
 export interface ExportState {
-    logic: Logic;
-    settings: Settings;
-    colorScheme: ColorScheme;
-    layout: Layout;
-    source: string;
+    version: string;
+    state: State;
 }
 
-export default function ImportExport({ state, importFunc }: {
-    state: ExportState,
-    importFunc: (newState: ExportState) => void
-}) {
+export default function ImportExport() {
+    const state = useAppState().trackerState;
+    const dispatch = useDispatch();
 
-    if (!state.settings || !state.logic) {
-        return null;
-    }
-
-    const doImport = (text: string) => importFunc(JSON.parse(text) as ExportState);
+    const doImport = (text: string) => {
+        const importVal = JSON.parse(text) as ExportState;
+        if (importVal.version !== version) {
+            alert('This export was made with an incompatible version of the Tracker and cannot be imported here.');
+        }
+        dispatch({ type: 'import', state: importVal.state })
+    };
     const doExport = () => {
-        const filename = `SS-Rando-Tracker${Date()}`;
-        const exportstring = JSON.stringify(state, undefined, '\t');
+        const filename = `SS-Rando-Tracker${new Date().toISOString()}`;
+        const exportVal: ExportState = { state, version };
+        const exportstring = JSON.stringify(exportVal, undefined, '\t');
         const blob = new Blob([exportstring], { type: 'json' });
         const e = document.createEvent('MouseEvents'); const
             a = document.createElement('a');

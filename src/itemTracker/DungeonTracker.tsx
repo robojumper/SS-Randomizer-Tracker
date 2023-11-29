@@ -19,7 +19,7 @@ import faronTrialGate from '../assets/bosses/faronTrialGate.png';
 import lanayruTrialGate from '../assets/bosses/lanayruTrialGate.png';
 import eldinTrialGate from '../assets/bosses/eldinTrialGate.png';
 import DungeonName from './items/dungeons/DungeonName';
-import { useDerivedState, useDispatch, useTrackerState } from '../newApp/Context';
+import { useDerivedState, useDispatch, useAppState } from '../newApp/Context';
 import DungeonIcon from './items/dungeons/DungeonIcon';
 import React from 'react';
 import { Col, Row } from 'react-bootstrap';
@@ -78,7 +78,7 @@ export default function DungeonTracker() {
     const divElement = useRef<HTMLDivElement>(null);
     const dispatch = useDispatch();
     const state = useDerivedState();
-    const colorScheme = useTrackerState().colorScheme;
+    const colorScheme = useAppState().colorScheme;
 
     useResizeObserver(divElement, () => {
         const elem = divElement.current;
@@ -183,11 +183,12 @@ export default function DungeonTracker() {
                                         dungeonData[d.name].dungeonAbbr
                                     }
                                     dungeonName={d.name}
-                                    completed={state.completedDungeons.includes(d.name)}
+                                    completed={d.completed}
+                                    required={d.required}
                                     dungeonChange={() =>
                                         dispatch({
-                                            type: 'onAreaClick',
-                                            area: d.name,
+                                            type: 'onDungeonNameClick',
+                                            dungeon: d.name,
                                         })
                                     }
                                 />

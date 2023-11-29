@@ -6,7 +6,7 @@ import swordBlock from '../assets/Sword_Block.png';
 import CrystalCounter from './items/sidequest/CrystalCounter';
 import ColorScheme from '../customization/ColorScheme';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDispatch, useTrackerState } from '../newApp/Context';
+import { useDispatch, useAppState } from '../newApp/Context';
 
 type SwordBlockProperties = {
     styleProps: CSSProperties;
@@ -15,7 +15,7 @@ type SwordBlockProperties = {
 
 const SwordBlock = (props: SwordBlockProperties) => {
     const dispatch = useDispatch();
-    const state = useTrackerState();
+    const state = useAppState();
     const handleExtraWalletClick = () => {
         dispatch({ type: 'onItemClick', item: 'Extra Wallet', take: false });
     };
@@ -100,7 +100,7 @@ const SwordBlock = (props: SwordBlockProperties) => {
                 role="button"
             >
                 <CrystalCounter
-                    current={`+${(state.state.inventory['Extra Wallet'] ?? 0) * 300}`}
+                    current={`+${(state.trackerState.inventory['Extra Wallet'] ?? 0) * 300}`}
                     colorScheme={props.colorScheme}
                     fontSize={wid * 0.12}
                 />

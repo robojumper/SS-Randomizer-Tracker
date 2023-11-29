@@ -13,7 +13,7 @@ import sotsImage from '../assets/hints/sots.png';
 import barrenImage from '../assets/hints/barren.png';
 
 import 'react-contexify/dist/ReactContexify.css';
-import { useDispatch, useTrackerState } from '../newApp/Context';
+import { useDispatch, useAppState } from '../newApp/Context';
 import clsx from 'clsx';
 import keyDownWrapper from '../KeyDownWrapper';
 import { TriggerEvent } from 'react-contexify';
@@ -34,7 +34,7 @@ export default function LocationGroupHeader({
     selected: boolean,
 }) {
     const dispatch = useDispatch();
-    const colorScheme = useTrackerState().colorScheme;
+    const colorScheme = useAppState().colorScheme;
     const onClick = useCallback(
         () => dispatch({ type: 'onAreaClick', area: area.name }),
         [dispatch, area.name],

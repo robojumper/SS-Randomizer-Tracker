@@ -15,8 +15,8 @@ import CustomizationModal, {
 import { Logic } from './NewLogic';
 import ItemTracker from '../itemTracker/ItemTracker';
 import GridTracker from '../itemTracker/GridTracker';
-import { TrackerState, trackerReducer } from './TrackerReducer';
-import { WithContext, useDispatch, useTrackerState } from './Context';
+import { AppState, trackerReducer } from './TrackerReducer';
+import { WithContext, useDispatch, useAppState } from './Context';
 import { NewLocationTracker } from './NewLocationTracker';
 import DungeonTracker from '../itemTracker/DungeonTracker';
 import BasicCounters from '../BasicCounters';
@@ -27,8 +27,9 @@ import EntranceTracker from '../entranceTracker/EntranceTracker';
 import OptionsMenu from './OptionsMenu';
 import { getInitialItems } from './TrackerModifications';
 import SecondaryLocationTracker from './SecondaryLocationTracker';
+import ImportExport from '../ImportExport';
 
-function initTrackerState(options: OptionDefs): TrackerState {
+function initTrackerState(options: OptionDefs): AppState {
     // const path = new URLSearchParams(window.location.search);
     // const source = path.get('source')!;
     const schemeJson = localStorage.getItem('ssrTrackerColorScheme');
@@ -40,7 +41,7 @@ function initTrackerState(options: OptionDefs): TrackerState {
         'inventory';
     const settings: TypedOptions2 = defaultSettings(options);
     return {
-        state: {
+        trackerState: {
             inventory: getInitialItems(settings),
             mappedExits: {},
             checkedChecks: [],
@@ -127,7 +128,7 @@ function NewTracker({
 }) {
     const { height, width } = useWindowDimensions();
     const dispatch = useDispatch();
-    const state = useTrackerState();
+    const state = useAppState();
 
     const itemTrackerStyle: CSSProperties = {
         position: 'fixed',
@@ -204,6 +205,9 @@ function NewTracker({
                         height: height * 0.05,
                     }}
                 >
+                    <Col>
+                        <ImportExport />
+                    </Col>
                     <Col>
                         <Button
                             variant="primary"

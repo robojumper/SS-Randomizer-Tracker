@@ -10,7 +10,7 @@ import {
     FormControl,
 } from 'react-bootstrap';
 import Select, { ActionMeta, MultiValue } from 'react-select';
-import { useDispatch, useTrackerState } from './Context';
+import { useDispatch, useAppState } from './Context';
 import 'tippy.js/dist/tippy.css';
 import { OptionDefs, Option, OptionValue } from '../permalink/SettingsTypes';
 import { decodePermalink, encodePermalink } from '../permalink/Settings';
@@ -24,11 +24,11 @@ function OptionsMenu({
     onHide: () => void;
     options: OptionDefs;
 }) {
-    const trackerState = useTrackerState();
+    const trackerState = useAppState();
     const dispatch = useDispatch();
 
     const [tempSettings, setTempSettings] = useState(
-        trackerState.state.settings,
+        trackerState.trackerState.settings,
     );
 
     const permalink = useMemo(

@@ -1,12 +1,12 @@
 import { produce } from "immer";
 import ColorScheme from "../customization/ColorScheme";
 import { Layout } from "../customization/CustomizationModal";
-import { Hint, State, isItem, itemMaxes } from "./State";
+import { Hint, State as TrackerState, isItem, itemMaxes } from "./State";
 import { TypedOptions2 } from "../permalink/SettingsTypes";
 import { getInitialItems } from "./TrackerModifications";
 
-export interface TrackerState {
-    state: State,
+export interface AppState {
+    trackerState: TrackerState,
     width: number;
     height: number;
     colorScheme: ColorScheme;
@@ -20,6 +20,7 @@ export interface TrackerState {
 export type TrackerAction =
     | { type: 'onItemClick', item: string, take: boolean }
     | { type: 'onCheckClick', check: string, markChecked?: boolean }
+    | { type: 'onDungeonNameClick', dungeon: string, }
     | { type: 'bulkEditChecks', checks: string[], check: boolean }
     | { type: 'onAreaClick', area: string }
     | { type: 'mapEntrance', from: string, to: string | undefined }
@@ -31,9 +32,10 @@ export type TrackerAction =
     | { type: 'acceptSettings', settings: TypedOptions2 }
     | { type: 'setLayout', layout: Layout }
     | { type: 'setColorScheme', colorScheme: ColorScheme }
-    | { type: 'reset', settings: TypedOptions2 | undefined };
+    | { type: 'reset', settings: TypedOptions2 | undefined }
+    | { type: 'import', state: TrackerState };
 
-export const trackerReducer = (state: TrackerState, action: TrackerAction): TrackerState => {
+export const trackerReducer = (state: AppState, action: TrackerAction): AppState => {
     switch (action.type) {
         case 'onItemClick': {
             if (!isItem(action.item)) {
@@ -44,7 +46,7 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
             }
             const item = action.item;
             const max = itemMaxes[item];
-            const count = state.state.inventory[item] ?? 0;
+            const count = state.trackerState.inventory[item] ?? 0;
             let newCount = action.take ? count - 1 : count + 1;
             if (newCount < 0) {
                 newCount += max + 1;
@@ -53,8 +55,8 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
             }
 
             return produce(state, (draft) => {
-                draft.state.hasModifiedInventory = true;
-                draft.state.inventory[item] = newCount;
+                draft.trackerState.hasModifiedInventory = true;
+                draft.trackerState.inventory[item] = newCount;
             });
         }
         case 'showEntranceDialog': {
@@ -77,25 +79,34 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
         }
         case 'acceptSettings': {
             return produce(state, (draft) => {
-                draft.state.settings = action.settings;
-                if (!draft.state.hasModifiedInventory) {
-                    draft.state.inventory = getInitialItems(action.settings);
+                draft.trackerState.settings = action.settings;
+                if (!draft.trackerState.hasModifiedInventory) {
+                    draft.trackerState.inventory = getInitialItems(action.settings);
                 }
             });
         }
         case 'onCheckClick': {
             return produce(state, (draft) => {
-                const add = action.markChecked !== undefined ? action.markChecked : !draft.state.checkedChecks.includes(action.check);
+                const add = action.markChecked !== undefined ? action.markChecked : !draft.trackerState.checkedChecks.includes(action.check);
                 if (add) {
-                    draft.state.checkedChecks.push(action.check);
+                    draft.trackerState.checkedChecks.push(action.check);
                 } else {
-                    draft.state.checkedChecks = draft.state.checkedChecks.filter((c) => c !== action.check);
+                    draft.trackerState.checkedChecks = draft.trackerState.checkedChecks.filter((c) => c !== action.check);
+                }
+            });
+        }
+        case 'onDungeonNameClick': {
+            return produce(state, (draft) => {
+                if (draft.trackerState.requiredDungeons.includes(action.dungeon)) {
+                    draft.trackerState.requiredDungeons = draft.trackerState.requiredDungeons.filter((c) => c !== action.dungeon);
+                } else {
+                    draft.trackerState.requiredDungeons.push(action.dungeon);
                 }
             });
         }
         case 'bulkEditChecks': {
             return produce(state, (draft) => {
-                const oldChecks = new Set(draft.state.checkedChecks);
+                const oldChecks = new Set(draft.trackerState.checkedChecks);
                 if (action.check) {
                     for (const check of action.checks) {
                         oldChecks.add(check);
@@ -105,7 +116,7 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
                         oldChecks.delete(check);
                     }
                 }
-                draft.state.checkedChecks = [...oldChecks];
+                draft.trackerState.checkedChecks = [...oldChecks];
             });
         }
         case 'onAreaClick': {
@@ -115,17 +126,17 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
         }
         case 'mapEntrance': {
             return produce(state, (draft) => {
-                draft.state.mappedExits[action.from] = action.to;
+                draft.trackerState.mappedExits[action.from] = action.to;
             })
         }
         case 'setHint': {
             return produce(state, (draft) => {
-                draft.state.hints[action.area] = action.hint;
+                draft.trackerState.hints[action.area] = action.hint;
             })
         }
         case 'setCheckHint': {
             return produce(state, (draft) => {
-                draft.state.checkHints[action.checkId] = action.hintItem;
+                draft.trackerState.checkHints[action.checkId] = action.hintItem;
             })
         }
         case 'setLayout': {
@@ -141,11 +152,11 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
             };
         }
         case 'reset': {
-            const settings = action.settings ?? state.state.settings;
+            const settings = action.settings ?? state.trackerState.settings;
             return {
                 ...state,
                 activeArea: undefined,
-                state: {
+                trackerState: {
                     checkedChecks: [],
                     hasModifiedInventory: false,
                     inventory: getInitialItems(settings),
@@ -155,6 +166,13 @@ export const trackerReducer = (state: TrackerState, action: TrackerAction): Trac
                     checkHints: {},
                     settings,
                 }
+            };
+        }
+        case 'import': {
+            // TODO: Validate
+            return {
+                ...state,
+                trackerState: action.state,
             };
         }
         default:

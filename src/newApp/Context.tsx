@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { TrackerAction, TrackerState } from './TrackerReducer';
+import { TrackerAction, AppState } from './TrackerReducer';
 import { Logic } from './NewLogic';
 import { DerivedState, useComputeDerivedState } from './DerivedState';
 import { OptionDefs } from '../permalink/SettingsTypes';
@@ -10,7 +10,7 @@ const DispatchContext = React.createContext<React.Dispatch<TrackerAction>>(
     },
 );
 
-const StateContext = React.createContext<TrackerState | null>(null);
+const StateContext = React.createContext<AppState | null>(null);
 const DerivedStateContext = React.createContext<DerivedState | null>(null);
 
 export function WithContext({
@@ -22,11 +22,11 @@ export function WithContext({
 }: {
     logic: Logic;
     options: OptionDefs;
-    state: TrackerState;
+    state: AppState;
     dispatch: React.Dispatch<TrackerAction>;
     children: React.ReactNode;
 }) {
-    const derivedState = useComputeDerivedState(logic, options, state.state);
+    const derivedState = useComputeDerivedState(logic, options, state.trackerState);
 
     return (
         <DispatchContext.Provider value={dispatch}>
@@ -43,7 +43,7 @@ export function useDispatch() {
     return useContext(DispatchContext);
 }
 
-export function useTrackerState() {
+export function useAppState() {
     return useContext(StateContext)!;
 }
 

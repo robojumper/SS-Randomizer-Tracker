@@ -2,6 +2,7 @@ import { TypedOptions2 } from "../permalink/SettingsTypes";
 import { Items, State, isItem } from "./State";
 import goddessCubesList_ from '../data/goddessCubes2.json';
 import _ from "lodash";
+import { swordsToAdd } from "./ThingsThatWouldBeNiceToHaveInTheDump";
 
 const canAccessCubeSuffix = '_TR_Cube_CanAccess';
 
@@ -49,15 +50,6 @@ export function getInitialItems(
     add('Group of Tadtones', settings['starting-tadtones'] ?? 0);
     add('Empty Bottle', settings['starting-bottles'] ?? 0);
 
-    const swordsToAdd: Record<string, number> = {
-        Swordless: 0,
-        'Practice Sword': 1,
-        'Goddess Sword': 2,
-        'Goddess Longsword': 3,
-        'Goddess White Sword': 4,
-        'Master Sword': 5,
-        'True Master Sword': 6,
-    };
     add(
         'Progressive Sword',
         swordsToAdd[settings['starting-sword'] ?? 'Swordless'],

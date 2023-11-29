@@ -9,11 +9,15 @@ import {
     randomizedExitsToDungeons,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
-import { cubeCheckToCanAccessCube, cubeCheckToGoddessChestCheck, mapToCanAccessCubeRequirement } from './TrackerModifications';
+import {
+    cubeCheckToCanAccessCube,
+    cubeCheckToGoddessChestCheck,
+    mapToCanAccessCubeRequirement,
+} from './TrackerModifications';
 
 export interface DerivedState {
     regularAreas: Area[];
-    dungeons: Area<Dungeon>[];
+    dungeons: Dungeon[];
     silentRealms: Area[];
     areas: Record<string, Area>;
     itemCount: Partial<Record<Items | 'Total Gratitude Crystals', number>>;
@@ -33,6 +37,11 @@ export interface Area<N extends string = string> {
     checks: Check[];
     extraChecks: Check[];
     hint: Hint | undefined;
+}
+
+export interface Dungeon extends Area<DungeonName> {
+    required: boolean;
+    completed: boolean;
 }
 
 export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic';
@@ -71,9 +80,9 @@ const dungeonNames = [
     'Sky Keep',
 ] as const;
 
-export type Dungeon = (typeof dungeonNames)[number];
-export type RegularDungeon = Exclude<Dungeon, 'Sky Keep'>;
-function isDungeon(id: string): id is Dungeon {
+export type DungeonName = (typeof dungeonNames)[number];
+export type RegularDungeon = Exclude<DungeonName, 'Sky Keep'>;
+function isDungeon(id: string): id is DungeonName {
     const names: readonly string[] = dungeonNames;
     return names.includes(id);
 }
@@ -101,8 +110,16 @@ function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions2) {
 
     const banTadtones = !settings['tadtonesanity'];
 
-    const isBannedCubeCheckViaChest = (checkId: string, check: LogicalCheck) => {
-        return check.type === 'tr_cube' && bannedChecks.has(logic.checks[cubeCheckToGoddessChestCheck[checkId]].name);
+    const isBannedCubeCheckViaChest = (
+        checkId: string,
+        check: LogicalCheck,
+    ) => {
+        return (
+            check.type === 'tr_cube' &&
+            bannedChecks.has(
+                logic.checks[cubeCheckToGoddessChestCheck[checkId]].name,
+            )
+        );
     };
 
     return (checkId: string, check: LogicalCheck) =>
@@ -156,6 +173,7 @@ export function useComputeDerivedState(
             state.checkedChecks,
             state.mappedExits,
             activeVanillaConnections,
+            state.requiredDungeons,
             state.settings,
         );
         return interpretLogic(logic, items, implications);
@@ -166,10 +184,14 @@ export function useComputeDerivedState(
         state.checkedChecks,
         state.inventory,
         state.mappedExits,
+        state.requiredDungeons,
         state.settings,
     ]);
 
-    const maybeCubeName = (check: string) => check in cubeCheckToGoddessChestCheck ? mapToCanAccessCubeRequirement(check) : check;
+    const maybeCubeName = (check: string) =>
+        check in cubeCheckToGoddessChestCheck
+            ? mapToCanAccessCubeRequirement(check)
+            : check;
 
     const semiLogicResultBits = useMemo(() => {
         const assumedCheckedChecks = [...state.checkedChecks];
@@ -195,6 +217,7 @@ export function useComputeDerivedState(
             assumedCheckedChecks,
             state.mappedExits,
             activeVanillaConnections,
+            state.requiredDungeons,
             state.settings,
         );
         // Monotonicity means we can optimize with this or
@@ -207,6 +230,7 @@ export function useComputeDerivedState(
         state.checkedChecks,
         state.inventory,
         state.mappedExits,
+        state.requiredDungeons,
         state.settings,
     ]);
 
@@ -251,7 +275,8 @@ export function useComputeDerivedState(
 
             const [extraChecks, regularChecks] = _.partition(
                 checkObjs,
-                (check) => check.type === 'cube' || check.type === 'loose_crystal',
+                (check) =>
+                    check.type === 'cube' || check.type === 'loose_crystal',
             );
 
             const remaining = regularChecks.filter((check) => !check.checked);
@@ -288,12 +313,23 @@ export function useComputeDerivedState(
         const [dungeons, regularAreas] = _.partition(areasAndDungeons, (a) =>
             isDungeon(a.name),
         );
-        const sortedDungeons = _.sortBy(dungeons as Area<Dungeon>[], (d) =>
+        const elaboratedDungeons: Dungeon[] = (
+            dungeons as Area<DungeonName>[]
+        ).map((dungeon) => ({
+            ...dungeon,
+            completed:
+                dungeon.name !== 'Sky Keep' &&
+                state.checkedChecks.includes(
+                    dungeonCompletionRequirements[dungeon.name],
+                ),
+            required: state.requiredDungeons.includes(dungeon.name),
+        }));
+        const sortedDungeons = _.sortBy(elaboratedDungeons, (d) =>
             dungeonNames.indexOf(d.name),
         );
 
         return [regularAreas, silentRealms, sortedDungeons];
-    }, [areas]);
+    }, [areas, state.checkedChecks, state.requiredDungeons]);
 
     const itemCount = useMemo(
         () => mapInventory(logic, state.inventory, state.checkedChecks),

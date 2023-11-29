@@ -1,6 +1,6 @@
 import { Col, Row } from 'react-bootstrap';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDispatch, useTrackerState } from './Context';
+import { useDispatch, useAppState } from './Context';
 import { LogicalState } from './DerivedState';
 import { useContextMenu } from '../locationTracker/context-menu';
 import { useCallback } from 'react';
@@ -27,7 +27,7 @@ export default function Location({
     hintItem?: string;
 }) {
     const dispatch = useDispatch();
-    const colorScheme = useTrackerState().colorScheme;
+    const colorScheme = useAppState().colorScheme;
 
     function onClick(e: React.UIEvent) {
         if (!(e.target as Element | null)?.id) {

@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import { Row, Col } from 'react-bootstrap';
 import Location from './Location';
-import { useDerivedState, useTrackerState } from './Context';
+import { useDerivedState, useAppState } from './Context';
 
 
 export default function SecondaryLocationTracker({
@@ -12,7 +12,7 @@ export default function SecondaryLocationTracker({
     containerHeight: number
 }) {
 
-    const state = useTrackerState();
+    const state = useAppState();
     const areas = useDerivedState().areas;
     const area = state.activeArea;
 

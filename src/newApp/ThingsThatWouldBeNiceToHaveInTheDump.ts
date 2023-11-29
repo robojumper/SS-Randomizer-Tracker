@@ -45,3 +45,22 @@ export const runtimeOptions: OptionMapping[] = [
     m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),
     m('FS Lava Flow option', 'fs-lava-flow', true),
 ];
+
+export const impaSongCheck = '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
+export const completeTriforceReq = '\\Complete Triforce';
+
+export const swordsToAdd: Record<string, number> = {
+    Swordless: 0,
+    'Practice Sword': 1,
+    'Goddess Sword': 2,
+    'Goddess Longsword': 3,
+    'Goddess White Sword': 4,
+    'Master Sword': 5,
+    'True Master Sword': 6,
+};
+
+// These requirements are populated based on required dungeons
+
+export const gotOpeningReq = 'GoT Opening Requirement';
+export const gotRaisingReq = 'GoT Raising Requirement';
+export const hordeDoorReq = 'Horde Door Requirement';

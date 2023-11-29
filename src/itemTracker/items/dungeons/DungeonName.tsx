@@ -1,15 +1,24 @@
 import './dungeons.css';
 import keyDownWrapper from '../../../KeyDownWrapper';
+import { useAppState } from '../../../newApp/Context';
 
 type DungeonNameProps = {
     dungeonAbbr: string;
     dungeonName: string;
     completed: boolean;
+    required: boolean;
     dungeonChange: () => void;
 };
 
 const DungeonName = (props: DungeonNameProps) => {
-    const { dungeonAbbr, completed, dungeonChange } = props;
+    const { dungeonAbbr, completed, dungeonChange, required } = props;
+    const colorScheme = useAppState().colorScheme;
+
+    const currentStyle = {
+        color: required
+            ? colorScheme.required
+            : colorScheme.unrequired,
+    };
 
     const completedState = completed
         ? 'complete'
@@ -22,7 +31,7 @@ const DungeonName = (props: DungeonNameProps) => {
             role="button"
             tabIndex={0}
         >
-            <p className={completedState}>
+            <p className={completedState} style={currentStyle}>
                 {dungeonAbbr}
             </p>
         </div>
