@@ -49,7 +49,7 @@ export interface Dungeon extends Area<DungeonName> {
 export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic';
 
 export interface Check {
-    type: LogicalCheck['type'] | 'cube' | 'exit';
+    type: LogicalCheck['type'] | 'exit';
     checkId: string;
     checkName: string;
     logicalState: LogicalState;
@@ -288,7 +288,7 @@ export function useComputeDerivedState(
             const [extraChecks, regularChecks] = _.partition(
                 checkObjs,
                 (check) =>
-                    check.type === 'cube' || check.type === 'loose_crystal',
+                    check.type === 'tr_cube' || check.type === 'loose_crystal',
             );
 
             const remaining = regularChecks.filter((check) => !check.checked);
