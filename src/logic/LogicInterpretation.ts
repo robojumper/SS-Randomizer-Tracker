@@ -11,6 +11,7 @@ export function interpretLogic(
 
     const bits = startingItems;
     let changed = true;
+    let iterations = 0;
     const start = performance.now();
     while (changed) {
         changed = false;
@@ -35,17 +36,21 @@ export function interpretLogic(
 
             const runtimeExpr = implications[idx];
             if (runtimeExpr && !bits.test(idx)) {
-                changed ||= evaluate(runtimeExpr);
+                const didChange = evaluate(runtimeExpr);
+                changed ||= didChange;
             }
 
             if (expr.isTriviallyFalse()) {
                 continue;
             } else if (!bits.test(idx)) {
-                changed ||= evaluate(expr);
+                const didChange = evaluate(expr);
+                changed ||= didChange;
             }
         }
+        iterations++;
     }
     console.log(performance.now() - start);
+    console.log('iterations', iterations);
     // console.log(fmtVec(logic, bits));
 
     return bits;
