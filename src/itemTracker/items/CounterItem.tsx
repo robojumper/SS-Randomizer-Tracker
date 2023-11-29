@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import _ from 'lodash';
 import ColorScheme from '../../customization/ColorScheme';
 import allImages from '../Images';
 import keyDownWrapper from '../../KeyDownWrapper';

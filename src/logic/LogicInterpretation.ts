@@ -28,19 +28,20 @@ export function interpretLogic(
                     console.log(`This implies ${logic.allItems[idx]}`);
                     */
                     bits.setBit(idx);
-                    changed = true;
+                    return true;
                 }
+                return false;
             };
 
             const runtimeExpr = implications[idx];
             if (runtimeExpr && !bits.test(idx)) {
-                evaluate(runtimeExpr);
+                changed ||= evaluate(runtimeExpr);
             }
 
             if (expr.isTriviallyFalse()) {
                 continue;
             } else if (!bits.test(idx)) {
-                evaluate(expr);
+                changed ||= evaluate(expr);
             }
         }
     }

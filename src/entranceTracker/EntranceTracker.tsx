@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import { useMemo, useState } from 'react';
 import {
     Modal,

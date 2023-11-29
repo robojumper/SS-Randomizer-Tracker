@@ -1,5 +1,3 @@
-import _ from 'lodash';
-
 export enum Op {
     And = 'and',
     Or = 'or',

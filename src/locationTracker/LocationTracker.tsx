@@ -1,5 +1,4 @@
 import { useDerivedState, useAppState } from "../newApp/Context";
-import _ from "lodash";
 import LocationGroupHeader from "./LocationGroupHeader";
 import LocationGroup from "./LocationGroup";
 import '../locationTracker/locationTracker.css'

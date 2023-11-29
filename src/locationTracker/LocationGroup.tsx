@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import Location from './Location';
 import ColorScheme from '../customization/ColorScheme';
 import { Col, Row } from 'react-bootstrap';
