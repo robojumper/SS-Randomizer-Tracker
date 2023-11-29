@@ -33,7 +33,7 @@ export default function Shell() {
             const excludedLocs = settings.find(
                 (x) => x.name === 'Excluded Locations' && x.type === 'multichoice'
             ) as MultiChoiceOption | undefined;
-            excludedLocs!.choices = Object.values(logic.checks);
+            excludedLocs!.choices = Object.values(logic.checks).map((c) => c.short_name);
             setOptions(settings);
         };
 

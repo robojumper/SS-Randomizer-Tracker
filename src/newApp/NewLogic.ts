@@ -31,6 +31,7 @@ export interface LogicalCheck {
         | 'loose_crystal'
         | 'trial_treasure'
         | 'rupee'
+        | 'tadtone'
         | 'beedle_shop'
         | 'tr_cube';
     name: string;
@@ -109,7 +110,7 @@ export function parseLogic(raw: RawLogic): Logic {
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
         return {
             name: check.short_name,
-            type: getCheckType(check.type),
+            type: getCheckType(check.short_name, check.type),
         } as const;
     });
 
@@ -571,7 +572,7 @@ export function parseLogic(raw: RawLogic): Logic {
     };
 }
 
-function getCheckType(checkType: string | null): LogicalCheck['type'] {
+function getCheckType(checkName: string, checkType: string | null): LogicalCheck['type'] {
     if (!checkType) {
         return 'regular';
     }
@@ -584,6 +585,8 @@ function getCheckType(checkType: string | null): LogicalCheck['type'] {
         return 'loose_crystal';
     } else if (checkType.includes("Beedle's Shop Purchases")) {
         return 'beedle_shop';
+    } else if (checkType.includes("Tadtones") && !checkName.includes('Water Dragon\'s Reward')) {
+        return 'tadtone';
     } else {
         return 'regular';
     }

@@ -20,7 +20,7 @@ export default function SecondaryLocationTracker({
         return null;
     }
 
-    const checks = areas[area].secondaryChecks;
+    const checks = areas[area].extraChecks;
 
     const locationChunks = _.chunk(checks, Math.ceil((_.size(checks) / 2)));
     const arrangedLocations = _.zip(...locationChunks);

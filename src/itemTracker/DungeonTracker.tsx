@@ -20,7 +20,6 @@ import lanayruTrialGate from '../assets/bosses/lanayruTrialGate.png';
 import eldinTrialGate from '../assets/bosses/eldinTrialGate.png';
 import DungeonName from './items/dungeons/DungeonName';
 import { useDerivedState, useDispatch, useTrackerState } from '../newApp/Context';
-import { Logic } from '../newApp/NewLogic';
 import DungeonIcon from './items/dungeons/DungeonIcon';
 import React from 'react';
 import { Col, Row } from 'react-bootstrap';
@@ -93,7 +92,7 @@ export default function DungeonTracker() {
     const numDungeons = dungeons.length;
     const iconsPerDungeon = 2;
     // scale icons differently with ER / sky keep to keep things fitted all at once
-    const scaleFactor = 1.05 * 1.03 * 1.15;
+    const scaleFactor = (state.dungeons.some((d) => d.name === 'Sky Keep') ? 1.05 : 1.0) * 1.15;
     const colWidth = width / (numDungeons * iconsPerDungeon * scaleFactor);
     const secondRowWidth = width / 4;
     const keysStyle: CSSProperties = {

@@ -91,7 +91,7 @@ function OptionsMenu({
                             <Row key={def.name}>
                                 <Setting
                                     def={def}
-                                    value={tempSettings[def.command]}
+                                    value={tempSettings[def.command] as OptionValue}
                                     setValue={(value) =>
                                         setTempSettings((existing) => ({
                                             ...existing,

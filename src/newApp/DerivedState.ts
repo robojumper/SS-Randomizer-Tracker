@@ -9,7 +9,7 @@ import {
     randomizedExitsToDungeons,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
-import { canAccessCubeToCubeCheck, cubeCheckToCanAccessCube, cubeCheckToGoddessChestCheck, mapToCanAccessCubeRequirement } from './TrackerModifications';
+import { cubeCheckToCanAccessCube, cubeCheckToGoddessChestCheck, mapToCanAccessCubeRequirement } from './TrackerModifications';
 
 export interface DerivedState {
     regularAreas: Area[];
@@ -31,7 +31,7 @@ export interface Area<N extends string = string> {
     numChecksAccessible: number;
     numTotalChecks: number;
     checks: Check[];
-    secondaryChecks: Check[];
+    extraChecks: Check[];
     hint: Hint | undefined;
 }
 
@@ -99,6 +99,8 @@ function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions2) {
         }
     };
 
+    const banTadtones = !settings['tadtonesanity'];
+
     const isBannedCubeCheckViaChest = (checkId: string, check: LogicalCheck) => {
         return check.type === 'tr_cube' && bannedChecks.has(logic.checks[cubeCheckToGoddessChestCheck[checkId]].name);
     };
@@ -108,7 +110,8 @@ function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions2) {
         isExcessRelic(check) ||
         isBannedCubeCheckViaChest(checkId, check) ||
         (rupeesExcluded && check.type === 'rupee') ||
-        (banBeedle && check.type === 'beedle_shop');
+        (banBeedle && check.type === 'beedle_shop') ||
+        (banTadtones && check.type === 'tadtone');
 }
 
 function skyKeepNonprogress(settings: TypedOptions2) {
@@ -246,9 +249,9 @@ export function useComputeDerivedState(
                 };
             });
 
-            const [regularChecks, secondaryChecks] = _.partition(
+            const [extraChecks, regularChecks] = _.partition(
                 checkObjs,
-                (check) => check.type === 'regular',
+                (check) => check.type === 'cube' || check.type === 'loose_crystal',
             );
 
             const remaining = regularChecks.filter((check) => !check.checked);
@@ -263,15 +266,13 @@ export function useComputeDerivedState(
                 numChecksAccessible,
                 numTotalChecks: regularChecks.length,
                 checks: regularChecks,
-                secondaryChecks,
+                extraChecks,
                 hint: state.hints[regionName],
             } satisfies Area;
         });
     }, [
         isCheckBanned,
-        logic.checks,
-        logic.checksByArea,
-        logic.items,
+        logic,
         resultBits,
         semiLogicResultBits,
         state.checkHints,

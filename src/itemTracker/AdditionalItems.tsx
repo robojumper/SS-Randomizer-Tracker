@@ -64,7 +64,7 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
     const scrapperWidth = width / 6.5;
     return (
         <div id="misc-items">
-            <img src={miscItemBlock} alt="" width="100%" />
+            <img src={miscItemBlock} alt="" width={width} />
             <div style={pouchStyle}>
                 <Item itemName="Progressive Pouch" imgWidth={pouchWidth} />
             </div>
