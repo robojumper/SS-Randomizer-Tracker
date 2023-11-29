@@ -3,8 +3,8 @@ import { GeneratedOptions } from '../newApp/GeneratedOptions';
 export type BaseOption = {
     permalink: boolean | undefined;
     help: string;
-    name: keyof TypedOptions;
-    command: keyof TypedOptions2;
+    name: string;
+    command: keyof TypedOptions;
 };
 
 export type BooleanOption = BaseOption & {
@@ -44,7 +44,7 @@ export type OptionDefs = Option[];
 export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
 
-export interface TypedOptions2
+export interface TypedOptions
     extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity'> {
     rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
     shopsanity: GeneratedOptions['shopsanity'] | 'Vanilla' | undefined;
@@ -52,56 +52,3 @@ export interface TypedOptions2
     'rupin-shopsanity': boolean | undefined;
     'luv-shopsanity': boolean | undefined;
 }
-
-export type TypedOptions = {
-    'Logic Mode': 'BiTless' | 'Glitched';
-
-    Rupeesanity: boolean | string;
-    Tadtonesanity: boolean;
-    'Randomize Entrances':
-        | 'None'
-        | 'Required Dungeons Separately'
-        | 'All Surface Dungeons'
-        | 'All Surface Dungeons + Sky Keep';
-    'Starting Sword': string;
-    'Open Thunderhead': string;
-    'Open Earth Temple': boolean;
-    'Open Lanayru Mining Facility': string;
-    'Open Lake Floria': 'Vanilla' | 'Talk to Yerbal' | 'Open';
-    'Upgraded Skyward Strike': boolean;
-    'Empty Unrequired Dungeons': boolean;
-    'Triforce Required': boolean;
-    'Triforce Shuffle': string;
-
-    'Starting Tablet Count': number;
-    'Starting Gratitude Crystal Packs': number;
-    'Starting Tadtone Count': number;
-    'Starting Empty Bottles': number;
-    'Starting Items': string[];
-
-    'Randomize Silent Realms': boolean;
-    'Treasuresanity in Silent Realms': boolean;
-    'Trial Treasure Amount': number;
-
-    'Place Scrap Shop Upgrades': boolean;
-    'BiT Changes': 'Disable BiT' | 'Vanilla' | 'Fix BiT Crashes';
-
-    'Excluded Locations': string[];
-    'Enabled Tricks': string[];
-    'Enabled Tricks BiTless': string[];
-    'Enabled Tricks Glitched': string[];
-
-    'Gate of Time Sword Requirement': string;
-
-    // deprecated
-    'Shop Mode': string;
-    'Max Batreaux Reward': number;
-
-    // https://github.com/ssrando/ssrando/pull/442
-    // to be deprecated
-    Shopsanity: boolean;
-    // future
-    'Beedle Shopsanity': boolean;
-    'Gear Shopsanity': boolean;
-    'Potion Shopsanity': boolean;
-};

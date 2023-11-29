@@ -4,7 +4,7 @@ import { Menu, Item, Separator, Submenu, ItemParams } from 'react-contexify';
 
 import hintItems from '../data/hintItems.json';
 import { useDispatch } from '../newApp/Context';
-import { LocationContextMenuProps } from '../newApp/Location';
+import { LocationContextMenuProps } from './Location';
 
 type CtxProps<T = void> = ItemParams<LocationContextMenuProps, T>;
 interface ItemData {

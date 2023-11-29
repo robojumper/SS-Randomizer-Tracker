@@ -1,31 +1,17 @@
-import { Col, Row } from 'react-bootstrap';
-import LocationGroup from './LocationGroup';
-import './locationTracker.css';
-import ColorScheme from '../customization/ColorScheme';
-import Logic from '../logic/Logic';
-import areaBlacklist from '../data/areaBlacklist.json';
-import LocationContextMenu from './LocationContextMenu';
-import LocationGroupHeader from './LocationGroupHeader';
-import LocationGroupContextMenu from './LocationGroupContextMenu';
-import { LocationClickCallback } from '../callbacks';
+import { useDerivedState, useAppState } from "../newApp/Context";
+import _ from "lodash";
+import LocationGroupHeader from "./LocationGroupHeader";
+import LocationGroup from "./LocationGroup";
+import '../locationTracker/locationTracker.css'
+import { Col, Row } from "react-bootstrap";
+import LocationGroupContextMenu from "./LocationGroupContextMenu";
+import LocationContextMenu from "./LocationContextMenu";
 
-export default function LocationTracker({
-    logic,
-    expandedGroup = '',
-    handleGroupClick,
-    handleLocationClick,
-    handleCheckAllClick,
-    colorScheme,
-    containerHeight
-}: {
-    logic: Logic,
-    expandedGroup: string | undefined,
-    handleGroupClick: (group: string) => void,
-    handleLocationClick: LocationClickCallback,
-    handleCheckAllClick: (group: string, value: boolean) => void,
-    colorScheme: ColorScheme,
-    containerHeight: number;
-}) {
+export function NewLocationTracker({ containerHeight }: { containerHeight: number; }) {
+    const state = useAppState();
+    const derivedState = useDerivedState();
+    const activeArea = state.activeArea ? derivedState.areas[state.activeArea] : undefined;
+
     return (
         <Col className="location-tracker">
             <LocationContextMenu />
@@ -33,27 +19,19 @@ export default function LocationTracker({
             <Row style={{ height: containerHeight / 2, overflowY: 'auto', overflowX: 'visible' }}>
                 <ul style={{ padding: '2%' }}>
                     {
-                        logic.areas().filter((area) => !areaBlacklist.includes(area)).map((value) => (
-                            <LocationGroupHeader key={value} title={value} logic={logic} colorScheme={colorScheme} onClick={() => handleGroupClick(value)} onCheckAll={handleCheckAllClick} />
+                        derivedState.regularAreas.map((value) => (
+                            <LocationGroupHeader selected={value.name === activeArea?.name} key={value.name} area={value} />
                         ))
                     }
                 </ul>
             </Row>
             {
-                expandedGroup && (
+                activeArea && (
                     <Row style={{ height: containerHeight / 2, overflowY: 'auto', overflowX: 'visible' }}>
-                        <LocationGroup
-                            groupName={expandedGroup}
-                            locations={logic.locationsForArea(expandedGroup)}
-                            locationHandler={handleLocationClick}
-                            meetsRequirement={logic.isRequirementMet}
-                            colorScheme={colorScheme}
-                            containerHeight={containerHeight / 2}
-                        />
+                        <LocationGroup locations={activeArea.checks} colorScheme={state.colorScheme} />
                     </Row>
                 )
             }
         </Col>
     );
 }
- 

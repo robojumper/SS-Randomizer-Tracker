@@ -1,4 +1,4 @@
-import { TypedOptions2 } from "../permalink/SettingsTypes";
+import { TypedOptions } from "../permalink/SettingsTypes";
 import { Items, State, isItem } from "./State";
 import goddessCubesList_ from '../data/goddessCubes2.json';
 import _ from "lodash";
@@ -33,7 +33,7 @@ export const triforceItems = [
 export const triforceItemReplacement = 'Triforce';
 
 export function getInitialItems(
-    settings: Partial<TypedOptions2>,
+    settings: Partial<TypedOptions>,
 ): State['inventory'] {
     const items: State['inventory'] = {};
     const add = (item: Items, count: number = 1) => {

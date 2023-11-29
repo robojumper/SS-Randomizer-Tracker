@@ -1,4 +1,4 @@
-import { OptionType, OptionValue, TypedOptions2 } from "../permalink/SettingsTypes";
+import { OptionType, OptionValue, TypedOptions } from "../permalink/SettingsTypes";
 import { RegularDungeon } from "./DerivedState";
 
 export const dungeonCompletionRequirements: Record<RegularDungeon, string> = {
@@ -27,8 +27,8 @@ export const nonRandomizedExits = [
     '\\Faron\\Sealed Grounds\\Hylia\'s Temple\\Gate of Time Exit'
 ];
 
-type OptionMapping = [string, keyof TypedOptions2, OptionValue | ((val: OptionValue) => boolean)];
-const m = <K extends keyof TypedOptions2>(item: string, settingsKey: K, value: TypedOptions2[K] | ((value: TypedOptions2[K]) => boolean)): OptionMapping => [item, settingsKey, value as OptionType];
+type OptionMapping = [string, keyof TypedOptions, OptionValue | ((val: OptionValue) => boolean)];
+const m = <K extends keyof TypedOptions>(item: string, settingsKey: K, value: TypedOptions[K] | ((value: TypedOptions[K]) => boolean)): OptionMapping => [item, settingsKey, value as OptionType];
 
 export const runtimeOptions: OptionMapping[] = [
     m('Open Thunderhead option', 'open-thunderhead', 'Open'),

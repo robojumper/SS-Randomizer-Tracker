@@ -10,10 +10,10 @@ import {
     FormControl,
 } from 'react-bootstrap';
 import Select, { ActionMeta, MultiValue } from 'react-select';
-import { useDispatch, useAppState } from './Context';
+import { useDispatch, useAppState } from './newApp/Context';
 import 'tippy.js/dist/tippy.css';
-import { OptionDefs, Option, OptionValue } from '../permalink/SettingsTypes';
-import { decodePermalink, encodePermalink } from '../permalink/Settings';
+import { OptionDefs, Option, OptionValue } from './permalink/SettingsTypes';
+import { decodePermalink, encodePermalink } from './permalink/Settings';
 import Tippy from '@tippyjs/react';
 // import EntranceGraph from './EntranceGraph';
 

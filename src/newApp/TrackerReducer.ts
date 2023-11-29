@@ -2,7 +2,7 @@ import { produce } from "immer";
 import ColorScheme from "../customization/ColorScheme";
 import { Layout } from "../customization/CustomizationModal";
 import { Hint, State as TrackerState, isItem, itemMaxes } from "./State";
-import { TypedOptions2 } from "../permalink/SettingsTypes";
+import { TypedOptions } from "../permalink/SettingsTypes";
 import { getInitialItems } from "./TrackerModifications";
 
 export interface AppState {
@@ -29,10 +29,10 @@ export type TrackerAction =
     | { type: 'showEntranceDialog', show: boolean }
     | { type: 'showCustomizationDialog', show: boolean }
     | { type: 'showOptionsDialog', show: boolean }
-    | { type: 'acceptSettings', settings: TypedOptions2 }
+    | { type: 'acceptSettings', settings: TypedOptions }
     | { type: 'setLayout', layout: Layout }
     | { type: 'setColorScheme', colorScheme: ColorScheme }
-    | { type: 'reset', settings: TypedOptions2 | undefined }
+    | { type: 'reset', settings: TypedOptions | undefined }
     | { type: 'import', state: TrackerState };
 
 export const trackerReducer = (state: AppState, action: TrackerAction): AppState => {

@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { TrackerAction, AppState } from './TrackerReducer';
-import { Logic } from './NewLogic';
+import { Logic } from '../logic/Logic';
 import { DerivedState, useComputeDerivedState } from './DerivedState';
 import { OptionDefs } from '../permalink/SettingsTypes';
 

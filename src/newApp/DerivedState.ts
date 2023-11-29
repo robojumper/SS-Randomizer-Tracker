@@ -1,14 +1,14 @@
 import { useMemo } from 'react';
-import { Logic, LogicalCheck } from './NewLogic';
+import { Logic, LogicalCheck } from '../logic/Logic';
 import { Hint, Items, State, mapInventory, mapState } from './State';
-import { interpretLogic } from './LogicInterpretation';
+import { interpretLogic } from '../logic/LogicInterpretation';
 import _ from 'lodash';
 import {
     dungeonCompletionRequirements,
     nonRandomizedExits,
     randomizedExitsToDungeons,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
-import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
+import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import {
     cubeCheckToCanAccessCube,
     cubeCheckToGoddessChestCheck,
@@ -89,7 +89,7 @@ function isDungeon(id: string): id is DungeonName {
 
 const trialTreasurePattern = /Relic (\d+)/;
 
-function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions2) {
+function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions) {
     const bannedChecks = new Set(settings['excluded-locations']);
     const rupeesExcluded =
         settings['rupeesanity'] === 'Vanilla' ||
@@ -131,7 +131,7 @@ function createIsCheckBannedPredicate(logic: Logic, settings: TypedOptions2) {
         (banTadtones && check.type === 'tadtone');
 }
 
-function skyKeepNonprogress(settings: TypedOptions2) {
+function skyKeepNonprogress(settings: TypedOptions) {
     return (
         settings['empty-unrequired-dungeons'] === true &&
         (settings['triforce-required'] === false ||
@@ -139,7 +139,7 @@ function skyKeepNonprogress(settings: TypedOptions2) {
     );
 }
 
-function isAreaNonprogress(settings: TypedOptions2, area: string) {
+function isAreaNonprogress(settings: TypedOptions, area: string) {
     return area === 'Sky Keep' && skyKeepNonprogress(settings);
 }
 

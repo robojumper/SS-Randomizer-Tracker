@@ -1,4 +1,4 @@
-import BooleanExpression, { Item } from '../logic/BooleanExpression';
+import BooleanExpression, { Item } from './BooleanExpression';
 import { BitVector } from './BitVector';
 import { parseExpression } from './ExpressionParse';
 

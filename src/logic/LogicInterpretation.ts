@@ -1,6 +1,6 @@
 import { BitVector } from './BitVector';
 import { LogicalExpression } from './LogicalExpression';
-import { Logic } from './NewLogic';
+import { Logic } from './Logic';
 
 export function interpretLogic(
     logic: Logic,

@@ -1,9 +1,9 @@
 import { load } from 'js-yaml';
 import { useEffect, useMemo, useState } from 'react';
-import { parseLogic } from './NewLogic';
-import { RawLogic } from './UpstreamTypes';
-import NewTrackerContainer from './NewTracker';
-import { MultiChoiceOption, OptionDefs } from '../permalink/SettingsTypes';
+import { parseLogic } from './logic/Logic';
+import { RawLogic } from './newApp/UpstreamTypes';
+import NewTrackerContainer from './Tracker';
+import { MultiChoiceOption, OptionDefs } from './permalink/SettingsTypes';
 
 const baseFileUrl = (file: string) =>
     `https://raw.githubusercontent.com/robojumper/ssrando/logic-dump/${file}.yaml`;
@@ -31,7 +31,7 @@ export default function Shell() {
             // correctly load the choices for excluded locations
             const settings = await loadFile<OptionDefs>('options');
             const excludedLocs = settings.find(
-                (x) => x.name === 'Excluded Locations' && x.type === 'multichoice'
+                (x) => x.command === 'excluded-locations' && x.type === 'multichoice'
             ) as MultiChoiceOption | undefined;
             excludedLocs!.choices = Object.values(logic.checks).map((c) => c.short_name);
             setOptions(settings);

@@ -1,9 +1,9 @@
 import _ from 'lodash';
-import { OptionDefs, TypedOptions2 } from '../permalink/SettingsTypes';
-import { BitVector } from './BitVector';
+import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { BitVector } from '../logic/BitVector';
 import { DerivedState, RegularDungeon } from './DerivedState';
-import { LogicalExpression } from './LogicalExpression';
-import { Logic, makeDay, makeNight } from './NewLogic';
+import { LogicalExpression } from '../logic/LogicalExpression';
+import { Logic, makeDay, makeNight } from '../logic/Logic';
 import { cubeCheckToCanAccessCube, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
 import { completeTriforceReq, dungeonCompletionRequirements, gotOpeningReq, gotRaisingReq, hordeDoorReq, impaSongCheck, runtimeOptions, swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
@@ -107,7 +107,7 @@ export interface State {
     /**
      * Fully decoded settings.
      */
-    settings: TypedOptions2;
+    settings: TypedOptions;
 }
 
 export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']): DerivedState['itemCount'] {
@@ -127,7 +127,7 @@ export function mapState(
     mappedExits: State['mappedExits'],
     activeVanillaConnections: Record<string, string>,
     requiredDungeons: string[],
-    settings: TypedOptions2,
+    settings: TypedOptions,
 ): {
     items: BitVector;
     implications: { [bitIndex: number]: LogicalExpression };

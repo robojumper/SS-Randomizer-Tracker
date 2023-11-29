@@ -1,5 +1,5 @@
 import _ from "lodash";
-import BooleanExpression from "../logic/BooleanExpression";
+import BooleanExpression from "./BooleanExpression";
 
 export function parseExpression(expression: string) {
     return booleanExpressionForTokens(splitExpression(expression));

@@ -10,13 +10,12 @@ import {
 } from 'react-bootstrap';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import Select, { ActionMeta, SingleValue } from 'react-select';
-import { ModalCloseCallback } from '../callbacks';
 import { useDerivedState, useDispatch } from '../newApp/Context';
 // import EntranceGraph from './EntranceGraph';
 
 type EntranceTrackerProps = {
     show: boolean;
-    onHide: ModalCloseCallback;
+    onHide: () => void;
 };
 
 type Entrance = {
