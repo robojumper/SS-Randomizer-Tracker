@@ -126,7 +126,6 @@ export function parseLogic(raw: RawLogic): Logic {
     const startingItems = new BitVector(numItems).setBit(1);
 
     const items: Logic['items'] = {};
-    const vanillaExits: AreaGraph['vanillaConnections'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
     const checksByArea: Logic['checksByArea'] = {};
 
@@ -331,7 +330,6 @@ export function parseLogic(raw: RawLogic): Logic {
                                 .drop_unless(dummy_night_bit, dummy_day_bit)
                                 .and(nightVec(rawArea.name)),
                         );
-                        vanillaExits[makeDay(rawArea.name)];
                     } else if (area.allowedTimeOfDay === TimeOfDay.DayOnly) {
                         implications[exitBit] = implications[exitBit].or(
                             expr
