@@ -15,6 +15,7 @@ import {
     mapToCanAccessCubeRequirement,
 } from './TrackerModifications';
 import { produce } from 'immer';
+import { getTooltipComputer } from './TooltipComputations';
 
 export interface DerivedState {
     regularAreas: Area[];
@@ -29,6 +30,7 @@ export interface DerivedState {
     numChecked: number;
     numAccessible: number;
     numRemaining: number;
+    tooltipComputer: (checkId: string) => string;
 }
 
 export interface Area<N extends string = string> {
@@ -171,34 +173,30 @@ export function useComputeDerivedState(
         if (startingEntranceSetting !== 'Vanilla') {
             connections = produce(connections, (draft) => {
                 delete draft['\\Start'];
-            })
+            });
         }
 
         return connections;
-    }, [entranceRandomSetting, logic.areaGraph.vanillaConnections, startingEntranceSetting]);
-
-    const resultBits = useMemo(() => {
-        const { items, implications } = mapState(
-            logic,
-            options,
-            state.inventory,
-            state.checkedChecks,
-            state.mappedExits,
-            activeVanillaConnections,
-            state.requiredDungeons,
-            state.settings,
-        );
-        return interpretLogic(logic, items, implications);
     }, [
-        activeVanillaConnections,
+        entranceRandomSetting,
+        logic.areaGraph.vanillaConnections,
+        startingEntranceSetting,
+    ]);
+
+    const { items: stateItems, implications: stateImplications } = useMemo(() => mapState(
         logic,
         options,
-        state.checkedChecks,
         state.inventory,
+        state.checkedChecks,
         state.mappedExits,
+        activeVanillaConnections,
         state.requiredDungeons,
         state.settings,
-    ]);
+    ), [activeVanillaConnections, logic, options, state.checkedChecks, state.inventory, state.mappedExits, state.requiredDungeons, state.settings]);
+
+    const resultBits = useMemo(() => {
+        return interpretLogic(logic, stateItems, stateImplications);
+    }, [logic, stateImplications, stateItems]);
 
     const maybeCubeName = (check: string) =>
         check in cubeCheckToGoddessChestCheck
@@ -255,7 +253,7 @@ export function useComputeDerivedState(
         const list = Object.entries(logic.checksByArea).filter(
             ([area]) => !isAreaNonprogress(state.settings, area),
         );
-        return list.map(([regionName, checksList]) => {
+        let areasList = list.map(([regionName, checksList]) => {
             const progressChecks = checksList.filter(
                 (check) => !isCheckBanned(check, logic.checks[check]),
             );
@@ -307,6 +305,24 @@ export function useComputeDerivedState(
                 hint: state.hints[regionName],
             } satisfies Area;
         });
+
+        const rawCheckOrder = Object.entries(logic.checks)
+            .filter(([, check]) => check.type !== 'tr_cube')
+            .map(([checkId]) => checkId);
+
+        areasList = _.sortBy(areasList, (area) =>
+            rawCheckOrder.indexOf(
+                logic.checksByArea[area.name].find(
+                    (check) => logic.checks[check].type !== 'tr_cube',
+                )!,
+            ),
+        );
+
+        for (const area of areasList) {
+            area.checks = _.sortBy(area.checks, (check) => rawCheckOrder.indexOf(check.checkId));
+        }
+
+        return areasList;
     }, [
         isCheckBanned,
         logic,
@@ -401,7 +417,11 @@ export function useComputeDerivedState(
 
     const remainingEntrances = useMemo(() => {
         const usedEntrances = new Set(
-            _.compact(exits.map((exit) => exit.exit.id !== '\\Start' && exit.entrance?.id)),
+            _.compact(
+                exits.map(
+                    (exit) => exit.exit.id !== '\\Start' && exit.entrance?.id,
+                ),
+            ),
         );
         return Object.entries(logic.areaGraph.entrances)
             .filter((e) => !usedEntrances.has(e[0]))
@@ -413,12 +433,13 @@ export function useComputeDerivedState(
 
     // TODO Filter based on setting
     const allowedStartingEntrances = useMemo(() => {
-        return Object.entries(logic.areaGraph.entrances)
-            .map(([id, def]) => ({
-                id,
-                name: def.short_name,
-            }));
+        return Object.entries(logic.areaGraph.entrances).map(([id, def]) => ({
+            id,
+            name: def.short_name,
+        }));
     }, [logic]);
+
+    const tooltipComputer = useMemo(() => getTooltipComputer(logic, stateImplications), [logic, stateImplications]);
 
     console.log('state derivation took:', performance.now() - start, 'ms');
 
@@ -435,5 +456,6 @@ export function useComputeDerivedState(
         numChecked,
         numAccessible,
         numRemaining,
+        tooltipComputer,
     };
 }

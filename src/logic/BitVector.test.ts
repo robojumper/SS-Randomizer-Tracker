@@ -4,7 +4,12 @@ test('basic tests', () => {
     const vec = new BitVector(8);
     vec.setBit(7);
     expect(vec.toString()).toBe('10000000');
-    expect(vec.inverted().toString()).toBe('01111111');
+    vec.setBit(6);
+    expect(vec.toString()).toBe('11000000');
+    vec.setBit(4);
+    expect(vec.toString()).toBe('11010000');
+    vec.clearBit(6);
+    expect(vec.toString()).toBe('10010000');
 });
 
 test('or tests', () => {

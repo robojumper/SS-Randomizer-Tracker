@@ -119,6 +119,36 @@ export function mapInventory(logic: Logic, inventory: State['inventory'], checke
     return result;
 }
 
+export function getTooltipOpaqueBits(logic: Logic) {
+    const items = new BitVector(logic.numItems);
+    const set = (id: string) => items.setBit(logic.items[id][1]);
+
+    for (const [item, count] of Object.entries(itemMaxes)) {
+        if (count === undefined || item === 'Sailcloth') {
+            continue;
+        }
+        if (item === sothItemReplacement) {
+            for (let i = 1; i <= count; i++) {
+                set(sothItems[i - 1]);
+            }
+        } else if (item === triforceItemReplacement) {
+            for (let i = 1; i <= count; i++) {
+                set(triforceItems[i - 1]);
+            }
+        } else {
+            for (let i = 1; i <= count; i++) {
+                if (i === 1) {
+                    set(item);
+                } else {
+                    set(`${item} x ${i}`);
+                }
+            }
+        }
+    }
+
+    return items;
+}
+
 export function mapState(
     logic: Logic,
     options: OptionDefs,
@@ -136,13 +166,17 @@ export function mapState(
     const implications: { [bitIndex: number]: LogicalExpression } = {};
 
     const set = (id: string) => items.setBit(logic.items[id][1]);
-    const trySet = (id: string) => {
+    const trySet = (id: string, implyToo = false) => {
         const item = logic.items[id];
         if (!item) {
             console.warn('invalid item', id)
             return;
         }
-        items.setBit(item[1])
+        items.setBit(item[1]);
+        if (implyToo) {
+            // FIXME Turn this on after debugging Top of LMF
+            // implications[item[1]] = new LogicalExpression([new BitVector(logic.numItems)]);
+        }
     };
 
     /** Mark checked things */
@@ -182,7 +216,7 @@ export function mapState(
         const val = settings[command];
         const match = val !== undefined && (typeof expect === 'function' ? expect(val) : expect === val);
         if (match) {
-            trySet(item);
+            trySet(item, true);
         }
     }
 

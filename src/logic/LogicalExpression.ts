@@ -42,7 +42,7 @@ export class LogicalExpression {
 
         const size =
             this.#conjunctions[0]?.size ?? other.#conjunctions[0]?.size;
-        if (!size) {
+        if (size === undefined) {
             return new LogicalExpression([]);
         }
         return new LogicalExpression(
@@ -58,6 +58,25 @@ export class LogicalExpression {
         );
     }
 
+    removeDuplicates() {
+        const terms: BitVector[] = [];
+        for (let i = 0; i < this.#conjunctions.length; i++) {
+            const candidate = this.#conjunctions[i];
+            const weakerTerm = terms.findIndex((t) => t.isSubsetOf(candidate));
+            if (weakerTerm !== -1) {
+                continue;
+            }
+
+            const strongerTerm = terms.findIndex((t) => candidate.isSubsetOf(t));
+            if (strongerTerm !== -1) {
+                terms[strongerTerm] = candidate;
+            } else {
+                terms.push(candidate);
+            }
+        }
+        return new LogicalExpression(terms);
+    }
+
     eval(vec: BitVector) {
         return this.#conjunctions.some((c) => c.isSubsetOf(vec));
     }
@@ -68,6 +87,10 @@ export class LogicalExpression {
 
     isTriviallyFalse() {
         return this.#conjunctions.length === 0;
+    }
+
+    isTriviallyTrue() {
+        return this.#conjunctions.length > 0 && this.#conjunctions.some((c) => c.numSetBits === 0);
     }
 }
 
