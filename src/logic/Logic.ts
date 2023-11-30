@@ -105,7 +105,7 @@ export function preprocessItems(raw: string[]): string[] {
 
 export function parseLogic(raw: RawLogic): Logic {
     const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
-    const rawItems = ['False', 'True', ...preprocessItems(raw.items), ...canAccessCubeReqs];
+    const rawItems = [...preprocessItems(raw.items), ...canAccessCubeReqs];
 
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
         return {
@@ -123,7 +123,7 @@ export function parseLogic(raw: RawLogic): Logic {
 
     const numItems = rawItems.length;
     // Link starts with True
-    const startingItems = new BitVector(numItems).setBit(1);
+    const startingItems = new BitVector(numItems);
 
     const items: Logic['items'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};

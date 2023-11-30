@@ -210,15 +210,15 @@ export function mapState(
     const nightVec = (id: string) => logic.items[makeNight(id)][0];
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
 
-    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? vec('True') : vec(impaSongCheck)]);
+    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? new BitVector(logic.numItems) : vec(impaSongCheck)]);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = new LogicalExpression([vec(`Progressive Sword x ${neededSwords}`)]);
-    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : vec('True')])
+    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : new BitVector(logic.numItems)])
 
     const validRequiredDungeons = requiredDungeons.filter((d) => d in dungeonCompletionRequirements);
     const requiredDungeonsCompleted = validRequiredDungeons.length > 0 && validRequiredDungeons.every((d) => checkedChecks.includes(dungeonCompletionRequirements[d as RegularDungeon]));
 
-    const dungeonsExpr = new LogicalExpression(requiredDungeonsCompleted ? [vec('True')]: []);
+    const dungeonsExpr = new LogicalExpression(requiredDungeonsCompleted ? [new BitVector(logic.numItems)]: []);
 
     if (settings['got-dungeon-requirement'] === 'Required') {
         openGotExpr = openGotExpr.and(dungeonsExpr);

@@ -114,7 +114,13 @@ function convert(
             }
         }
     } else {
-        const bit_idx = lookup(expr);
-        return [new BitVector(size).setBit(bit_idx)];
+        if (expr === 'True') {
+            return [new BitVector(size)];
+        } else if (expr === 'False') {
+            return [];
+        } else {
+            const bit_idx = lookup(expr);
+            return [new BitVector(size).setBit(bit_idx)];
+        }
     }
 }
