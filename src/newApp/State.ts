@@ -174,8 +174,7 @@ export function mapState(
         }
         items.setBit(item[1]);
         if (implyToo) {
-            // FIXME Turn this on after debugging Top of LMF
-            // implications[item[1]] = new LogicalExpression([new BitVector(logic.numItems)]);
+            implications[item[1]] = new LogicalExpression([new BitVector(logic.numItems)]);
         }
     };
 
