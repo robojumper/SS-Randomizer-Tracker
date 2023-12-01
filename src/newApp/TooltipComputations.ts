@@ -62,7 +62,7 @@ export function getTooltipComputer(
     }
 }
 
-function computeExpression(opaqueBits: BitVector, implications: LogicalExpression[], idx: number, visitedExpressions: Set<number>, computedExprs: Record<number, LogicalExpression> = {}): LogicalExpression {
+function computeExpression(opaqueBits: BitVector, implications: LogicalExpression[], idx: number, visitedExpressions: Set<number>): LogicalExpression {
     let result = new LogicalExpression([]);
     if (visitedExpressions.has(idx)) {
         return new LogicalExpression([]);
@@ -76,13 +76,7 @@ function computeExpression(opaqueBits: BitVector, implications: LogicalExpressio
             if (opaqueBits.test(bit)) {
                 tmpBits.setBit(bit);
             } else {
-                let newTerm: LogicalExpression;
-                if (computedExprs[bit]) {
-                    newTerm = computedExprs[bit];
-                } else {
-                    newTerm = computeExpression(opaqueBits, implications, bit, visitedExpressions);
-                    computedExprs[bit] = newTerm;
-                }
+                const newTerm = computeExpression(opaqueBits, implications, bit, visitedExpressions);
                 if (newTerm.isTriviallyFalse()) {
                     continue nextConj;
                 }

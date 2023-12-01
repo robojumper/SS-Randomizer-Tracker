@@ -103,7 +103,7 @@ export class BitVector {
     }
 
     clone() {
-        return new BitVector(this.#size, this.#data, this.#intSet);
+        return new BitVector(this.#size, this.#data, new Set(this.#intSet));
     }
 
     isEmpty() {
