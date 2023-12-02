@@ -8,6 +8,14 @@ import { parseExpression } from './ExpressionParse';
 export class LogicalExpression {
     #conjunctions: BitVector[];
 
+    static false() {
+        return new LogicalExpression([]);
+    }
+
+    static true(size: number) {
+        return new LogicalExpression([new BitVector(size)]);
+    }
+
     constructor(conjs: BitVector[]);
     constructor(size: number, expr: string, lookup: (text: string) => number);
     constructor(
@@ -36,17 +44,17 @@ export class LogicalExpression {
     and(other: LogicalExpression | BitVector) {
         if (other instanceof BitVector) {
             return new LogicalExpression(
-                andToDnf(other.size, [this.#conjunctions, [other]]),
+                andToDnf2(this.#conjunctions, [other]),
             );
         }
 
         const size =
             this.#conjunctions[0]?.size ?? other.#conjunctions[0]?.size;
         if (size === undefined) {
-            return new LogicalExpression([]);
+            return LogicalExpression.false();
         }
         return new LogicalExpression(
-            andToDnf(size, [this.#conjunctions, other.#conjunctions]),
+            andToDnf2(this.#conjunctions, other.#conjunctions),
         );
     }
 
@@ -92,6 +100,16 @@ export class LogicalExpression {
     isTriviallyTrue() {
         return this.#conjunctions.length > 0 && this.#conjunctions.some((c) => c.numSetBits === 0);
     }
+}
+
+function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
+    const newExpr = [];
+    for (const l of left) {
+        for (const r of right) {
+            newExpr.push(l.or(r));
+        }
+    }
+    return newExpr;
 }
 
 function andToDnf(size: number, arr: BitVector[][]): BitVector[] {

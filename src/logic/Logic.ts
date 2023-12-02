@@ -13,6 +13,12 @@ import { cubeCheckToCanAccessCube } from '../newApp/TrackerModifications';
 export interface Logic {
     numItems: number;
     allItems: string[];
+    /**
+     * Requirements that will always imply each other by construction. Progressive Sword x 2 will always
+     * imply Progressive Sword x 1.
+     * A map from item to other items that imply this item by construction.
+     */
+    dominators: Record<string, string[]>,
     items: Record<string, [vec: BitVector, bitIndex: number]>;
     startingItems: BitVector;
     areaGraph: AreaGraph;
@@ -86,26 +92,39 @@ export function makeNight(loc: string) {
 
 const itemIndexPat = /^(.+) #(\d+)$/;
 
+function itemName(item: string, amount: number) {
+    return amount > 1 ? `${item} x ${amount}` : item;
+}
+
 /**
  * Turns all "<Item> #<number>" requirements into "<Item> x <number+1>"
  * requirements - this works better with the tracker.
  */
-export function preprocessItems(raw: string[]): string[] {
-    return raw.map((rawItem) => {
+export function preprocessItems(raw: string[]): { newItems: string[], dominators: Logic['dominators'] } {
+    const dominators: Logic['dominators'] = {};
+    const newItems = raw.map((rawItem) => {
         const match = rawItem.match(itemIndexPat);
         if (!match) {
             return rawItem;
         } else {
             const [, item, amount_] = match;
             const amount = parseInt(amount_, 10) + 1;
-            return amount > 1 ? `${item} x ${amount}` : item;
+
+            for (let i = 0; i <= amount; i++) {
+                (dominators[itemName(item, i)] ??= []).push(itemName(item, amount));
+            }
+
+            return itemName(item, amount);
         }
     });
+
+    return { dominators, newItems };
 }
 
 export function parseLogic(raw: RawLogic): Logic {
     const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
-    const rawItems = [...preprocessItems(raw.items), ...canAccessCubeReqs];
+    const { newItems, dominators } = preprocessItems(raw.items);
+    const rawItems = [...newItems, ...canAccessCubeReqs];
 
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
         return {
@@ -145,7 +164,7 @@ export function parseLogic(raw: RawLogic): Logic {
 
     const implications: LogicalExpression[] = new Array<LogicalExpression>(
         numItems,
-    ).fill(new LogicalExpression([]));
+    ).fill(LogicalExpression.false());
 
     const lookup = (id: string) => {
         const item = items[id];
@@ -553,6 +572,7 @@ export function parseLogic(raw: RawLogic): Logic {
     return {
         numItems,
         allItems: rawItems,
+        dominators,
         items,
         startingItems,
         checks,

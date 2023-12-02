@@ -149,6 +149,140 @@ export function getTooltipOpaqueBits(logic: Logic) {
     return items;
 }
 
+export function mapSettings(
+    logic: Logic,
+    options: OptionDefs,
+    mappedExits: State['mappedExits'],
+    activeVanillaConnections: Record<string, string>,
+    // requiredDungeons: string[],
+    settings: TypedOptions,
+) {
+    const implications: { [bitIndex: number]: LogicalExpression } = {};
+
+    const trySet = (id: string) => {
+        const item = logic.items[id];
+        if (item) {
+            implications[item[1]] = LogicalExpression.true(logic.numItems);
+        }
+    };
+
+    for (const option of runtimeOptions) {
+        const [item, command, expect] = option;
+        const val = settings[command];
+        const match = val !== undefined && (typeof expect === 'function' ? expect(val) : expect === val);
+        if (match) {
+            trySet(item);
+        }
+    }
+
+    for (const option of options) {
+        if (option.type === 'multichoice') {
+            if (option.command === 'starting-items' || option.command === 'excluded-locations') {
+                continue;
+            }
+            const vals = settings[option.command] as string[];
+            const trick = option.name === 'Enabled Tricks Glitched' || option.name === 'Enabled Tricks';
+            for (const option of vals) {
+                if (trick) {
+                    trySet(`${option} Trick`)
+                } else {
+                    trySet(`${option} option`)
+                }
+            }
+        }
+    }
+
+    const vec = (id: string) => logic.items[id][0];
+    const bit = (id: string) => logic.items[id][1];
+    const dayVec = (id: string) => logic.items[makeDay(id)][0];
+    const dayBit = (id: string) => logic.items[makeDay(id)][1];
+    const nightVec = (id: string) => logic.items[makeNight(id)][0];
+    const nightBit = (id: string) => logic.items[makeNight(id)][1];
+
+    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? new BitVector(logic.numItems) : vec(impaSongCheck)]);
+    const neededSwords = swordsToAdd[settings['got-sword-requirement']];
+    let openGotExpr = new LogicalExpression([vec(`Progressive Sword x ${neededSwords}`)]);
+    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : new BitVector(logic.numItems)])
+
+    // const validRequiredDungeons = requiredDungeons.filter((d) => d in dungeonCompletionRequirements);
+    // const requiredDungeonsCompleted = validRequiredDungeons.length > 0 && validRequiredDungeons.every((d) => checkedChecks.includes(dungeonCompletionRequirements[d as RegularDungeon]));
+
+    // const dungeonsExpr = new LogicalExpression(requiredDungeonsCompleted ? [new BitVector(logic.numItems)]: []);
+    const dungeonsExpr = LogicalExpression.false();
+
+    if (settings['got-dungeon-requirement'] === 'Required') {
+        openGotExpr = openGotExpr.and(dungeonsExpr);
+    } else if (settings['got-dungeon-requirement'] === 'Unrequired') {
+        hordeDoorExpr = hordeDoorExpr.and(dungeonsExpr);
+    }
+
+    implications[bit(gotOpeningReq)] = openGotExpr;
+    implications[bit(gotRaisingReq)] = raiseGotExpr;
+    implications[bit(hordeDoorReq)] = hordeDoorExpr;
+
+    const mapConnection = (from: string, to: string) => {
+        // console.log(`connection ${from} -> ${to}`);
+        const exitArea = logic.areaGraph.areasByExit[from];
+        const exitExpr = new LogicalExpression([vec(from)]);
+
+        let dayReq: LogicalExpression;
+        let nightReq: LogicalExpression;
+
+        if (exitArea.abstract) {
+            dayReq = exitExpr;
+            nightReq = exitExpr;
+        } else if (exitArea.allowedTimeOfDay === TimeOfDay.Both) {
+            dayReq = exitExpr.and(dayVec(exitArea.name));
+            nightReq = exitExpr.and(nightVec(exitArea.name));
+        } else if (exitArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
+            dayReq = exitExpr;
+            nightReq = LogicalExpression.false();
+        } else if (exitArea.allowedTimeOfDay === TimeOfDay.NightOnly) {
+            dayReq = LogicalExpression.false();
+            nightReq = exitExpr;
+        } else {
+            throw new Error('bad ToD');
+        }
+
+        const entranceDef = logic.areaGraph.entrances[to];
+        let bitReq: [bit: number, req: LogicalExpression][];
+        if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
+            bitReq = [
+                [dayBit(to), dayReq],
+                [nightBit(to), nightReq],
+            ];
+        } else if (entranceDef.allowed_time_of_day === TimeOfDay.DayOnly) {
+            bitReq = [[bit(to), dayReq]];
+        } else if (entranceDef.allowed_time_of_day === TimeOfDay.NightOnly) {
+            bitReq = [[bit(to), nightReq]];
+        } else {
+            throw new Error('bad ToD');
+        }
+
+        for (const [bitIdx, expr] of bitReq) {
+            implications[bitIdx] = (
+                implications[bitIdx] ?? LogicalExpression.false()
+            ).or(expr);
+        }
+    };
+
+    for (const [from, to] of Object.entries(
+        activeVanillaConnections,
+    )) {
+        mapConnection(from, to);
+    }
+
+    for (const [from, to] of Object.entries(
+        mappedExits,
+    )) {
+        if (to !== undefined) {
+            mapConnection(from, to);
+        }
+    }
+
+    return implications;
+}
+
 export function mapState(
     logic: Logic,
     options: OptionDefs,
@@ -174,7 +308,7 @@ export function mapState(
         }
         items.setBit(item[1]);
         if (implyToo) {
-            implications[item[1]] = new LogicalExpression([new BitVector(logic.numItems)]);
+            implications[item[1]] = LogicalExpression.true(logic.numItems);
         }
     };
 
@@ -263,8 +397,8 @@ export function mapState(
     implications[bit(gotRaisingReq)] = raiseGotExpr;
     implications[bit(hordeDoorReq)] = hordeDoorExpr;
 
+    // eslint-disable-next-line sonarjs/no-identical-functions
     const mapConnection = (from: string, to: string) => {
-        // console.log(`connection ${from} -> ${to}`);
         const exitArea = logic.areaGraph.areasByExit[from];
         const exitExpr = new LogicalExpression([vec(from)]);
 
@@ -279,9 +413,9 @@ export function mapState(
             nightReq = exitExpr.and(nightVec(exitArea.name));
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
             dayReq = exitExpr;
-            nightReq = new LogicalExpression([]);
+            nightReq = LogicalExpression.false();
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.NightOnly) {
-            dayReq = new LogicalExpression([]);
+            dayReq = LogicalExpression.false();
             nightReq = exitExpr;
         } else {
             throw new Error('bad ToD');
@@ -304,7 +438,7 @@ export function mapState(
 
         for (const [bitIdx, expr] of bitReq) {
             implications[bitIdx] = (
-                implications[bitIdx] ?? new LogicalExpression([])
+                implications[bitIdx] ?? LogicalExpression.false()
             ).or(expr);
         }
     };

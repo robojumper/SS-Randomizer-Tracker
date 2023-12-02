@@ -1,90 +1,305 @@
+import { noop } from 'lodash';
 import { BitVector } from '../logic/BitVector';
 import { Logic } from '../logic/Logic';
-// import { fmtVec } from '../logic/LogicInterpretation';
 import { LogicalExpression } from '../logic/LogicalExpression';
 import { getTooltipOpaqueBits } from './State';
+import BooleanExpression from './BooleanExpression';
 
 /**
  * This module contains various strategies to turn the requirements and implications into a more compact and readable
  * form, with the goal of creating readable and understandable requirements for tooltips.
  */
 
-export function getTooltipComputer(
-    logic: Logic,
-    stateImplications: Record<number, LogicalExpression>,
-): (checkId: string) => string {
-    const opaqueItemBits = getTooltipOpaqueBits(logic);
-    const allImplications = logic.implications.map((val, idx) => {
-        const stateImp = stateImplications[idx];
-        if (stateImp) {
-            return val.or(stateImp);
-        } else {
-            return val;
-        }
-    });
+/**
+ * A CancelToken should be passed to cancelable functions. Those functions should then check the state of the
+ * token and return early.
+ */
+interface CancelToken {
+    readonly canceled: boolean;
+}
 
-    // const oldImplications = allImplications.slice();
+/**
+ * Returns a cancel token and a cancellation function. The token can be passed to functions and checked
+ * to see whether it has been canceled. The function can be called to cancel the token.
+ */
+function withCancel(): [CancelToken, () => void] {
+    let isCanceled = false;
+    return [
+        {
+            get canceled() {
+                return isCanceled;
+            },
+        },
+        () => (isCanceled = true),
+    ];
+}
 
-    do {
-        for (const [idx, expr] of allImplications.entries()) {
-            if (expr.conjunctions.length >= 2) {
-                allImplications[idx] = expr.removeDuplicates();
+// setTimeout as a promise
+function delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export class TooltipComputer {
+    logic: Logic;
+    #subscriptions: Record<string, { checkId: string; callback: () => void }>;
+    #results: Record<string, BooleanExpression>;
+
+    opaqueBits: BitVector;
+    implications: LogicalExpression[];
+    revealed: Set<number>;
+
+    cancel: () => void;
+    wakeupWorker: () => void;
+
+    constructor(logic: Logic, implications: Record<number, LogicalExpression>) {
+        this.logic = logic;
+        this.#subscriptions = {};
+        this.revealed = new Set();
+        this.wakeupWorker = noop;
+        this.#results = {};
+        this.opaqueBits = getTooltipOpaqueBits(logic);
+
+        this.implications = this.logic.implications.map((val, idx) => {
+            const stateImp = implications[idx];
+            if (stateImp) {
+                return val.or(stateImp);
+            } else {
+                return val;
             }
-        }
-        while (shallowSimplify(opaqueItemBits, allImplications)) {
-            for (const [idx, expr] of allImplications.entries()) {
-                if (expr.conjunctions.length >= 2) {
-                    allImplications[idx] = expr.removeDuplicates();
-                }
-            }
-        }
-    } while (unifyRequirements(opaqueItemBits, allImplications));
+        });
 
-    /*
-    for (let idx = 0; idx < logic.numItems; idx++) {
-        console.log(logic.allItems[idx], 'needs');
-        printInfo(logic, oldImplications[idx]);
-        console.log(logic.allItems[idx], 'simplified to');
-        printInfo(logic, allImplications[idx]);
+        const [cancelToken, cancel] = withCancel();
+        this.cancel = cancel;
+        computationTask(cancelToken, this);
     }
-    */
 
-    const cachedTooltips: Record<string, LogicalExpression> = {};
-    return (checkId: string) => {
-        if (!cachedTooltips[checkId]) {
-            console.log('computing', logic.checks[checkId].name);
-            const start = performance.now();
-            cachedTooltips[checkId] = computeExpression(opaqueItemBits, allImplications, logic.items[checkId][1], new Set());
-            console.log('done after', performance.now() - start, 'ms', cachedTooltips[checkId].conjunctions.length);
+    notifyAll() {
+        for (const entry of Object.values(this.#subscriptions)) {
+            entry.callback();
+        }
+    }
+
+    notify(check: string) {
+        for (const entry of Object.values(this.#subscriptions)) {
+            if (entry.checkId === check) {
+                entry.callback();
+            }
+        }
+    }
+
+    subscribe(subscriptionId: string, checkId: string, callback: () => void) {
+        this.#subscriptions[subscriptionId] = { checkId, callback };
+        this.wakeupWorker();
+        return () => delete this.#subscriptions[subscriptionId];
+    }
+
+    getSnapshot(checkId: string): BooleanExpression | undefined {
+        return this.#results[checkId];
+    }
+
+    destroy() {
+        this.cancel();
+        this.wakeupWorker();
+    }
+
+    getNextTask() {
+        if (!this.implications) {
+            return undefined;
         }
 
-        return cachedTooltips[checkId].conjunctions.map((conj) => `(${[...conj.iter()].map((bit) => logic.allItems[bit]).join(' AND ')})`).join(' OR ');
+        const checkId = Object.values(this.#subscriptions).find(
+            (check) => !this.#results[check.checkId],
+        )?.checkId;
+        if (!checkId) {
+            return undefined;
+        }
+
+        return {
+            checkId,
+        };
+    }
+
+    acceptTaskResult(checkId: string, result: BooleanExpression) {
+        this.#results[checkId] = result;
+        this.notify(checkId);
     }
 }
 
-function computeExpression(opaqueBits: BitVector, implications: LogicalExpression[], idx: number, visitedExpressions: Set<number>): LogicalExpression {
-    let result = new LogicalExpression([]);
-    if (visitedExpressions.has(idx)) {
-        return new LogicalExpression([]);
+async function computationTask(
+    cancelToken: CancelToken,
+    store: TooltipComputer,
+) {
+    do {
+        await delay(0);
+        removeDuplicates(store.implications);
+        await delay(0);
+        while (shallowSimplify(store.opaqueBits, store.implications)) {
+            await delay(0);
+            removeDuplicates(store.implications);
+            await delay(0);
+        }
+    } while (unifyRequirements(store.opaqueBits, store.implications));
+
+    while (!cancelToken.canceled) {
+        const task = store.getNextTask();
+
+        if (!task) {
+            // The main scenario to avoid here is a wakeupWorker call
+            // coming in after we find out there's nothing to do but before
+            // we set wakeupWorker for the next promise, which is prevented
+            // by the fact that there's no await before this and the Promise
+            // executor is called synchronously.
+            const promise = new Promise((resolve) => {
+                store.wakeupWorker = () => resolve(null);
+            });
+            await promise;
+            continue;
+        }
+
+        console.log('analyzing', task.checkId);
+
+        const bit = store.logic.items[task.checkId][1];
+
+        const potentialPath = anyPath(
+            store.opaqueBits,
+            store.implications,
+            bit,
+            new Set(),
+            store.revealed,
+        );
+
+        await delay(0);
+
+        if (potentialPath) {
+            for (const precomputeBit of potentialPath.iter()) {
+                if (
+                    !store.opaqueBits.test(precomputeBit) &&
+                    !store.revealed.has(precomputeBit)
+                ) {
+                    // And then precompute some non-opaque requirements. This persists between tooltips, so
+                    // different checks can reuse these results.
+                    // Note that even though the result of `anyPath` is obviously path-dependent and depends on the check in question,
+                    // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
+                    store.implications[precomputeBit] = computeExpression(
+                        store.opaqueBits,
+                        store.implications,
+                        precomputeBit,
+                        new Set(),
+                    );
+                    store.revealed.add(precomputeBit);
+                    await delay(0);
+                }
+            }
+        }
+
+        const opaqueOnlyExpr = computeExpression(
+            store.opaqueBits,
+            store.implications,
+            bit,
+            new Set(),
+        );
+        await delay(0);
+        store.implications[bit] = opaqueOnlyExpr;
+        store.acceptTaskResult(
+            task.checkId,
+            dnfToRequirementExpr(store.logic, opaqueOnlyExpr),
+        );
     }
-    // console.log(visitedExpressions.size);
+}
+
+function dnfToRequirementExpr(
+    logic: Logic,
+    expression: LogicalExpression,
+): BooleanExpression {
+    return BooleanExpression.or(
+        ...expression.conjunctions.map((c) => bitVecToRequirements(logic, c)),
+    ).simplify((a, b) => {
+        return a === b || Boolean(logic.dominators[b]?.includes(a));
+    });
+}
+
+function bitVecToRequirements(logic: Logic, vec: BitVector): BooleanExpression {
+    return BooleanExpression.and(
+        ...[...vec.iter()].map((x) => logic.allItems[x]),
+    );
+}
+
+/**
+ * Some checks still have some relatively deep expressions, and the `computeExpression` algorithm may perform poorly
+ * if it repeately has to reveal a complex entrance. Finding *any* path to the check has a reasonably likelyhood
+ * of including these bottlenecks, and precomputing bits in that partial path can solve a lot of problems and the
+ * results can even be reused.
+ */
+function anyPath(
+    opaqueBits: BitVector,
+    implications: LogicalExpression[],
+    idx: number,
+    visitedExpressions: Set<number>,
+    revealedExpressions: Set<number>,
+): BitVector | undefined {
+    if (visitedExpressions.has(idx)) {
+        return undefined;
+    }
+    const expr = implications[idx];
+    if (expr.isTriviallyFalse()) {
+        return undefined;
+    }
+
+    visitedExpressions.add(idx);
+
+    const thisBit = new BitVector(opaqueBits.size).setBit(idx);
+
+    for (const conj of implications[idx].conjunctions) {
+        for (const bit of conj.iter()) {
+            if (!opaqueBits.test(bit) && !revealedExpressions.has(bit)) {
+                const moreBits = anyPath(
+                    opaqueBits,
+                    implications,
+                    bit,
+                    visitedExpressions,
+                    revealedExpressions,
+                );
+                if (moreBits) {
+                    return thisBit.or(moreBits);
+                }
+            }
+        }
+    }
+
+    visitedExpressions.delete(idx);
+    return thisBit;
+}
+
+function computeExpression(
+    opaqueBits: BitVector,
+    implications: LogicalExpression[],
+    idx: number,
+    visitedExpressions: Set<number>,
+): LogicalExpression {
+    let result = LogicalExpression.false();
+    if (visitedExpressions.has(idx)) {
+        return result;
+    }
     visitedExpressions.add(idx);
     nextConj: for (const conj of implications[idx].conjunctions) {
-        let tmpExpr = new LogicalExpression([new BitVector(opaqueBits.size)]);
-        const tmpBits = new BitVector(opaqueBits.size);
+        let tmpExpr = LogicalExpression.true(opaqueBits.size);
+        const conjOpaqueBits = opaqueBits.and(conj);
         for (const bit of conj.iter()) {
-            if (opaqueBits.test(bit)) {
-                tmpBits.setBit(bit);
-            } else {
-                const newTerm = computeExpression(opaqueBits, implications, bit, visitedExpressions);
+            if (!conjOpaqueBits.test(bit)) {
+                const newTerm = computeExpression(
+                    opaqueBits,
+                    implications,
+                    bit,
+                    visitedExpressions,
+                );
                 if (newTerm.isTriviallyFalse()) {
                     continue nextConj;
                 }
                 tmpExpr = tmpExpr.and(newTerm).removeDuplicates();
             }
         }
-        if (tmpBits.numSetBits) {
-            tmpExpr = tmpExpr.and(tmpBits);
+        if (conjOpaqueBits.numSetBits) {
+            tmpExpr = tmpExpr.and(conjOpaqueBits);
         }
 
         result = result.or(tmpExpr);
@@ -94,14 +309,13 @@ function computeExpression(opaqueBits: BitVector, implications: LogicalExpressio
     return result.removeDuplicates();
 }
 
-
-/*
-function printInfo(logic: Logic, expr: LogicalExpression) {
-    for (const part of expr.conjunctions) {
-        console.log(`    | ${fmtVec(logic, part)}`);
+function removeDuplicates(implications: LogicalExpression[]) {
+    for (const [idx, expr] of implications.entries()) {
+        if (expr.conjunctions.length >= 2) {
+            implications[idx] = expr.removeDuplicates();
+        }
     }
 }
-*/
 
 /**
  * Unifies non-opaque requirements if they directly imply each other. This is mostly
@@ -183,7 +397,7 @@ function shallowSimplify(
         if (expr.conjunctions.length >= 30) {
             continue;
         }
-        let newExpr = new LogicalExpression([]);
+        let newExpr = LogicalExpression.false();
         for (const conj of expr.conjunctions) {
             if (!conj.and(simplificationBits).isEmpty()) {
                 simplified = true;

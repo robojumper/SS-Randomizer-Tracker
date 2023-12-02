@@ -56,12 +56,16 @@ export function interpretLogic(
     return bits;
 }
 
+export function printExpr(logic: Logic, expr: LogicalExpression) {
+    for (const part of expr.conjunctions) {
+        console.log(`    | ${fmtVec(logic, part)}`);
+    }
+}
+
 export function fmtVec(logic: Logic, items: BitVector) {
     let str = '[';
-    for (let i = 0; i < logic.numItems; i++) {
-        if (items.test(i)) {
-            str += logic.allItems[i] + ', ';
-        }
+    for (const i of items.iter()) {
+        str += logic.allItems[i] + ', ';
     }
     return str + ']';
 }

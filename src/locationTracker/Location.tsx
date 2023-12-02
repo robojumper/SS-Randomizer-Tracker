@@ -9,6 +9,8 @@ import images from '../itemTracker/Images';
 import placeholderImg from '../assets/slot test.png';
 import '../locationTracker/Location.css';
 import Tippy from '@tippyjs/react';
+import { useTooltipExpr } from '../newApp/TooltipHooks';
+import RequirementsTooltip from './RequirementsTooltip';
 
 export interface LocationContextMenuProps {
     checkId: string;
@@ -29,6 +31,7 @@ export default function Location({
 }) {
     const dispatch = useDispatch();
     const colorScheme = useAppState().colorScheme;
+    const derivedState = useDerivedState();
 
     function onClick(e: React.UIEvent) {
         if (!(e.target as Element | null)?.id) {
@@ -53,8 +56,10 @@ export default function Location({
         show({ event: e, props: { checkId: id } });
     }, [id, show]);
 
+    const expr = useTooltipExpr(id);
+
     return (
-        <Tippy content={<Tooltip checkId={id} />}>
+        <Tippy content={<RequirementsTooltip requirements={expr} logic={derivedState.logic} inventoryBits={derivedState.inventoryBits} />}>
             <div
                 className="location-container"
                 onClick={onClick}
@@ -79,8 +84,4 @@ export default function Location({
             </div>
         </Tippy>
     );
-}
-
-function Tooltip({ checkId }: { checkId: string }) {
-    return <>{useDerivedState().tooltipComputer(checkId)}</>;
 }

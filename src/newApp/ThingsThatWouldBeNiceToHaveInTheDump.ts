@@ -15,12 +15,22 @@ export const randomizedExitsToDungeons = [
     '\\Faron\\Faron Woods\\Deep Woods\\Exit to Skyview Temple',
     '\\Eldin\\Volcano\\Near Temple Entrance\\Exit to Earth Temple',
     '\\Lanayru\\Desert\\Top of LMF\\Exit to Lanayru Mining Facility',
-    '\\FaronLake Floria\\Waterfall\\Exit to Ancient Cistern',
+    '\\Faron\\Lake Floria\\Waterfall\\Exit to Ancient Cistern',
     '\\Lanayru\\Lanayru Sand Sea\\Ancient Harbour\\Exit to Sandship',
     '\\Lanayru\\Lanayru Sand Sea\\Sandship Dock Exit',
     '\\Eldin\\Volcano Summit\\Outside Fire Sanctuary\\Exit to Fire Sanctuary',
     '\\Skyloft\\Central Skyloft\\Near Temple Entrance\\Exit to Sky Keep',
 ];
+
+export const randomizedDungeonEntrances = [
+    '\\Skyview\\Main\\Entry\\Main Entrance',
+    '\\Earth Temple\\Main\\First Room\\Main Entrance',
+    '\\Lanayru Mining Facility\\Main\\First Room\\Main Entrance',
+    '\\Ancient Cistern\\Main\\Main Room\\Main Entrance',
+    '\\Sandship\\Main\\Deck\\Main Entrance',
+    '\\Fire Sanctuary\\Main\\First Room\\Main Entrance',
+    '\\Sky Keep\\Main\\First Room\\Bottom Entrance',
+]
 
 export const nonRandomizedExits = [
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Gate of Time Exit',

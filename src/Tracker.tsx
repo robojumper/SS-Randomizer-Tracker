@@ -27,6 +27,7 @@ import OptionsMenu from './OptionsMenu';
 import { getInitialItems } from './newApp/TrackerModifications';
 import SecondaryLocationTracker from './locationTracker/ExtraLocationTracker';
 import ImportExport from './ImportExport';
+import { MakeTooltipsAvailable } from './newApp/TooltipHooks';
 
 function initTrackerState(options: OptionDefs): AppState {
     // const path = new URLSearchParams(window.location.search);
@@ -107,11 +108,13 @@ export default function NewTrackerContainer({
             state={trackerState}
             dispatch={dispatch}
         >
-            <NewTracker
-                colorScheme={trackerState.colorScheme}
-                layout={trackerState.layout}
-                options={options}
-            />
+            <MakeTooltipsAvailable logic={logic} options={options} state={trackerState.trackerState}>
+                <NewTracker
+                    colorScheme={trackerState.colorScheme}
+                    layout={trackerState.layout}
+                    options={options}
+                />
+            </MakeTooltipsAvailable>
         </WithContext>
     );
 }

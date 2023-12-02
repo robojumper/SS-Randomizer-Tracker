@@ -15,7 +15,7 @@ import {
     mapToCanAccessCubeRequirement,
 } from './TrackerModifications';
 import { produce } from 'immer';
-import { getTooltipComputer } from './TooltipComputations';
+import { BitVector } from '../logic/BitVector';
 
 export interface DerivedState {
     regularAreas: Area[];
@@ -30,7 +30,9 @@ export interface DerivedState {
     numChecked: number;
     numAccessible: number;
     numRemaining: number;
-    tooltipComputer: (checkId: string) => string;
+
+    logic: Logic;
+    inventoryBits: BitVector;
 }
 
 export interface Area<N extends string = string> {
@@ -439,8 +441,6 @@ export function useComputeDerivedState(
         }));
     }, [logic]);
 
-    const tooltipComputer = useMemo(() => getTooltipComputer(logic, stateImplications), [logic, stateImplications]);
-
     console.log('state derivation took:', performance.now() - start, 'ms');
 
     return {
@@ -456,6 +456,7 @@ export function useComputeDerivedState(
         numChecked,
         numAccessible,
         numRemaining,
-        tooltipComputer,
+        logic,
+        inventoryBits: stateItems,
     };
 }
