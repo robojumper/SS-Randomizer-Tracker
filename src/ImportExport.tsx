@@ -1,16 +1,17 @@
 import { ChangeEvent } from 'react';
-import { useDispatch, useAppState } from './newApp/Context';
-import { State } from './newApp/State';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from './store/store';
+import { TrackerState, loadTracker } from './tracker/slice';
 
 const version = 'SSRANDO-TRACKER-NG-V1';
 
 export interface ExportState {
     version: string;
-    state: State;
+    state: TrackerState;
 }
 
 export default function ImportExport() {
-    const state = useAppState().trackerState;
+    const state = useSelector((state: RootState) => state.tracker);
     const dispatch = useDispatch();
 
     const doImport = (text: string) => {
@@ -18,7 +19,7 @@ export default function ImportExport() {
         if (importVal.version !== version) {
             alert('This export was made with an incompatible version of the Tracker and cannot be imported here.');
         }
-        dispatch({ type: 'import', state: importVal.state })
+        dispatch(loadTracker(importVal.state));
     };
     const doExport = () => {
         const filename = `SS-Rando-Tracker${new Date().toISOString()}`;

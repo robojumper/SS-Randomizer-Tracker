@@ -1,30 +1,29 @@
 import { Modal, Button, Container, Row, Col, FormControl } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
-import ColorScheme from './ColorScheme';
+import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
+import { Layout, setColorScheme, setLayout } from './slice';
+import { useDispatch, useSelector } from 'react-redux';
+import { colorSchemeSelector, layoutSelector } from './selectors';
+import { useCallback } from 'react';
 
 const defaultColorSchemes = {
-    Light: new ColorScheme(),
-    Dark: {...(new ColorScheme()), background: '#000000', text: '#FFFFFF', checked: '#B6B6B6'},
+    Light: lightColorScheme,
+    Dark: darkColorScheme,
 };
 
-
-export type Layout = 'grid' | 'inventory';
-
 export default function CustomizationModal({
-    colorScheme,
     onHide,
-    selectedLayout,
     show,
-    updateColorScheme,
-    updateLayout
 }: {
     show: boolean,
     onHide: () => void,
-    colorScheme: ColorScheme,
-    updateColorScheme: (scheme: ColorScheme) => void,
-    updateLayout: (layout: Layout) => void,
-    selectedLayout: Layout,
 }) {
+    const dispatch = useDispatch();
+    const colorScheme = useSelector(colorSchemeSelector);
+    const layout = useSelector(layoutSelector);
+
+    const updateColorScheme = useCallback((scheme: ColorScheme) => dispatch(setColorScheme(scheme)), [dispatch]);
+
     return (
         <Modal show={show} onHide={onHide}>
             <Modal.Header closeButton>
@@ -66,9 +65,9 @@ export default function CustomizationModal({
                         <h4>Tracker Settings</h4>
                     </Row>
                     <Row>
-                        <FormControl as="select" onChange={(e) => updateLayout(e.target.value as Layout)}>
-                            <option value="inventory" selected={selectedLayout === 'inventory'}>In-Game Inventory</option>
-                            <option value="grid" selected={selectedLayout === 'grid'}>Grid Layout</option>
+                        <FormControl as="select" onChange={(e) => dispatch(setLayout(e.target.value as Layout))}>
+                            <option value="inventory" selected={layout === 'inventory'}>In-Game Inventory</option>
+                            <option value="grid" selected={layout === 'grid'}>Grid Layout</option>
                         </FormControl>
                     </Row>
                 </Container>

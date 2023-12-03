@@ -6,7 +6,8 @@ import CrystalCounter from './items/sidequest/CrystalCounter';
 import questItemBlock from '../assets/quest_items_block.png';
 
 import ColorScheme from '../customization/ColorScheme';
-import { useDerivedState } from '../newApp/Context';
+import { useSelector } from 'react-redux';
+import { totalGratitudeCrystalsSelector } from '../tracker/selectors';
 
 type QuestItemProps = {
     styleProps: CSSProperties;
@@ -48,7 +49,7 @@ const QuestItems = (props: QuestItemProps) => {
         left: width * 0.9,
     };
 
-    const crystalCount = useDerivedState().itemCount['Total Gratitude Crystals'] ?? 0;
+    const crystalCount = useSelector(totalGratitudeCrystalsSelector);
 
     return (
         <div id="quest-items">

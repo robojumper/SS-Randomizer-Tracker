@@ -1,9 +1,14 @@
 import { load } from 'js-yaml';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { parseLogic } from './logic/Logic';
 import { RawLogic } from './newApp/UpstreamTypes';
 import NewTrackerContainer from './Tracker';
 import { MultiChoiceOption, OptionDefs } from './permalink/SettingsTypes';
+import { useDispatch, useSelector } from 'react-redux';
+import { loadLogic } from './logic/slice';
+import { logicSelector, optionsSelector } from './logic/selectors';
+import { acceptSettings } from './tracker/slice';
+import { defaultSettings } from './permalink/Settings';
 
 const baseFileUrl = (file: string) =>
     `https://raw.githubusercontent.com/robojumper/ssrando/logic-dump/${file}.yaml`;
@@ -21,32 +26,36 @@ const loadFile = async <T,>(file: string) => {
 };
 
 export default function Shell() {
-    const [logic, setLogic] = useState<RawLogic | undefined>(undefined);
-    const [options, setOptions] = useState<OptionDefs | undefined>(undefined);
+    const dispatch = useDispatch();
 
     useEffect(() => {
         const load = async () => {
-            const logic = await loadFile<RawLogic>('dump');
-            setLogic(logic);
-            // correctly load the choices for excluded locations
-            const settings = await loadFile<OptionDefs>('options');
-            const excludedLocs = settings.find(
+
+            const [rawLogic, options] = await Promise.all([
+                loadFile<RawLogic>('dump'),
+                loadFile<OptionDefs>('options'),
+            ]);
+
+            const mappedLogic = parseLogic(rawLogic);
+            const excludedLocs = options.find(
                 (x) => x.command === 'excluded-locations' && x.type === 'multichoice'
             ) as MultiChoiceOption | undefined;
-            excludedLocs!.choices = Object.values(logic.checks).map((c) => c.short_name);
-            setOptions(settings);
+            excludedLocs!.choices = Object.values(rawLogic.checks).map((c) => c.short_name);
+            dispatch(acceptSettings({ settings: defaultSettings(options) }))
+            dispatch(loadLogic({ logic: mappedLogic, options }));
         };
 
         load();
-    }, []);
+    }, [dispatch]);
 
-    const mappedLogic = useMemo(() => logic && parseLogic(logic), [logic]);
+    const logic = useSelector(logicSelector);
+    const options = useSelector(optionsSelector);
 
-    if (!mappedLogic || !options) {
+    if (!logic) {
         return <>Loading...</>;
     }
 
     return (
-        <NewTrackerContainer logic={mappedLogic} options={options} />
+        <NewTrackerContainer logic={logic} options={options} />
     );
 }

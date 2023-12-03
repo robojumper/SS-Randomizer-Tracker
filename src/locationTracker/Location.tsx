@@ -1,7 +1,6 @@
 import { Col, Row } from 'react-bootstrap';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDispatch, useAppState, useDerivedState } from '../newApp/Context';
-import { LogicalState } from '../newApp/DerivedState';
+import { useDerivedState } from '../newApp/Context';
 import { useContextMenu } from './context-menu';
 import { useCallback } from 'react';
 import { TriggerEvent } from 'react-contexify';
@@ -11,39 +10,39 @@ import '../locationTracker/Location.css';
 import Tippy from '@tippyjs/react';
 import { useTooltipExpr } from '../newApp/TooltipHooks';
 import RequirementsTooltip from './RequirementsTooltip';
+import { useDispatch, useSelector } from 'react-redux';
+import { colorSchemeSelector } from '../customization/selectors';
+import { checkHintSelector, checkSelector } from '../tracker/selectors';
+import { clickCheck } from '../tracker/slice';
 
 export interface LocationContextMenuProps {
     checkId: string;
 }
 
 export default function Location({
-    name,
     id,
-    checked,
-    logicalState,
-    hintItem,
 }: {
-    name: string;
     id: string;
-    checked: boolean;
-    logicalState: LogicalState;
-    hintItem?: string;
 }) {
     const dispatch = useDispatch();
-    const colorScheme = useAppState().colorScheme;
     const derivedState = useDerivedState();
+    const hintItem = useSelector(checkHintSelector(id));
+
+    const check = useSelector(checkSelector(id));
+
+    const colorScheme = useSelector(colorSchemeSelector);
 
     function onClick(e: React.UIEvent) {
         if (!(e.target as Element | null)?.id) {
             return;
         }
-        dispatch({ type: 'onCheckClick', check: id });
+        dispatch(clickCheck({ checkId: id }));
     }
 
     const style = {
-        textDecoration: checked ? 'line-through' : 'none',
+        textDecoration: check.checked ? 'line-through' : 'none',
         cursor: 'pointer',
-        color: checked ? colorScheme.checked : colorScheme[logicalState],
+        color: check.checked ? colorScheme.checked : colorScheme[check.logicalState],
         paddingLeft: 6,
         paddingRight: 0,
     };
@@ -73,7 +72,7 @@ export default function Location({
                         style={style}
                         id={id}
                     >
-                        {name}
+                        {check.checkName}
                     </Col>
                     {hintItem && (
                         <Col sm={2} style={{ padding: 0 }}>

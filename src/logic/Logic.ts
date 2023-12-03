@@ -8,7 +8,7 @@ import {
     RawEntrance,
     RawExit,
 } from '../newApp/UpstreamTypes';
-import { cubeCheckToCanAccessCube } from '../newApp/TrackerModifications';
+import { cubeCheckToCanAccessCube, requiredDungeonsCompletedFakeRequirement } from '../newApp/TrackerModifications';
 
 export interface Logic {
     numItems: number;
@@ -22,7 +22,6 @@ export interface Logic {
     /** Maps from items K to items V such that for every V: K -> V */
     reverseDominators: Record<string, string[]>,
     items: Record<string, [vec: BitVector, bitIndex: number]>;
-    startingItems: BitVector;
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
     checksByArea: Record<string, string[]>;
@@ -41,7 +40,8 @@ export interface LogicalCheck {
         | 'rupee'
         | 'tadtone'
         | 'beedle_shop'
-        | 'tr_cube';
+        | 'tr_cube'
+        | 'tr_dummy';
     name: string;
 }
 
@@ -59,7 +59,6 @@ export interface Area {
     abstract: boolean;
     name: string;
     locations: [location: BitVector, predicate: LogicalExpression][];
-    parentArea: Area | undefined;
     subAreas: Record<string, Area>;
     allowedTimeOfDay: TimeOfDay;
     /** The exits of this area, and the things needed to get there */
@@ -128,7 +127,7 @@ export function preprocessItems(raw: string[]): { newItems: string[], dominators
 export function parseLogic(raw: RawLogic): Logic {
     const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
     const { newItems, dominators, reverseDominators } = preprocessItems(raw.items);
-    const rawItems = [...newItems, ...canAccessCubeReqs];
+    const rawItems = [...newItems, ...canAccessCubeReqs, requiredDungeonsCompletedFakeRequirement];
 
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
         return {
@@ -144,9 +143,12 @@ export function parseLogic(raw: RawLogic): Logic {
         };
     }
 
+    checks[requiredDungeonsCompletedFakeRequirement] = {
+        name: 'Required Dungeons Completed',
+        type: 'tr_dummy'
+    };
+
     const numItems = rawItems.length;
-    // Link starts with True
-    const startingItems = new BitVector(numItems);
 
     const items: Logic['items'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
@@ -185,7 +187,7 @@ export function parseLogic(raw: RawLogic): Logic {
     const nightVec = (id: string) => items[makeNight(id)][0];
     const nightBit = (id: string) => items[makeNight(id)][1];
 
-    function createAreaIndex(rawArea: RawArea, parentArea: Area | undefined) {
+    function createAreaIndex(rawArea: RawArea) {
         const area: Area = {
             abstract: rawArea.abstract,
             name: rawArea.name,
@@ -194,12 +196,11 @@ export function parseLogic(raw: RawLogic): Logic {
             entrances: [],
             subAreas: {},
             locations: [],
-            parentArea,
         };
         allAreas[area.name] = area;
         if (!_.isEmpty(rawArea.sub_areas)) {
             for (const rawSubArea of Object.values(rawArea.sub_areas)) {
-                const subArea = createAreaIndex(rawSubArea, area);
+                const subArea = createAreaIndex(rawSubArea);
                 area.subAreas[rawSubArea.name] = subArea;
             }
         }
@@ -517,7 +518,7 @@ export function parseLogic(raw: RawLogic): Logic {
         return area;
     }
 
-    createAreaIndex(raw.areas, undefined);
+    createAreaIndex(raw.areas);
     const rootArea = populateArea(raw.areas);
     if (!rootArea.abstract) {
         throw new Error('rootArea must be abstract');
@@ -579,7 +580,6 @@ export function parseLogic(raw: RawLogic): Logic {
         dominators,
         reverseDominators,
         items,
-        startingItems,
         checks,
         checksByArea,
         areaGraph: {

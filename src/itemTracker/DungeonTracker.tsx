@@ -19,12 +19,19 @@ import faronTrialGate from '../assets/bosses/faronTrialGate.png';
 import lanayruTrialGate from '../assets/bosses/lanayruTrialGate.png';
 import eldinTrialGate from '../assets/bosses/eldinTrialGate.png';
 import DungeonName from './items/dungeons/DungeonName';
-import { useDerivedState, useDispatch, useAppState } from '../newApp/Context';
 import DungeonIcon from './items/dungeons/DungeonIcon';
 import React from 'react';
 import { Col, Row } from 'react-bootstrap';
 import AreaCounters from '../locationTracker/AreaCounters';
 import HintMarker from '../hints/HintMarker';
+import { useSelector } from 'react-redux';
+import { colorSchemeSelector } from '../customization/selectors';
+import { areasSelector } from '../tracker/selectors';
+import {
+    Area,
+    DungeonName as DungeonNameType,
+    isDungeon,
+} from '../newApp/DerivedState';
 
 const silentRealmData: Record<string, string> = {
     'Faron Silent Realm': faronTrialGate,
@@ -73,12 +80,20 @@ const dungeonData = {
 
 const smallKeyImages = [noSmallKey, oneSmallKey, twoSmallKey, threeSmallKey];
 
-export default function DungeonTracker() {
+export default function DungeonTracker({
+    setActiveArea,
+}: {
+    setActiveArea: (area: string) => void;
+}) {
     const [width, setWidth] = useState(0);
     const divElement = useRef<HTMLDivElement>(null);
-    const dispatch = useDispatch();
-    const state = useDerivedState();
-    const colorScheme = useAppState().colorScheme;
+    const areas = useSelector(areasSelector);
+    const colorScheme = useSelector(colorSchemeSelector);
+
+    const dungeons = areas.filter((a) =>
+        isDungeon(a.name),
+    ) as Area<DungeonNameType>[];
+    const silentRealms = areas.filter((a) => a.name.includes('Silent Realm'));
 
     useResizeObserver(divElement, () => {
         const elem = divElement.current;
@@ -88,11 +103,11 @@ export default function DungeonTracker() {
         setWidth(divElement.current.clientWidth);
     });
 
-    const dungeons = state.dungeons;
     const numDungeons = dungeons.length;
     const iconsPerDungeon = 2;
     // scale icons differently with ER / sky keep to keep things fitted all at once
-    const scaleFactor = (state.dungeons.some((d) => d.name === 'Sky Keep') ? 1.05 : 1.0) * 1.15;
+    const scaleFactor =
+        (dungeons.some((d) => d.name === 'Sky Keep') ? 1.05 : 1.0) * 1.15;
     const colWidth = width / (numDungeons * iconsPerDungeon * scaleFactor);
     const secondRowWidth = width / 4;
     const keysStyle: CSSProperties = {
@@ -130,8 +145,6 @@ export default function DungeonTracker() {
         left: '2%',
         top: '-2%',
     };
-
-    const silentRealms = state.silentRealms;
 
     return (
         <Col
@@ -183,14 +196,6 @@ export default function DungeonTracker() {
                                         dungeonData[d.name].dungeonAbbr
                                     }
                                     dungeonName={d.name}
-                                    completed={d.completed}
-                                    required={d.required}
-                                    dungeonChange={() =>
-                                        dispatch({
-                                            type: 'onDungeonNameClick',
-                                            dungeon: d.name,
-                                        })
-                                    }
                                 />
                             </td>
                         ))}
@@ -203,22 +208,23 @@ export default function DungeonTracker() {
                                     image={dungeonData[d.name].bossIcon}
                                     iconLabel={d.name}
                                     width={colWidth * 2}
-                                    groupClicked={() =>
-                                        dispatch({
-                                            type: 'onAreaClick',
-                                            area: d.name,
-                                        })
-                                    }
+                                    groupClicked={() => setActiveArea(d.name)}
                                 />
                             </td>
                         ))}
                     </tr>
                     <tr>
                         {dungeons.map((d) => (
-                            <td colSpan={2} key={d.name} style={dungeonCheckStyle}>
+                            <td
+                                colSpan={2}
+                                key={d.name}
+                                style={dungeonCheckStyle}
+                            >
                                 <AreaCounters
                                     totalChecksLeftInArea={d.numChecksRemaining}
-                                    totalChecksAccessible={d.numChecksAccessible}
+                                    totalChecksAccessible={
+                                        d.numChecksAccessible
+                                    }
                                     colorScheme={colorScheme}
                                 />
                             </td>
@@ -230,21 +236,31 @@ export default function DungeonTracker() {
                 {silentRealms.map((area) => (
                     <Col key={area.name}>
                         <HintMarker width={secondRowWidth / 4} />
-                    </Col>)
-                )}
+                    </Col>
+                ))}
             </Row>
             <Row className="g-0" style={trialStyle}>
                 {silentRealms.map((a) => (
                     <Col key={a.name}>
-                        <DungeonIcon image={silentRealmData[a.name]} iconLabel={a.name} area={a.name} width={secondRowWidth} groupClicked={() => dispatch({ type: 'onAreaClick', area: a.name })} />
-                    </Col>    
+                        <DungeonIcon
+                            image={silentRealmData[a.name]}
+                            iconLabel={a.name}
+                            area={a.name}
+                            width={secondRowWidth}
+                            groupClicked={() => setActiveArea(a.name)}
+                        />
+                    </Col>
                 ))}
             </Row>
             <Row className="g-0" style={trialCheckStyle}>
                 {silentRealms.map((a) => (
                     <Col key={a.name}>
-                        <AreaCounters totalChecksLeftInArea={a.numChecksRemaining} totalChecksAccessible={a.numChecksAccessible} colorScheme={colorScheme} />
-                    </Col>    
+                        <AreaCounters
+                            totalChecksLeftInArea={a.numChecksRemaining}
+                            totalChecksAccessible={a.numChecksAccessible}
+                            colorScheme={colorScheme}
+                        />
+                    </Col>
                 ))}
             </Row>
         </Col>

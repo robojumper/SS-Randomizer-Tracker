@@ -1,8 +1,10 @@
 import { CSSProperties } from 'react';
 import allImages from './Images';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDerivedState, useDispatch } from '../newApp/Context';
 import { Items } from '../newApp/State';
+import { useDispatch, useSelector } from 'react-redux';
+import { rawItemCountSelector } from '../tracker/selectors';
+import { clickItem } from '../tracker/slice';
 
 type ItemProps = {
     images?: string[];
@@ -24,7 +26,7 @@ const Item = (props: ItemProps) => {
     } = props;
 
     const dispatch = useDispatch();
-    const count = useDerivedState().itemCount[itemName] ?? 0;
+    const count = useSelector(rawItemCountSelector(itemName));
     const className = ignoreItemClass ? '' : 'item';
 
     let itemImages: string[];
@@ -42,10 +44,10 @@ const Item = (props: ItemProps) => {
 
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
-            dispatch({type: 'onItemClick', item: itemName, take: true });
+            dispatch(clickItem({ item: itemName, take: true }));
             e.preventDefault();
         } else {
-            dispatch({type: 'onItemClick', item: itemName, take: false });
+            dispatch(clickItem({ item: itemName, take: false }));
         }
     };
 

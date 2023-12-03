@@ -9,7 +9,9 @@ import {
 } from 'react-bootstrap';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import Select, { ActionMeta, SingleValue } from 'react-select';
-import { useDerivedState, useDispatch } from '../newApp/Context';
+import { useDispatch, useSelector } from 'react-redux';
+import { allowedStartingEntrancesSelector, exitsSelector, remainingEntrancesSelector } from '../tracker/selectors';
+import { mapEntrance } from '../tracker/slice';
 // import EntranceGraph from './EntranceGraph';
 
 type EntranceTrackerProps = {
@@ -25,12 +27,14 @@ type Entrance = {
 const RESET_OPTION = 'RESET';
 
 function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
-    const state = useDerivedState();
     const dispatch = useDispatch();
-    const exits = state.exits;
+    const exits = useSelector(exitsSelector);
+    const remainingEntrances = useSelector(remainingEntrancesSelector);
+
+    const allowedStartingEntrances = useSelector(allowedStartingEntrancesSelector);
     
     const entranceOptions: Entrance[] = useMemo(() => {
-        const entrances = state.remainingEntrances.map(({
+        const entrances = remainingEntrances.map(({
             id, name
         }) => ({
             value: id,
@@ -38,10 +42,10 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
         }));
         entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
         return entrances;
-    }, [state.remainingEntrances]);
+    }, [remainingEntrances]);
 
     const startingEntranceOptions: Entrance[] = useMemo(() => {
-        const entrances = state.allowedStartingEntrances.map(({
+        const entrances = allowedStartingEntrances.map(({
             id, name
         }) => ({
             value: id,
@@ -49,7 +53,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
         }));
         entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
         return entrances;
-    }, [state.allowedStartingEntrances]);
+    }, [allowedStartingEntrances]);
 
     const [exitSearch, setExitSearch] = useState('');
     const [entranceSearch, setEntranceSeach] = useState('');
@@ -68,9 +72,9 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
         ) => {
             if (meta.action === 'select-option') {
                 if (!selectedOption || selectedOption.value === RESET_OPTION) {
-                    dispatch({ type: 'mapEntrance', from, to: undefined })
+                    dispatch(mapEntrance({ from, to: undefined }))
                 } else {
-                    dispatch({ type: 'mapEntrance', from, to: selectedOption.value })
+                    dispatch(mapEntrance({ from, to: selectedOption.value }))
                 }
             }
         };

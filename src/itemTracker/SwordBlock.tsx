@@ -6,7 +6,9 @@ import swordBlock from '../assets/Sword_Block.png';
 import CrystalCounter from './items/sidequest/CrystalCounter';
 import ColorScheme from '../customization/ColorScheme';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDispatch, useAppState } from '../newApp/Context';
+import { useDispatch, useSelector } from 'react-redux';
+import { rawItemCountSelector } from '../tracker/selectors';
+import { clickItem } from '../tracker/slice';
 
 type SwordBlockProperties = {
     styleProps: CSSProperties;
@@ -15,9 +17,8 @@ type SwordBlockProperties = {
 
 const SwordBlock = (props: SwordBlockProperties) => {
     const dispatch = useDispatch();
-    const state = useAppState();
     const handleExtraWalletClick = () => {
-        dispatch({ type: 'onItemClick', item: 'Extra Wallet', take: false });
+        dispatch(clickItem({ item: 'Extra Wallet', take: false }));
     };
 
     const wid = Number(props.styleProps.width || 0);
@@ -61,6 +62,8 @@ const SwordBlock = (props: SwordBlockProperties) => {
     const flameWidth = wid / 4.4;
     const walletWidth = wid / 3;
 
+    const extraWalletCount = useSelector(rawItemCountSelector('Extra Wallet'));
+
     return (
         <div id="BWheel">
             <img src={swordBlock} alt="" width={wid} />
@@ -100,7 +103,7 @@ const SwordBlock = (props: SwordBlockProperties) => {
                 role="button"
             >
                 <CrystalCounter
-                    current={`+${(state.trackerState.inventory['Extra Wallet'] ?? 0) * 300}`}
+                    current={`+${extraWalletCount * 300}`}
                     colorScheme={props.colorScheme}
                     fontSize={wid * 0.12}
                 />

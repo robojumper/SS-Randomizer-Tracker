@@ -1,12 +1,13 @@
+import { useSelector } from 'react-redux';
 import ColorScheme from './customization/ColorScheme';
-import { useDerivedState } from './newApp/Context';
+import { totalCountersSelector } from './tracker/selectors';
 
 export default function BasicCounters({
     colorScheme,
 }: {
     colorScheme: ColorScheme;
 }) {
-    const state = useDerivedState();
+    const state = useSelector(totalCountersSelector);
     return (
         <div className="Counters" style={{ color: colorScheme.text }}>
             <p>{`Locations Checked: ${state.numChecked}`}</p>

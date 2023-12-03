@@ -1,44 +1,38 @@
 import { BitVector } from './BitVector';
 import { LogicalExpression } from './LogicalExpression';
 import { Logic } from './Logic';
+import _ from 'lodash';
 
 export function interpretLogic(
     logic: Logic,
-    items: BitVector,
-    implications: Record<number, LogicalExpression>,
+    settingsImplications: Record<number, LogicalExpression>,
+    inventoryImplications: Record<number, LogicalExpression>,
+    checksImplications: Record<number, LogicalExpression>,
 ) {
-    const startingItems = logic.startingItems.or(items);
+    const effectiveImplications = logic.implications.slice();
+    for (const [idx, expr] of logic.implications.entries()) {
+        const reqs = _.compact([expr.isTriviallyFalse() ? undefined : expr, settingsImplications[idx], inventoryImplications[idx], checksImplications[idx]]);
+        if (reqs.length > 1) {
+            console.warn('requirements overwriting', logic.allItems[idx]);
+        }
+        effectiveImplications[idx] = _.last(reqs) ?? expr;
+    }
 
-    const bits = startingItems;
+    const bits = new BitVector(logic.numItems);
     let changed = true;
     let iterations = 0;
     const start = performance.now();
     while (changed) {
         changed = false;
-        for (const [idx, expr] of logic.implications.entries()) {
+        for (const [idx, expr] of effectiveImplications.entries()) {
             const evaluate = (e: LogicalExpression) => {
                 const val = e.eval(bits);
                 if (val) {
-                    /*
-                    console.log("The following are all true: ");
-                    console.log(`    ${fmtVec(logic, bits)}`);
-                    console.log(`${logic.allItems[idx]} needs:`);
-                    for (const part of e.conjunctions) {
-                        console.log(`    | ${fmtVec(logic, part)}`);
-                    }
-                    console.log(`This implies ${logic.allItems[idx]}`);
-                    */
                     bits.setBit(idx);
                     return true;
                 }
                 return false;
             };
-
-            const runtimeExpr = implications[idx];
-            if (runtimeExpr && !bits.test(idx)) {
-                const didChange = evaluate(runtimeExpr);
-                changed ||= didChange;
-            }
 
             if (expr.isTriviallyFalse()) {
                 continue;

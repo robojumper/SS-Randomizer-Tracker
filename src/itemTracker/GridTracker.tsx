@@ -6,7 +6,9 @@ import GratitudeCrystals from './items/sidequest/GratitudeCrystals';
 
 import noTablets from '../assets/tablets/no_tablets.png';
 import CounterItem from './items/CounterItem';
-import { useDerivedState, useDispatch } from '../newApp/Context';
+import { useDispatch, useSelector } from 'react-redux';
+import { rawItemCountSelector, totalGratitudeCrystalsSelector } from '../tracker/selectors';
+import { clickItem } from '../tracker/slice';
 
 type GridTrackerProps = {
     styleProps: CSSProperties;
@@ -16,7 +18,7 @@ type GridTrackerProps = {
 const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
     const dispatch = useDispatch();
     const handleExtraWalletClick = () => {
-        dispatch({ type: 'onItemClick', item: 'Extra Wallet', take: false });
+        dispatch(clickItem({ item: 'Extra Wallet', take: false }));
     };
 
     const emeraldTabletStyle: CSSProperties = {
@@ -49,9 +51,8 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
     const rubyWidth = emptyTabWidth * 0.74;
     const amberWidth = emptyTabWidth * 0.505;
 
-    const items = useDerivedState().itemCount;
-    const crystalCount = (items['Total Gratitude Crystals'] ?? 0);
-    const walletCount = (items['Extra Wallet'] ?? 0) * 300;
+    const walletCount = useSelector(rawItemCountSelector('Extra Wallet')) ?? 0;
+    const crystalCount = useSelector(totalGratitudeCrystalsSelector);
 
     return (
         <table>
@@ -209,7 +210,7 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                             role="button"
                         >
                             <CrystalCounter
-                                current={`+${walletCount}`}
+                                current={`+${walletCount * 300}`}
                                 colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.4}
                             />

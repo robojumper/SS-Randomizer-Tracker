@@ -1,10 +1,10 @@
 import _ from 'lodash';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { BitVector } from '../logic/BitVector';
-import { DerivedState, RegularDungeon } from './DerivedState';
+import { RegularDungeon } from './DerivedState';
 import { LogicalExpression } from '../logic/LogicalExpression';
 import { Logic, makeDay, makeNight } from '../logic/Logic';
-import { cubeCheckToCanAccessCube, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
+import { cubeCheckToCanAccessCube, requiredDungeonsCompletedFakeRequirement, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
 import { completeTriforceReq, dungeonCompletionRequirements, gotOpeningReq, gotRaisingReq, hordeDoorReq, impaSongCheck, runtimeOptions, swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
@@ -97,25 +97,15 @@ export interface State {
      */
     requiredDungeons: string[];
     /**
-     * Hints by area
-     */
-    hints: Record<string, Hint | undefined>;
-    /**
-     * Hints by check name
-     */
-    checkHints: Record<string, string | undefined>;
-    /**
      * Fully decoded settings.
      */
     settings: TypedOptions;
 }
 
-export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']): DerivedState['itemCount'] {
-    const result: DerivedState['itemCount'] = _.clone(inventory);
+export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']) {
+    const result = _.clone(inventory);
     const looseCrystalsCount = checkedChecks.filter((check) => logic.checks[check].type === 'loose_crystal').length;
     result['Gratitude Crystal'] = looseCrystalsCount;
-    const crystalCount = (result['Gratitude Crystal Pack'] ?? 0) * 5 + looseCrystalsCount;
-    result['Total Gratitude Crystals'] = crystalCount;
     return result;
 }
 
@@ -145,6 +135,8 @@ export function getTooltipOpaqueBits(logic: Logic) {
             }
         }
     }
+
+    set(requiredDungeonsCompletedFakeRequirement);
 
     return items;
 }

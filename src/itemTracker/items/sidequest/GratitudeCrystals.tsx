@@ -1,6 +1,8 @@
 import allImages from '../../Images';
 import keyDownWrapper from '../../../KeyDownWrapper';
-import { useDerivedState, useDispatch } from '../../../newApp/Context';
+import { totalGratitudeCrystalsSelector } from '../../../tracker/selectors';
+import { useDispatch, useSelector } from 'react-redux';
+import { clickItem } from '../../../tracker/slice';
 
 type GratitudeCrystalsProps = {
     images?: string[];
@@ -14,15 +16,14 @@ const GratitudeCrystals = (props: GratitudeCrystalsProps) => {
     const dispatch = useDispatch();
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'click') {
-            dispatch({ type: 'onItemClick', item: 'Gratitude Crystal Pack', take: false });
+            dispatch(clickItem({ item: 'Gratitude Crystal Pack', take: false }));
         } else if (e.type === 'contextmenu') {
-            dispatch({ type: 'onItemClick', item: 'Gratitude Crystal Pack', take: true });
+            dispatch(clickItem({ item: 'Gratitude Crystal Pack', take: true }));
             e.preventDefault();
         }
     };
 
-    const items = useDerivedState().itemCount;
-    const count = (items['Total Gratitude Crystals'] ?? 0);
+    const count = useSelector(totalGratitudeCrystalsSelector);
 
     const current = count >= 1 ? 1 : 0;
     const className = ignoreItemClass ? '' : 'item';

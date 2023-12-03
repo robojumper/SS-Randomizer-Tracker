@@ -9,12 +9,13 @@ import {
     FormControl,
 } from 'react-bootstrap';
 import Select, { ActionMeta, MultiValue } from 'react-select';
-import { useDispatch, useAppState } from './newApp/Context';
 import 'tippy.js/dist/tippy.css';
 import { OptionDefs, Option, OptionValue } from './permalink/SettingsTypes';
 import { decodePermalink, encodePermalink } from './permalink/Settings';
 import Tippy from '@tippyjs/react';
-// import EntranceGraph from './EntranceGraph';
+import { useDispatch, useSelector } from 'react-redux';
+import { settingsSelector } from './tracker/selectors';
+import { acceptSettings, reset } from './tracker/slice';
 
 function OptionsMenu({
     onHide,
@@ -23,11 +24,11 @@ function OptionsMenu({
     onHide: () => void;
     options: OptionDefs;
 }) {
-    const trackerState = useAppState();
+    const storedSettings = useSelector(settingsSelector);
     const dispatch = useDispatch();
 
     const [tempSettings, setTempSettings] = useState(
-        trackerState.trackerState.settings,
+        storedSettings,
     );
 
     const permalink = useMemo(
@@ -48,18 +49,12 @@ function OptionsMenu({
     );
 
     const onAccept = useCallback(() => {
-        dispatch({
-            type: 'acceptSettings',
-            settings: tempSettings,
-        });
+        dispatch(acceptSettings({ settings: tempSettings }));
         onHide();
     }, [dispatch, onHide, tempSettings]);
 
     const onAcceptWithReset = useCallback(() => {
-        dispatch({
-            type: 'reset',
-            settings: tempSettings,
-        });
+        dispatch(reset({ settings: tempSettings }));
         onHide();
     }, [dispatch, onHide, tempSettings]);
 
@@ -108,7 +103,6 @@ function OptionsMenu({
                 <Button onClick={onHide}>Cancel</Button>
             </Modal.Footer>
         </Modal>
-        // <EntranceGraph />
     );
 }
 

@@ -13,12 +13,14 @@ import sotsImage from '../assets/hints/sots.png';
 import barrenImage from '../assets/hints/barren.png';
 
 import 'react-contexify/dist/ReactContexify.css';
-import { useDispatch, useAppState } from '../newApp/Context';
 import clsx from 'clsx';
 import keyDownWrapper from '../KeyDownWrapper';
 import { TriggerEvent } from 'react-contexify';
 import { useContextMenu } from './context-menu';
 import { Area } from '../newApp/DerivedState';
+import { useSelector } from 'react-redux';
+import { colorSchemeSelector } from '../customization/selectors';
+import { areaHintSelector } from '../tracker/selectors';
 
 const pathImages = [g1, scaldera, moldarach, koloktos, tentalus, g2];
 
@@ -29,16 +31,19 @@ export interface LocationGroupContextMenuProps {
 export default function LocationGroupHeader({
     area,
     selected,
+    setActiveArea,
 }: {
     area: Area,
     selected: boolean,
+    setActiveArea: (area: string) => void,
 }) {
-    const dispatch = useDispatch();
-    const colorScheme = useAppState().colorScheme;
+    const colorScheme = useSelector(colorSchemeSelector);
     const onClick = useCallback(
-        () => dispatch({ type: 'onAreaClick', area: area.name }),
-        [dispatch, area.name],
+        () => setActiveArea(area.name),
+        [area.name, setActiveArea],
     );
+
+    const areaHint = useSelector(areaHintSelector(area.name));
 
     const { show } = useContextMenu<LocationGroupContextMenuProps>({
         id: 'group-context',
@@ -55,11 +60,11 @@ export default function LocationGroupHeader({
     );
 
     let image;
-    if (area.hint?.type === 'path') {
-        image = <img src={pathImages[area.hint.index]} alt="path" />;
-    } else if (area.hint?.type === 'sots') {
+    if (areaHint?.type === 'path') {
+        image = <img src={pathImages[areaHint.index]} alt="path" />;
+    } else if (areaHint?.type === 'sots') {
         image = <img src={sotsImage} alt="sots" />;
-    } else if (area.hint?.type === 'barren') {
+    } else if (areaHint?.type === 'barren') {
         image = <img src={barrenImage} alt="barren" />;
     }
 

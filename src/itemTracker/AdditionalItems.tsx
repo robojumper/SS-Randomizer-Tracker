@@ -2,7 +2,8 @@ import { CSSProperties } from 'react';
 import Item from './Item';
 import ColorScheme from '../customization/ColorScheme';
 import miscItemBlock from '../assets/misc_items_block.png';
-import { useDerivedState } from '../newApp/Context';
+import { useSelector } from 'react-redux';
+import { rawItemCountSelector } from '../tracker/selectors';
 
 type AdditionalItemsProps = {
     colorScheme: ColorScheme;
@@ -52,7 +53,8 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
         left: width * 0.785,
     };
 
-    const items = useDerivedState().itemCount;
+    const bottleCount = useSelector(rawItemCountSelector('Empty Bottle'));
+    const tadtoneCount = useSelector(rawItemCountSelector('Group of Tadtones'));
 
     const keyWidth = width / 6.5;
     const chartWidth = width / 10;
@@ -79,7 +81,7 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
                         color: colorScheme.text,
                     }}
                 >
-                    {items['Empty Bottle'] ?? 0}
+                    {bottleCount}
                 </p>
             </div>
             <div style={chargeStyle}>
@@ -96,7 +98,7 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
                         color: colorScheme.text,
                     }}
                 >
-                    {items['Group of Tadtones'] ?? 0}
+                    {tadtoneCount}
                 </p>
             </div>
             <div style={keyStyle}>

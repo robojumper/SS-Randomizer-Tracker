@@ -3,8 +3,9 @@ import { useCallback } from 'react';
 import { Menu, Item, Separator, Submenu, ItemParams } from 'react-contexify';
 
 import hintItems from '../data/hintItems.json';
-import { useDispatch } from '../newApp/Context';
 import { LocationContextMenuProps } from './Location';
+import { useDispatch } from 'react-redux';
+import { clickCheck, setCheckHint } from '../tracker/slice';
 
 type CtxProps<T = void> = ItemParams<LocationContextMenuProps, T>;
 interface ItemData {
@@ -16,41 +17,37 @@ export default function LocationContextMenu() {
 
     const handleCheckClick = useCallback(
         (params: CtxProps) =>
-            dispatch({
-                type: 'onCheckClick',
-                check: params.props!.checkId,
+            dispatch(clickCheck({
+                checkId: params.props!.checkId,
                 markChecked: true,
-            }),
+            })),
         [dispatch],
     );
 
     const handleUncheckClick = useCallback(
         (params: CtxProps) =>
-            dispatch({
-                type: 'onCheckClick',
-                check: params.props!.checkId,
+            dispatch(clickCheck({
+                checkId: params.props!.checkId,
                 markChecked: false,
-            }),
+            })),
         [dispatch],
     );
 
     const handleSetItemClick = useCallback(
         (params: CtxProps<ItemData>) =>
-            dispatch({
-                type: 'setCheckHint',
+            dispatch(setCheckHint({
                 checkId: params.props!.checkId,
-                hintItem: params.data!.item,
-            }),
+                hint: params.data!.item,
+            })),
         [dispatch],
     );
 
     const handleClearItemClick = useCallback(
         (params: CtxProps<ItemData>) =>
-            dispatch({
-                type: 'setCheckHint',
+            dispatch(setCheckHint({
                 checkId: params.props!.checkId,
-                hintItem: undefined,
-            }),
+                hint: undefined,
+            })),
         [dispatch],
     );
 

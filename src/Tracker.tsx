@@ -1,66 +1,30 @@
 import {
     CSSProperties,
     useMemo,
-    useReducer,
+    useState,
     useSyncExternalStore,
 } from 'react';
-import Container from 'react-bootstrap/Container';
-import Col from 'react-bootstrap/Col';
-import Row from 'react-bootstrap/Row';
-import ColorScheme from './customization/ColorScheme';
-import CustomizationModal, {
-    Layout,
-} from './customization/CustomizationModal';
-import { Logic } from './logic/Logic';
-import ItemTracker from './itemTracker/ItemTracker';
-import GridTracker from './itemTracker/GridTracker';
-import { AppState, trackerReducer } from './newApp/TrackerReducer';
-import { WithContext, useDispatch, useAppState } from './newApp/Context';
-import { NewLocationTracker } from './locationTracker/LocationTracker';
-import DungeonTracker from './itemTracker/DungeonTracker';
-import BasicCounters from './BasicCounters';
-import { OptionDefs, TypedOptions } from './permalink/SettingsTypes';
-import { defaultSettings } from './permalink/Settings';
 import { Button } from 'react-bootstrap';
-import EntranceTracker from './entranceTracker/EntranceTracker';
-import OptionsMenu from './OptionsMenu';
-import { getInitialItems } from './newApp/TrackerModifications';
-import SecondaryLocationTracker from './locationTracker/ExtraLocationTracker';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import { useDispatch, useSelector } from 'react-redux';
+import BasicCounters from './BasicCounters';
 import ImportExport from './ImportExport';
+import OptionsMenu from './OptionsMenu';
+import EntranceTracker from './entranceTracker/EntranceTracker';
+import DungeonTracker from './itemTracker/DungeonTracker';
+import GridTracker from './itemTracker/GridTracker';
+import ItemTracker from './itemTracker/ItemTracker';
+import SecondaryLocationTracker from './locationTracker/ExtraLocationTracker';
+import { NewLocationTracker } from './locationTracker/LocationTracker';
+import { Logic } from './logic/Logic';
+import { WithContext } from './newApp/Context';
 import { MakeTooltipsAvailable } from './newApp/TooltipHooks';
-
-function initTrackerState(options: OptionDefs): AppState {
-    // const path = new URLSearchParams(window.location.search);
-    // const source = path.get('source')!;
-    const schemeJson = localStorage.getItem('ssrTrackerColorScheme');
-    const colorScheme = schemeJson
-        ? (JSON.parse(schemeJson) as ColorScheme)
-        : new ColorScheme();
-    const layout =
-        (localStorage.getItem('ssrTrackerLayout') as Layout | null) ??
-        'inventory';
-    const settings: TypedOptions = defaultSettings(options);
-    return {
-        trackerState: {
-            inventory: getInitialItems(settings),
-            mappedExits: {},
-            checkedChecks: [],
-            requiredDungeons: [],
-            settings,
-            hasModifiedInventory: false,
-            hints: {},
-            checkHints: {},
-        },
-        width: window.innerWidth,
-        height: window.innerHeight,
-        showCustomizationDialog: false,
-        colorScheme,
-        layout,
-        showEntranceDialog: false,
-        showOptionsDialog: false,
-        activeArea: undefined,
-    };
-}
+import { OptionDefs } from './permalink/SettingsTypes';
+import CustomizationModal from './customization/CustomizationModal';
+import { colorSchemeSelector, layoutSelector } from './customization/selectors';
+import { reset } from './tracker/slice';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -95,23 +59,13 @@ export default function NewTrackerContainer({
     logic: Logic;
     options: OptionDefs;
 }) {
-    const [trackerState, dispatch] = useReducer(
-        trackerReducer,
-        options,
-        initTrackerState,
-    );
-
     return (
         <WithContext
             logic={logic}
             options={options}
-            state={trackerState}
-            dispatch={dispatch}
         >
-            <MakeTooltipsAvailable logic={logic} options={options} state={trackerState.trackerState}>
+            <MakeTooltipsAvailable logic={logic} options={options}>
                 <NewTracker
-                    colorScheme={trackerState.colorScheme}
-                    layout={trackerState.layout}
                     options={options}
                 />
             </MakeTooltipsAvailable>
@@ -121,16 +75,18 @@ export default function NewTrackerContainer({
 
 function NewTracker({
     options,
-    layout,
-    colorScheme,
 }: {
     options: OptionDefs;
-    layout: Layout;
-    colorScheme: ColorScheme;
 }) {
     const { height, width } = useWindowDimensions();
     const dispatch = useDispatch();
-    const state = useAppState();
+
+    const [showCustomizationDialog, setShowCustomizationDialog] = useState(false);
+    const [showEntranceDialog, setShowEntranceDialog] = useState(false);
+    const [showOptionsDialog, setShowOptionsDialog] = useState(false);
+    const [activeArea, setActiveArea] = useState<string | undefined>(undefined);
+
+    const colorScheme = useSelector(colorSchemeSelector);
 
     const itemTrackerStyle: CSSProperties = {
         position: 'fixed',
@@ -148,6 +104,8 @@ function NewTracker({
         top: 0,
         margin: '1%',
     };
+
+    const layout = useSelector(layoutSelector);
 
     let itemTracker;
     if (layout === 'inventory') {
@@ -178,20 +136,21 @@ function NewTracker({
                 <Row>
                     <Col>{itemTracker}</Col>
                     <Col>
-                        <NewLocationTracker containerHeight={height * 0.95} />
+                        <NewLocationTracker activeArea={activeArea} setActiveArea={setActiveArea} containerHeight={height * 0.95} />
                     </Col>
                     <Col>
                         <Row className="g-0">
                             <BasicCounters colorScheme={colorScheme} />
                         </Row>
                         <Row className="g-0">
-                            <DungeonTracker />
+                            <DungeonTracker setActiveArea={setActiveArea} />
                         </Row>
                         <Row style={{ paddingRight: '10%', paddingTop: '2.5%', height: (height * 0.95) / 2 }} className="g-0">
                             <Col style={{ overflowY: 'scroll', overflowX: 'auto', height: (height * 0.95) - 447 }} className="g-0">
                                 <SecondaryLocationTracker
                                     className="overflowAuto"
                                     containerHeight={(height * 0.95) / 2}
+                                    activeArea={activeArea}
                                 />
                             </Col>
                         </Row>
@@ -213,12 +172,7 @@ function NewTracker({
                     <Col>
                         <Button
                             variant="primary"
-                            onClick={() =>
-                                dispatch({
-                                    type: 'showCustomizationDialog',
-                                    show: true,
-                                })
-                            }
+                            onClick={() => setShowCustomizationDialog(true)}
                         >
                             Customization
                         </Button>
@@ -226,12 +180,7 @@ function NewTracker({
                     <Col>
                         <Button
                             variant="primary"
-                            onClick={() =>
-                                dispatch({
-                                    type: 'showEntranceDialog',
-                                    show: true,
-                                })
-                            }
+                            onClick={() => setShowEntranceDialog(true)}
                         >
                             Entrances
                         </Button>
@@ -239,12 +188,7 @@ function NewTracker({
                     <Col>
                         <Button
                             variant="primary"
-                            onClick={() =>
-                                dispatch({
-                                    type: 'showOptionsDialog',
-                                    show: true,
-                                })
-                            }
+                            onClick={() => setShowOptionsDialog(true)}
                         >
                             Options
                         </Button>
@@ -252,7 +196,7 @@ function NewTracker({
                     <Col>
                         <Button
                             variant="primary"
-                            onClick={() => dispatch({ type: 'reset', settings: undefined })}
+                            onClick={() => dispatch(reset({ settings: undefined }))}
                         >
                             Reset
                         </Button>
@@ -260,30 +204,16 @@ function NewTracker({
                 </Row>
             </Container>
             <CustomizationModal
-                show={state.showCustomizationDialog}
-                onHide={() =>
-                    dispatch({ type: 'showCustomizationDialog', show: false })
-                }
-                colorScheme={colorScheme}
-                updateColorScheme={(colorScheme) =>
-                    dispatch({ type: 'setColorScheme', colorScheme })
-                }
-                updateLayout={(layout) =>
-                    dispatch({ type: 'setLayout', layout })
-                }
-                selectedLayout={state.layout}
+                show={showCustomizationDialog}
+                onHide={() => setShowCustomizationDialog(false)}
             />
             <EntranceTracker
-                show={state.showEntranceDialog}
-                onHide={() =>
-                    dispatch({ type: 'showEntranceDialog', show: false })
-                }
+                show={showEntranceDialog}
+                onHide={() => setShowEntranceDialog(false)}
             />
-            {state.showOptionsDialog && (
+            {showOptionsDialog && (
                 <OptionsMenu
-                    onHide={() =>
-                        dispatch({ type: 'showOptionsDialog', show: false })
-                    }
+                    onHide={() => setShowOptionsDialog(false)}
                     options={options}
                 />
             )}

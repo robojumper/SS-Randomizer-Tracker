@@ -1,12 +1,14 @@
 import { ReactNode, createContext, useCallback, useContext, useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react';
 import { TooltipComputer } from './TooltipComputations';
 import { Logic } from '../logic/Logic';
-import { State, mapSettings } from './State';
+import { mapSettings } from './State';
 import { OptionDefs } from '../permalink/SettingsTypes';
 import { produce } from 'immer';
 import { nonRandomizedExits, randomizedExitsToDungeons } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import { noop } from 'lodash';
 import BooleanExpression from './BooleanExpression';
+import { useSelector } from 'react-redux';
+import { RootState } from '../store/store';
 
 const TooltipsContext = createContext<TooltipComputer | null>(null);
 
@@ -14,17 +16,16 @@ export function MakeTooltipsAvailable({
     logic,
     options,
     children,
-    state,
 }: {
     logic: Logic;
     options: OptionDefs,
     children: ReactNode;
-    state: State,
 }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
-    const entranceRandomSetting = state.settings['randomize-entrances'];
-    const startingEntranceSetting = state.settings['random-start-entrance'];
+    const state = useSelector((state: RootState) => state.tracker);
+    const entranceRandomSetting = state.settings!['randomize-entrances'];
+    const startingEntranceSetting = state.settings!['random-start-entrance'];
     const activeVanillaConnections = useMemo(() => {
         let connections: Record<string, string>;
         if (entranceRandomSetting === 'None') {
@@ -57,7 +58,7 @@ export function MakeTooltipsAvailable({
         options,
         state.mappedExits,
         activeVanillaConnections,
-        state.settings,
+        state.settings!,
     ), [activeVanillaConnections, logic, options, state.mappedExits, state.settings]);
 
     useEffect(() => {
