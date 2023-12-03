@@ -181,7 +181,7 @@ export function mapSettings(
                 continue;
             }
             const vals = settings[option.command] as string[];
-            const trick = option.name === 'Enabled Tricks Glitched' || option.name === 'Enabled Tricks';
+            const trick = option.command === 'enabled-tricks-glitched' || option.command === 'enabled-tricks-bitless';
             for (const option of vals) {
                 if (trick) {
                     trySet(`${option} Trick`)
@@ -359,7 +359,7 @@ export function mapState(
                 continue;
             }
             const vals = settings[option.command] as string[];
-            const trick = option.name === 'Enabled Tricks Glitched' || option.name === 'Enabled Tricks';
+            const trick = option.command === 'enabled-tricks-glitched' || option.command === 'enabled-tricks-bitless';
             for (const option of vals) {
                 if (trick) {
                     trySet(`${option} Trick`)

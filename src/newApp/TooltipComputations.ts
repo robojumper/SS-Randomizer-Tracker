@@ -108,7 +108,8 @@ export class TooltipComputer {
         }
 
         const checkId = Object.values(this.#subscriptions).find(
-            (check) => !this.#results[check.checkId],
+            (check) => !this.#results[check.checkId] /* && 
+                check.checkId === '\\Lanayru\\Mine\\End\\Chest at the End of Mine', */
         )?.checkId;
         if (!checkId) {
             return undefined;
@@ -207,20 +208,44 @@ async function computationTask(
     }
 }
 
+function simplifier(logic: Logic) {
+    return (a: string, b: string) => {
+        return a === b || Boolean(logic.dominators[b]?.includes(a));
+    };
+}
+
 function dnfToRequirementExpr(
     logic: Logic,
     expression: LogicalExpression,
 ): BooleanExpression {
-    return BooleanExpression.or(
-        ...expression.conjunctions.map((c) => bitVecToRequirements(logic, c)),
-    ).simplify((a, b) => {
-        return a === b || Boolean(logic.dominators[b]?.includes(a));
-    });
+
+    const presentBits = new Set(expression.conjunctions.flatMap((c) => [...c.iter()]));
+
+    const simplify = simplifier(logic);
+    const expr = BooleanExpression.or(
+        ...expression.conjunctions.map((c) => bitVecToRequirements(logic, presentBits, c)),
+    ).simplify((a, b) => a === b);
+
+    function recursivelySimplify(expr: BooleanExpression) {
+        for (let i = 0; i < expr.items.length; i++) {
+            let item = expr.items[i];
+            if (BooleanExpression.isExpression(item)) {
+                item = recursivelySimplify(item);
+                item = item.simplify(simplify);
+
+                expr.items[i] = item;
+            }
+        }
+        return expr.simplify(simplify);
+    }
+
+    return recursivelySimplify(expr);
 }
 
-function bitVecToRequirements(logic: Logic, vec: BitVector): BooleanExpression {
+function bitVecToRequirements(logic: Logic, presentBits: Set<number>, vec: BitVector): BooleanExpression {
     return BooleanExpression.and(
-        ...[...vec.iter()].map((x) => logic.allItems[x]),
+        // ...[...vec.iter()].map((x) => logic.allItems[x]),
+        ...[...vec.iter()].flatMap((x) => [logic.allItems[x], ...(logic.reverseDominators[logic.allItems[x]]?.filter((i) => presentBits.has(logic.items[i][1])) ?? [])]),
     );
 }
 

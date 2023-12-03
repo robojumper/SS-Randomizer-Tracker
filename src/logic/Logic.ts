@@ -16,9 +16,11 @@ export interface Logic {
     /**
      * Requirements that will always imply each other by construction. Progressive Sword x 2 will always
      * imply Progressive Sword x 1.
-     * A map from item to other items that imply this item by construction.
+     * A map from item K to other items V such that for every V: V -> K
      */
     dominators: Record<string, string[]>,
+    /** Maps from items K to items V such that for every V: K -> V */
+    reverseDominators: Record<string, string[]>,
     items: Record<string, [vec: BitVector, bitIndex: number]>;
     startingItems: BitVector;
     areaGraph: AreaGraph;
@@ -100,8 +102,9 @@ function itemName(item: string, amount: number) {
  * Turns all "<Item> #<number>" requirements into "<Item> x <number+1>"
  * requirements - this works better with the tracker.
  */
-export function preprocessItems(raw: string[]): { newItems: string[], dominators: Logic['dominators'] } {
+export function preprocessItems(raw: string[]): { newItems: string[], dominators: Logic['dominators'], reverseDominators: Logic['reverseDominators'] } {
     const dominators: Logic['dominators'] = {};
+    const reverseDominators: Logic['reverseDominators'] = {};
     const newItems = raw.map((rawItem) => {
         const match = rawItem.match(itemIndexPat);
         if (!match) {
@@ -112,18 +115,19 @@ export function preprocessItems(raw: string[]): { newItems: string[], dominators
 
             for (let i = 0; i <= amount; i++) {
                 (dominators[itemName(item, i)] ??= []).push(itemName(item, amount));
+                (reverseDominators[itemName(item, amount)] ??= []).push(itemName(item, i));
             }
 
             return itemName(item, amount);
         }
     });
 
-    return { dominators, newItems };
+    return { newItems, dominators, reverseDominators };
 }
 
 export function parseLogic(raw: RawLogic): Logic {
     const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
-    const { newItems, dominators } = preprocessItems(raw.items);
+    const { newItems, dominators, reverseDominators } = preprocessItems(raw.items);
     const rawItems = [...newItems, ...canAccessCubeReqs];
 
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
@@ -573,6 +577,7 @@ export function parseLogic(raw: RawLogic): Logic {
         numItems,
         allItems: rawItems,
         dominators,
+        reverseDominators,
         items,
         startingItems,
         checks,
