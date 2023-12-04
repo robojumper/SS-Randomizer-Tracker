@@ -1,75 +1,32 @@
-import { ReactNode, createContext, useCallback, useContext, useEffect, useId, useMemo, useState, useSyncExternalStore } from 'react';
+import { ReactNode, createContext, useCallback, useContext, useEffect, useId, useState, useSyncExternalStore } from 'react';
 import { TooltipComputer } from './TooltipComputations';
-import { Logic } from '../logic/Logic';
-import { mapSettings } from './State';
-import { OptionDefs } from '../permalink/SettingsTypes';
-import { produce } from 'immer';
-import { nonRandomizedExits, randomizedExitsToDungeons } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import { noop } from 'lodash';
 import BooleanExpression from './BooleanExpression';
 import { useSelector } from 'react-redux';
-import { RootState } from '../store/store';
+import { settingsImplicationsSelector } from '../tracker/selectors';
+import { logicSelector } from '../logic/selectors';
 
 const TooltipsContext = createContext<TooltipComputer | null>(null);
 
 export function MakeTooltipsAvailable({
-    logic,
-    options,
     children,
 }: {
-    logic: Logic;
-    options: OptionDefs,
     children: ReactNode;
 }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
-    const state = useSelector((state: RootState) => state.tracker);
-    const entranceRandomSetting = state.settings!['randomize-entrances'];
-    const startingEntranceSetting = state.settings!['random-start-entrance'];
-    const activeVanillaConnections = useMemo(() => {
-        let connections: Record<string, string>;
-        if (entranceRandomSetting === 'None') {
-            connections = logic.areaGraph.vanillaConnections;
-        } else {
-            connections = Object.fromEntries(
-                Object.entries(logic.areaGraph.vanillaConnections).filter(
-                    ([from]) =>
-                        !randomizedExitsToDungeons.includes(from) &&
-                        !nonRandomizedExits.includes(from),
-                ),
-            );
-        }
-
-        if (startingEntranceSetting !== 'Vanilla') {
-            connections = produce(connections, (draft) => {
-                delete draft['\\Start'];
-            });
-        }
-
-        return connections;
-    }, [
-        entranceRandomSetting,
-        logic.areaGraph.vanillaConnections,
-        startingEntranceSetting,
-    ]);
-
-    const implications = useMemo(() => mapSettings(
-        logic,
-        options,
-        state.mappedExits,
-        activeVanillaConnections,
-        state.settings!,
-    ), [activeVanillaConnections, logic, options, state.mappedExits, state.settings]);
+    const logic = useSelector(logicSelector);
+    const settingsImplications = useSelector(settingsImplicationsSelector);
 
     useEffect(() => {
-        setAnalyzer(new TooltipComputer(logic, implications));
+        setAnalyzer(new TooltipComputer(logic, settingsImplications));
         return () => {
             setAnalyzer((oldAnalyzer) => {
                 oldAnalyzer?.destroy();
                 return null;
             });
         };
-    }, [implications, logic]);
+    }, [settingsImplications, logic]);
 
     return (
         <TooltipsContext.Provider value={analyzer}>

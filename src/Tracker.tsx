@@ -64,7 +64,7 @@ export default function NewTrackerContainer({
             logic={logic}
             options={options}
         >
-            <MakeTooltipsAvailable logic={logic} options={options}>
+            <MakeTooltipsAvailable>
                 <NewTracker
                     options={options}
                 />

@@ -8,6 +8,7 @@ export function interpretLogic(
     settingsImplications: Record<number, LogicalExpression>,
     inventoryImplications: Record<number, LogicalExpression>,
     checksImplications: Record<number, LogicalExpression>,
+    startingBits?: BitVector,
 ) {
     const effectiveImplications = logic.implications.slice();
     for (const [idx, expr] of logic.implications.entries()) {
@@ -18,7 +19,7 @@ export function interpretLogic(
         effectiveImplications[idx] = _.last(reqs) ?? expr;
     }
 
-    const bits = new BitVector(logic.numItems);
+    const bits = startingBits?.clone() ?? new BitVector(logic.numItems);
     let changed = true;
     let iterations = 0;
     const start = performance.now();
