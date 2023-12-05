@@ -14,17 +14,6 @@ export const store = configureStore({
     preloadedState: {
         customization: preloadedCustomizationState(),
     },
-    // Logic is a mess, which is why it's immutable.
-    // Opt out of serializability checks here
-    middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
-            serializableCheck: {
-                // Ignore these action types
-                ignoredActions: ['logic/loadLogic'],
-                // Ignore these paths in the state
-                ignoredPaths: ['logic.logic', 'logic.options'],
-            },
-        }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

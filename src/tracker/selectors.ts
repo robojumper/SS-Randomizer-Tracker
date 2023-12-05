@@ -36,9 +36,9 @@ import {
     triforceItems,
 } from '../newApp/TrackerModifications';
 import _ from 'lodash';
-import { LogicalExpression } from '../logic/LogicalExpression';
+import { LogicalExpression } from '../bitlogic/LogicalExpression';
 import { TimeOfDay } from '../newApp/UpstreamTypes';
-import { interpretLogic } from '../logic/LogicInterpretation';
+import { interpretLogic } from '../bitlogic/BitLogic';
 
 /**
  * Selects the hint for a given area.
@@ -120,23 +120,25 @@ export const itemCountsSelector = createSelector(
 export const allowedStartingEntrancesSelector = createSelector(
     [logicSelector, settingSelector('random-start-entrance')],
     (logic, randomizeStart) => {
-        return Object.entries(logic.areaGraph.entrances)
-            // eslint-disable-next-line array-callback-return
-            .filter(([, def]) => {
-                switch (randomizeStart) {
-                    case 'Vanilla':
-                        return false;
-                    case 'Bird Statues':
-                        return def.subtype === 'bird-statue-entrance';
-                    case 'Any Surface Region':
-                    case 'Any':
-                        return true;
-                }
-            })
-            .map(([id, def]) => ({
-                id,
-                name: def.short_name,
-            }));
+        return (
+            Object.entries(logic.areaGraph.entrances)
+                // eslint-disable-next-line array-callback-return
+                .filter(([, def]) => {
+                    switch (randomizeStart) {
+                        case 'Vanilla':
+                            return false;
+                        case 'Bird Statues':
+                            return def.subtype === 'bird-statue-entrance';
+                        case 'Any Surface Region':
+                        case 'Any':
+                            return true;
+                    }
+                })
+                .map(([id, def]) => ({
+                    id,
+                    name: def.short_name,
+                }))
+        );
     },
 );
 
@@ -203,7 +205,7 @@ function mapSettings(
             console.warn('invalid item', id);
             return;
         }
-        implications[item[1]] = LogicalExpression.true(logic.numItems);
+        implications[item[1]] = LogicalExpression.true(logic.bitLogic.numBits);
     };
 
     for (const option of runtimeOptions) {
@@ -247,7 +249,7 @@ function mapSettings(
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
 
     const raiseGotExpr = settings['got-start']
-        ? LogicalExpression.true(logic.numItems)
+        ? LogicalExpression.true(logic.bitLogic.numBits)
         : new LogicalExpression([vec(impaSongCheck)]);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = new LogicalExpression([
@@ -255,7 +257,7 @@ function mapSettings(
     ]);
     let hordeDoorExpr = settings['triforce-required']
         ? new LogicalExpression([vec(completeTriforceReq)])
-        : LogicalExpression.true(logic.numItems);
+        : LogicalExpression.true(logic.bitLogic.numBits);
 
     const dungeonsExpr = new LogicalExpression([
         logic.items[requiredDungeonsCompletedFakeRequirement][0],
@@ -338,7 +340,7 @@ function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const implications: { [bitIndex: number]: LogicalExpression } = {};
     const set = (id: string) => {
         const item = logic.items[id];
-        implications[item[1]] = LogicalExpression.true(logic.numItems);
+        implications[item[1]] = LogicalExpression.true(logic.bitLogic.numBits);
     };
 
     for (const [item, count] of Object.entries(itemCounts)) {
@@ -395,13 +397,15 @@ function mapChecks(
 
     for (const check of checkedChecks) {
         if (cubeCheckToCanAccessCube[check]) {
-            implications[logic.items[check][1]] = LogicalExpression.true(logic.numItems);
+            implications[logic.items[check][1]] = LogicalExpression.true(
+                logic.bitLogic.numBits,
+            );
         }
     }
 
     implications[logic.items[requiredDungeonsCompletedFakeRequirement][1]] =
         requiredDungeonsCompleted
-            ? LogicalExpression.true(logic.numItems)
+            ? LogicalExpression.true(logic.bitLogic.numBits)
             : LogicalExpression.false();
 
     return implications;
@@ -415,12 +419,11 @@ export const inLogicBitsSelector = createSelector(
         checkImplicationsSelector,
     ],
     (logic, settingsImplications, inventoryImplications, checkImplications) =>
-        interpretLogic(
-            logic,
+        interpretLogic(logic.bitLogic, [
             settingsImplications,
             inventoryImplications,
             checkImplications,
-        ),
+        ]),
 );
 
 export const inSemiLogicBitsSelector = createSelector(
@@ -438,18 +441,26 @@ export const inSemiLogicBitsSelector = createSelector(
         inventoryImplications,
         inLogicBits,
     ) => {
-        // The assumed number of gratitude crystals is 
-        const numLooseGratitudeCrystals =
-            Object.entries(logic.checks).filter(
-                ([checkId, checkDef]) =>
-                    checkDef.type === 'loose_crystal' &&
-                    inLogicBits.test(logic.items[checkId][1]),
-            ).length;
+        // The assumed number of gratitude crystals is
+        const numLooseGratitudeCrystals = Object.entries(logic.checks).filter(
+            ([checkId, checkDef]) =>
+                checkDef.type === 'loose_crystal' &&
+                inLogicBits.test(logic.items[checkId][1]),
+        ).length;
 
-        const gratitudeImplications = mapInventory(logic, { 'Gratitude Crystal': numLooseGratitudeCrystals });
-        const assumedInventory = { ...inventoryImplications, ...gratitudeImplications };
+        const gratitudeImplications = mapInventory(logic, {
+            'Gratitude Crystal': numLooseGratitudeCrystals,
+        });
+        const assumedInventory = {
+            ...inventoryImplications,
+            ...gratitudeImplications,
+        };
 
-        return interpretLogic(logic, settingsImplications, assumedInventory, checkImplications, inLogicBits);
+        return interpretLogic(
+            logic.bitLogic,
+            [settingsImplications, assumedInventory, checkImplications],
+            inLogicBits,
+        );
     },
 );
 
@@ -477,9 +488,19 @@ export const checkSelector = currySelector(
             inSemiLogicBitsSelector,
             checkedChecksSelector,
         ],
-        (checkId, logic, inLogicBits, inSemiLogicBits, checkedChecks): Check => {
+        (
+            checkId,
+            logic,
+            inLogicBits,
+            inSemiLogicBits,
+            checkedChecks,
+        ): Check => {
             const checkBit = logic.items[checkId][1];
-            const logicalState = inLogicBits.test(checkBit) ? 'inLogic' : inSemiLogicBits.test(checkBit) ? 'semiLogic' : 'outLogic';
+            const logicalState = inLogicBits.test(checkBit)
+                ? 'inLogic'
+                : inSemiLogicBits.test(checkBit)
+                    ? 'semiLogic'
+                    : 'outLogic';
             const checkName = logic.checks[checkId].name;
             const shortCheckName = checkName.includes('-')
                 ? checkName.substring(checkName.indexOf('-') + 1).trim()
@@ -622,7 +643,7 @@ export const areasSelector = createSelector(
 
                 return {
                     checks: regularChecks,
-                    numTotalChecks: progressChecks.length,
+                    numTotalChecks: regularChecks.length,
                     extraChecks: extraChecks,
                     nonProgress: isAreaNonprogress(area),
                     name: area,

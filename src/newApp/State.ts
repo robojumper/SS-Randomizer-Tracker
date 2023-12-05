@@ -1,8 +1,8 @@
 import _ from 'lodash';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
-import { BitVector } from '../logic/BitVector';
+import { BitVector } from '../bitlogic/BitVector';
 import { RegularDungeon } from './DerivedState';
-import { LogicalExpression } from '../logic/LogicalExpression';
+import { LogicalExpression } from '../bitlogic/LogicalExpression';
 import { Logic, makeDay, makeNight } from '../logic/Logic';
 import { cubeCheckToCanAccessCube, requiredDungeonsCompletedFakeRequirement, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
@@ -110,7 +110,7 @@ export function mapInventory(logic: Logic, inventory: State['inventory'], checke
 }
 
 export function getTooltipOpaqueBits(logic: Logic) {
-    const items = new BitVector(logic.numItems);
+    const items = new BitVector(logic.bitLogic.numBits);
     const set = (id: string) => items.setBit(logic.items[id][1]);
 
     for (const [item, count] of Object.entries(itemMaxes)) {
@@ -154,7 +154,7 @@ export function mapSettings(
     const trySet = (id: string) => {
         const item = logic.items[id];
         if (item) {
-            implications[item[1]] = LogicalExpression.true(logic.numItems);
+            implications[item[1]] = LogicalExpression.true(logic.bitLogic.numBits);
         }
     };
 
@@ -191,10 +191,10 @@ export function mapSettings(
     const nightVec = (id: string) => logic.items[makeNight(id)][0];
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
 
-    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? new BitVector(logic.numItems) : vec(impaSongCheck)]);
+    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? new BitVector(logic.bitLogic.numBits) : vec(impaSongCheck)]);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = new LogicalExpression([vec(`Progressive Sword x ${neededSwords}`)]);
-    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : new BitVector(logic.numItems)])
+    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : new BitVector(logic.bitLogic.numBits)])
 
     // const validRequiredDungeons = requiredDungeons.filter((d) => d in dungeonCompletionRequirements);
     // const requiredDungeonsCompleted = validRequiredDungeons.length > 0 && validRequiredDungeons.every((d) => checkedChecks.includes(dungeonCompletionRequirements[d as RegularDungeon]));
@@ -288,7 +288,7 @@ export function mapState(
     items: BitVector;
     implications: { [bitIndex: number]: LogicalExpression };
 } {
-    const items = new BitVector(logic.numItems);
+    const items = new BitVector(logic.bitLogic.numBits);
     const implications: { [bitIndex: number]: LogicalExpression } = {};
 
     const set = (id: string) => items.setBit(logic.items[id][1]);
@@ -300,7 +300,7 @@ export function mapState(
         }
         items.setBit(item[1]);
         if (implyToo) {
-            implications[item[1]] = LogicalExpression.true(logic.numItems);
+            implications[item[1]] = LogicalExpression.true(logic.bitLogic.numBits);
         }
     };
 
@@ -369,15 +369,15 @@ export function mapState(
     const nightVec = (id: string) => logic.items[makeNight(id)][0];
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
 
-    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? new BitVector(logic.numItems) : vec(impaSongCheck)]);
+    const raiseGotExpr = new LogicalExpression([settings['got-start'] ? new BitVector(logic.bitLogic.numBits) : vec(impaSongCheck)]);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = new LogicalExpression([vec(`Progressive Sword x ${neededSwords}`)]);
-    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : new BitVector(logic.numItems)])
+    let hordeDoorExpr = new LogicalExpression([settings['triforce-required'] ? vec(completeTriforceReq) : new BitVector(logic.bitLogic.numBits)])
 
     const validRequiredDungeons = requiredDungeons.filter((d) => d in dungeonCompletionRequirements);
     const requiredDungeonsCompleted = validRequiredDungeons.length > 0 && validRequiredDungeons.every((d) => checkedChecks.includes(dungeonCompletionRequirements[d as RegularDungeon]));
 
-    const dungeonsExpr = new LogicalExpression(requiredDungeonsCompleted ? [new BitVector(logic.numItems)]: []);
+    const dungeonsExpr = new LogicalExpression(requiredDungeonsCompleted ? [new BitVector(logic.bitLogic.numBits)]: []);
 
     if (settings['got-dungeon-requirement'] === 'Required') {
         openGotExpr = openGotExpr.and(dungeonsExpr);

@@ -10,20 +10,20 @@ import {
 } from 'react-bootstrap';
 import Select, { ActionMeta, MultiValue } from 'react-select';
 import 'tippy.js/dist/tippy.css';
-import { OptionDefs, Option, OptionValue } from './permalink/SettingsTypes';
+import { Option, OptionValue } from './permalink/SettingsTypes';
 import { decodePermalink, encodePermalink } from './permalink/Settings';
 import Tippy from '@tippyjs/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { settingsSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
+import { optionsSelector } from './logic/selectors';
 
 function OptionsMenu({
     onHide,
-    options,
 }: {
     onHide: () => void;
-    options: OptionDefs;
 }) {
+    const options = useSelector(optionsSelector);
     const storedSettings = useSelector(settingsSelector);
     const dispatch = useDispatch();
 

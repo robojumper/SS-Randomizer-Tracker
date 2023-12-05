@@ -1,10 +1,9 @@
 import React from 'react';
-import { BitVector } from '../logic/BitVector';
+import { BitVector } from '../bitlogic/BitVector';
 import { Logic } from '../logic/Logic';
 import './RequirementsTooltip.css';
 import { cloneElement } from 'react';
-import BooleanExpression, { Op } from '../newApp/BooleanExpression';
-import { Item } from '../logic/BooleanExpression';
+import BooleanExpression, { Item, Op } from '../newApp/BooleanExpression';
 import prettyItemNames_ from '../data/prettyItemNames.json';
 
 const prettyItemNames: Record<

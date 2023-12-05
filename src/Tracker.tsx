@@ -18,10 +18,8 @@ import GridTracker from './itemTracker/GridTracker';
 import ItemTracker from './itemTracker/ItemTracker';
 import SecondaryLocationTracker from './locationTracker/ExtraLocationTracker';
 import { NewLocationTracker } from './locationTracker/LocationTracker';
-import { Logic } from './logic/Logic';
 import { WithContext } from './newApp/Context';
 import { MakeTooltipsAvailable } from './newApp/TooltipHooks';
-import { OptionDefs } from './permalink/SettingsTypes';
 import CustomizationModal from './customization/CustomizationModal';
 import { colorSchemeSelector, layoutSelector } from './customization/selectors';
 import { reset } from './tracker/slice';
@@ -52,32 +50,17 @@ function useWindowDimensions() {
     );
 }
 
-export default function NewTrackerContainer({
-    logic,
-    options,
-}: {
-    logic: Logic;
-    options: OptionDefs;
-}) {
+export default function NewTrackerContainer() {
     return (
-        <WithContext
-            logic={logic}
-            options={options}
-        >
+        <WithContext>
             <MakeTooltipsAvailable>
-                <NewTracker
-                    options={options}
-                />
+                <NewTracker />
             </MakeTooltipsAvailable>
         </WithContext>
     );
 }
 
-function NewTracker({
-    options,
-}: {
-    options: OptionDefs;
-}) {
+function NewTracker() {
     const { height, width } = useWindowDimensions();
     const dispatch = useDispatch();
 
@@ -214,7 +197,6 @@ function NewTracker({
             {showOptionsDialog && (
                 <OptionsMenu
                     onHide={() => setShowOptionsDialog(false)}
-                    options={options}
                 />
             )}
         </div>

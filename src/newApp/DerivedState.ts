@@ -7,7 +7,7 @@ import {
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import { OptionDefs } from '../permalink/SettingsTypes';
 import { produce } from 'immer';
-import { BitVector } from '../logic/BitVector';
+import { BitVector } from '../bitlogic/BitVector';
 import { TrackerState } from '../tracker/slice';
 
 export interface DerivedState {

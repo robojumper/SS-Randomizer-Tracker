@@ -1,6 +1,6 @@
 import _ from 'lodash';
-import { BitVector } from './BitVector';
-import { LogicalExpression } from './LogicalExpression';
+import { BitVector } from '../bitlogic/BitVector';
+import { LogicalExpression } from '../bitlogic/LogicalExpression';
 import {
     RawLogic,
     RawArea,
@@ -8,28 +8,28 @@ import {
     RawEntrance,
     RawExit,
 } from '../newApp/UpstreamTypes';
-import { cubeCheckToCanAccessCube, requiredDungeonsCompletedFakeRequirement } from '../newApp/TrackerModifications';
+import {
+    cubeCheckToCanAccessCube,
+    requiredDungeonsCompletedFakeRequirement,
+} from '../newApp/TrackerModifications';
+import { BitLogic } from '../bitlogic/BitLogic';
 
 export interface Logic {
-    numItems: number;
+    bitLogic: BitLogic;
+
     allItems: string[];
     /**
      * Requirements that will always imply each other by construction. Progressive Sword x 2 will always
      * imply Progressive Sword x 1.
      * A map from item K to other items V such that for every V: V -> K
      */
-    dominators: Record<string, string[]>,
+    dominators: Record<string, string[]>;
     /** Maps from items K to items V such that for every V: K -> V */
-    reverseDominators: Record<string, string[]>,
+    reverseDominators: Record<string, string[]>;
     items: Record<string, [vec: BitVector, bitIndex: number]>;
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
     checksByArea: Record<string, string[]>;
-    /**
-     * array index is bit index. value at that index is a logical
-     * expression that, if evaluated to true, implies the given bit index
-     */
-    implications: LogicalExpression[];
 }
 
 export interface LogicalCheck {
@@ -101,7 +101,11 @@ function itemName(item: string, amount: number) {
  * Turns all "<Item> #<number>" requirements into "<Item> x <number+1>"
  * requirements - this works better with the tracker.
  */
-export function preprocessItems(raw: string[]): { newItems: string[], dominators: Logic['dominators'], reverseDominators: Logic['reverseDominators'] } {
+export function preprocessItems(raw: string[]): {
+    newItems: string[];
+    dominators: Logic['dominators'];
+    reverseDominators: Logic['reverseDominators'];
+} {
     const dominators: Logic['dominators'] = {};
     const reverseDominators: Logic['reverseDominators'] = {};
     const newItems = raw.map((rawItem) => {
@@ -113,8 +117,12 @@ export function preprocessItems(raw: string[]): { newItems: string[], dominators
             const amount = parseInt(amount_, 10) + 1;
 
             for (let i = 0; i <= amount; i++) {
-                (dominators[itemName(item, i)] ??= []).push(itemName(item, amount));
-                (reverseDominators[itemName(item, amount)] ??= []).push(itemName(item, i));
+                (dominators[itemName(item, i)] ??= []).push(
+                    itemName(item, amount),
+                );
+                (reverseDominators[itemName(item, amount)] ??= []).push(
+                    itemName(item, i),
+                );
             }
 
             return itemName(item, amount);
@@ -126,8 +134,14 @@ export function preprocessItems(raw: string[]): { newItems: string[], dominators
 
 export function parseLogic(raw: RawLogic): Logic {
     const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
-    const { newItems, dominators, reverseDominators } = preprocessItems(raw.items);
-    const rawItems = [...newItems, ...canAccessCubeReqs, requiredDungeonsCompletedFakeRequirement];
+    const { newItems, dominators, reverseDominators } = preprocessItems(
+        raw.items,
+    );
+    const rawItems = [
+        ...newItems,
+        ...canAccessCubeReqs,
+        requiredDungeonsCompletedFakeRequirement,
+    ];
 
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
         return {
@@ -145,10 +159,17 @@ export function parseLogic(raw: RawLogic): Logic {
 
     checks[requiredDungeonsCompletedFakeRequirement] = {
         name: 'Required Dungeons Completed',
-        type: 'tr_dummy'
+        type: 'tr_dummy',
     };
 
     const numItems = rawItems.length;
+
+    const bitLogic: BitLogic = {
+        numBits: numItems,
+        implications: new Array<LogicalExpression>(numItems).fill(
+            LogicalExpression.false(),
+        ),
+    };
 
     const items: Logic['items'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
@@ -167,10 +188,6 @@ export function parseLogic(raw: RawLogic): Logic {
     const dummy_night_bit = items['Night'][1];
 
     const allAreas: AreaGraph['areas'] = {};
-
-    const implications: LogicalExpression[] = new Array<LogicalExpression>(
-        numItems,
-    ).fill(LogicalExpression.false());
 
     const lookup = (id: string) => {
         const item = items[id];
@@ -207,7 +224,6 @@ export function parseLogic(raw: RawLogic): Logic {
 
         return area;
     }
-    
 
     function populateArea(rawArea: RawArea): Area {
         const area = allAreas[rawArea.name];
@@ -224,12 +240,12 @@ export function parseLogic(raw: RawLogic): Logic {
 
             const areaDayIdx = dayBit(rawArea.name);
             const areaNightIdx = nightBit(rawArea.name);
-            implications[areaDayIdx] = implications[areaDayIdx].or(
-                nightVec(rawArea.name),
-            );
-            implications[areaNightIdx] = implications[areaNightIdx].or(
-                dayVec(rawArea.name),
-            );
+            bitLogic.implications[areaDayIdx] = bitLogic.implications[
+                areaDayIdx
+            ].or(nightVec(rawArea.name));
+            bitLogic.implications[areaNightIdx] = bitLogic.implications[
+                areaNightIdx
+            ].or(dayVec(rawArea.name));
         }
 
         if (rawArea.exits) {
@@ -252,40 +268,48 @@ export function parseLogic(raw: RawLogic): Logic {
                         const dest_area_night_idx = nightBit(destArea.name);
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            implications[dest_area_day_idx] = implications[
-                                dest_area_day_idx
-                            ].or(
-                                expr
-                                    .drop_unless(dummy_day_bit, dummy_night_bit)
-                                    .and(dayVec(rawArea.name)),
-                            );
-                            implications[dest_area_night_idx] = implications[
-                                dest_area_night_idx
-                            ].or(
-                                expr
-                                    .drop_unless(dummy_night_bit, dummy_day_bit)
-                                    .and(nightVec(rawArea.name)),
-                            );
+                            bitLogic.implications[dest_area_day_idx] =
+                                bitLogic.implications[dest_area_day_idx].or(
+                                    expr
+                                        .drop_unless(
+                                            dummy_day_bit,
+                                            dummy_night_bit,
+                                        )
+                                        .and(dayVec(rawArea.name)),
+                                );
+                            bitLogic.implications[dest_area_night_idx] =
+                                bitLogic.implications[dest_area_night_idx].or(
+                                    expr
+                                        .drop_unless(
+                                            dummy_night_bit,
+                                            dummy_day_bit,
+                                        )
+                                        .and(nightVec(rawArea.name)),
+                                );
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.DayOnly
                         ) {
-                            implications[dest_area_day_idx] = implications[
-                                dest_area_day_idx
-                            ].or(
-                                expr
-                                    .drop_unless(dummy_day_bit, dummy_night_bit)
-                                    .and(vec(rawArea.name)),
-                            );
+                            bitLogic.implications[dest_area_day_idx] =
+                                bitLogic.implications[dest_area_day_idx].or(
+                                    expr
+                                        .drop_unless(
+                                            dummy_day_bit,
+                                            dummy_night_bit,
+                                        )
+                                        .and(vec(rawArea.name)),
+                                );
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.NightOnly
                         ) {
-                            implications[dest_area_night_idx] = implications[
-                                dest_area_night_idx
-                            ].or(
-                                expr
-                                    .drop_unless(dummy_night_bit, dummy_day_bit)
-                                    .and(vec(rawArea.name)),
-                            );
+                            bitLogic.implications[dest_area_night_idx] =
+                                bitLogic.implications[dest_area_night_idx].or(
+                                    expr
+                                        .drop_unless(
+                                            dummy_night_bit,
+                                            dummy_day_bit,
+                                        )
+                                        .and(vec(rawArea.name)),
+                                );
                         } else {
                             throw new Error('bad ToD requirement');
                         }
@@ -312,15 +336,17 @@ export function parseLogic(raw: RawLogic): Logic {
                         }
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            implications[areaBit] = implications[areaBit].or(
-                                timedReq.and(timedArea()),
-                            );
+                            bitLogic.implications[areaBit] =
+                                bitLogic.implications[areaBit].or(
+                                    timedReq.and(timedArea()),
+                                );
                         } else if (
                             area.allowedTimeOfDay === destArea.allowedTimeOfDay
                         ) {
-                            implications[areaBit] = implications[areaBit].or(
-                                timedReq.and(vec(area.name)),
-                            );
+                            bitLogic.implications[areaBit] =
+                                bitLogic.implications[areaBit].or(
+                                    timedReq.and(vec(area.name)),
+                                );
                         }
                     }
 
@@ -342,26 +368,34 @@ export function parseLogic(raw: RawLogic): Logic {
                                 'abstract area can only exit to start',
                             );
                         }
-                        implications[exitBit] = expr;
+                        bitLogic.implications[exitBit] = expr;
                     } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                        implications[exitBit] = implications[exitBit].or(
+                        bitLogic.implications[exitBit] = bitLogic.implications[
+                            exitBit
+                        ].or(
                             expr
                                 .drop_unless(dummy_day_bit, dummy_night_bit)
                                 .and(dayVec(rawArea.name)),
                         );
-                        implications[exitBit] = implications[exitBit].or(
+                        bitLogic.implications[exitBit] = bitLogic.implications[
+                            exitBit
+                        ].or(
                             expr
                                 .drop_unless(dummy_night_bit, dummy_day_bit)
                                 .and(nightVec(rawArea.name)),
                         );
                     } else if (area.allowedTimeOfDay === TimeOfDay.DayOnly) {
-                        implications[exitBit] = implications[exitBit].or(
+                        bitLogic.implications[exitBit] = bitLogic.implications[
+                            exitBit
+                        ].or(
                             expr
                                 .drop_unless(dummy_day_bit, dummy_night_bit)
                                 .and(vec(rawArea.name)),
                         );
                     } else if (area.allowedTimeOfDay === TimeOfDay.NightOnly) {
-                        implications[exitBit] = implications[exitBit].or(
+                        bitLogic.implications[exitBit] = bitLogic.implications[
+                            exitBit
+                        ].or(
                             expr
                                 .drop_unless(dummy_night_bit, dummy_day_bit)
                                 .and(vec(rawArea.name)),
@@ -409,12 +443,12 @@ export function parseLogic(raw: RawLogic): Logic {
                 if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
                     const areaDayBit = dayBit(area.name);
                     const areaNightBit = nightBit(area.name);
-                    implications[areaDayBit] = implications[areaDayBit].or(
-                        dayVec(fullEntranceName),
-                    );
-                    implications[areaNightBit] = implications[areaNightBit].or(
-                        nightVec(fullEntranceName),
-                    );
+                    bitLogic.implications[areaDayBit] = bitLogic.implications[
+                        areaDayBit
+                    ].or(dayVec(fullEntranceName));
+                    bitLogic.implications[areaNightBit] = bitLogic.implications[
+                        areaNightBit
+                    ].or(nightVec(fullEntranceName));
                 } else {
                     const entranceBit = vec(fullEntranceName);
                     if (area.allowedTimeOfDay === TimeOfDay.Both) {
@@ -423,22 +457,22 @@ export function parseLogic(raw: RawLogic): Logic {
                             TimeOfDay.DayOnly
                         ) {
                             const bit = dayBit(area.name);
-                            implications[bit] =
-                                implications[bit].or(entranceBit);
+                            bitLogic.implications[bit] =
+                                bitLogic.implications[bit].or(entranceBit);
                         } else if (
                             entranceDef.allowed_time_of_day ===
                             TimeOfDay.NightOnly
                         ) {
                             const bit = nightBit(area.name);
-                            implications[bit] =
-                                implications[bit].or(entranceBit);
+                            bitLogic.implications[bit] =
+                                bitLogic.implications[bit].or(entranceBit);
                         } else {
                             throw new Error('bad ToD requirement');
                         }
                     } else {
                         const areaBit = bit(area.name);
-                        implications[areaBit] =
-                            implications[areaBit].or(entranceBit);
+                        bitLogic.implications[areaBit] =
+                            bitLogic.implications[areaBit].or(entranceBit);
                     }
                 }
             }
@@ -456,16 +490,18 @@ export function parseLogic(raw: RawLogic): Logic {
                 if (!location.startsWith('\\')) {
                     const check = checks[locName];
                     if (check) {
-                        let region: string | null | undefined = rawArea.hint_region;
-                        if (locName.includes('Goddess Cube at Ride') && !region) {
+                        let region: string | null | undefined =
+                            rawArea.hint_region;
+                        if (
+                            locName.includes('Goddess Cube at Ride') &&
+                            !region
+                        ) {
                             region = 'Lanayru Desert';
-                        } 
+                        }
                         if (!region) {
                             throw new Error('check has no region?');
                         }
-                        (checksByArea[region] ??= []).push(
-                            locName,
-                        );
+                        (checksByArea[region] ??= []).push(locName);
                     }
                 }
 
@@ -510,7 +546,8 @@ export function parseLogic(raw: RawLogic): Logic {
                 } else {
                     throw new Error('bad ToD requirement');
                 }
-                implications[locVec[1]] = implications[locVec[1]].or(timed_req);
+                bitLogic.implications[locVec[1]] =
+                    bitLogic.implications[locVec[1]].or(timed_req);
                 area.locations.push([locVec[0], expr]);
             }
         }
@@ -575,7 +612,7 @@ export function parseLogic(raw: RawLogic): Logic {
     }
 
     return {
-        numItems,
+        bitLogic,
         allItems: rawItems,
         dominators,
         reverseDominators,
@@ -591,11 +628,13 @@ export function parseLogic(raw: RawLogic): Logic {
             exits: raw.exits,
             vanillaConnections,
         },
-        implications,
     };
 }
 
-function getCheckType(checkName: string, checkType: string | null): LogicalCheck['type'] {
+function getCheckType(
+    checkName: string,
+    checkType: string | null,
+): LogicalCheck['type'] {
     if (!checkType) {
         return 'regular';
     }
@@ -608,7 +647,10 @@ function getCheckType(checkName: string, checkType: string | null): LogicalCheck
         return 'loose_crystal';
     } else if (checkType.includes("Beedle's Shop Purchases")) {
         return 'beedle_shop';
-    } else if (checkType.includes("Tadtones") && !checkName.includes('Water Dragon\'s Reward')) {
+    } else if (
+        checkType.includes('Tadtones') &&
+        !checkName.includes("Water Dragon's Reward")
+    ) {
         return 'tadtone';
     } else {
         return 'regular';

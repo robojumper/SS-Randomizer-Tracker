@@ -1,22 +1,19 @@
 import React, { useContext } from 'react';
-import { Logic } from '../logic/Logic';
 import { DerivedState, useComputeDerivedState } from './DerivedState';
-import { OptionDefs } from '../permalink/SettingsTypes';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
+import { logicSelector, optionsSelector } from '../logic/selectors';
 
 
 const DerivedStateContext = React.createContext<DerivedState | null>(null);
 
 export function WithContext({
-    logic,
-    options,
     children,
 }: {
-    logic: Logic;
-    options: OptionDefs;
     children: React.ReactNode;
 }) {
+    const logic = useSelector(logicSelector);
+    const options = useSelector(optionsSelector);
     const trackerState = useSelector((state: RootState) => state.tracker);
     const derivedState = useComputeDerivedState(logic, options, trackerState);
 

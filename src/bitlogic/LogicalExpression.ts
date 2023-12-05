@@ -1,6 +1,6 @@
-import BooleanExpression, { Item } from './BooleanExpression';
 import { BitVector } from './BitVector';
-import { parseExpression } from './ExpressionParse';
+import { parseExpression } from '../logic/ExpressionParse';
+import BooleanExpression, { Item } from '../newApp/BooleanExpression';
 
 /**
  * A logical expression in DNF (disjunctive normal form).
@@ -75,7 +75,9 @@ export class LogicalExpression {
                 continue;
             }
 
-            const strongerTerm = terms.findIndex((t) => candidate.isSubsetOf(t));
+            const strongerTerm = terms.findIndex((t) =>
+                candidate.isSubsetOf(t),
+            );
             if (strongerTerm !== -1) {
                 terms[strongerTerm] = candidate;
             } else {
@@ -98,7 +100,10 @@ export class LogicalExpression {
     }
 
     isTriviallyTrue() {
-        return this.#conjunctions.length > 0 && this.#conjunctions.some((c) => c.numSetBits === 0);
+        return (
+            this.#conjunctions.length > 0 &&
+            this.#conjunctions.some((c) => c.numSetBits === 0)
+        );
     }
 }
 
@@ -116,8 +121,7 @@ function andToDnf(size: number, arr: BitVector[][]): BitVector[] {
     const newExpr = [];
     for (const tuple of cartesianProduct(...arr)) {
         const newVec = tuple.reduce(
-            (acc, val) =>
-                acc.or(val),
+            (acc, val) => acc.or(val),
             new BitVector(size),
         );
         newExpr.push(newVec);
