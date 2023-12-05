@@ -138,6 +138,12 @@ export function getTooltipOpaqueBits(logic: Logic) {
 
     set(requiredDungeonsCompletedFakeRequirement);
 
+    for (const [checkId, checkDef] of Object.entries(logic.checks)) {
+        if (checkDef.type === 'tr_cube') {
+            set(checkId);
+        }
+    }
+
     return items;
 }
 

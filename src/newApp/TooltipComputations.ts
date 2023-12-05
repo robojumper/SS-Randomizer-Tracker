@@ -5,6 +5,7 @@ import { LogicalExpression } from '../bitlogic/LogicalExpression';
 import { getTooltipOpaqueBits } from './State';
 import BooleanExpression from './BooleanExpression';
 import { anyPath, computeExpression, removeDuplicates, shallowSimplify, unifyRequirements } from '../bitlogic/BitLogic';
+import { mapToCanAccessCubeRequirement } from './TrackerModifications';
 
 /**
  * This module contains various strategies to turn the requirements and implications into a more compact and readable
@@ -109,8 +110,7 @@ export class TooltipComputer {
         }
 
         const checkId = Object.values(this.#subscriptions).find(
-            (check) => !this.#results[check.checkId] /* && 
-                check.checkId === '\\Lanayru\\Mine\\End\\Chest at the End of Mine', */
+            (check) => !this.#results[check.checkId]
         )?.checkId;
         if (!checkId) {
             return undefined;
@@ -160,7 +160,12 @@ async function computationTask(
 
         console.log('analyzing', task.checkId);
 
-        const bit = store.logic.items[task.checkId][1];
+        let checkId = task.checkId;
+        if (store.logic.checks[checkId].type === 'tr_cube') {
+            checkId = mapToCanAccessCubeRequirement(checkId);
+        }
+
+        const bit = store.logic.items[checkId][1];
 
         const potentialPath = anyPath(
             store.opaqueBits,

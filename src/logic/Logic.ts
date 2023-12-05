@@ -13,6 +13,7 @@ import {
     requiredDungeonsCompletedFakeRequirement,
 } from '../newApp/TrackerModifications';
 import { BitLogic } from '../bitlogic/BitLogic';
+import { booleanExprToLogicalExpr, parseExpression } from './ExpressionParse';
 
 export interface Logic {
     bitLogic: BitLogic;
@@ -61,7 +62,7 @@ export interface Area {
     locations: [location: BitVector, predicate: LogicalExpression][];
     subAreas: Record<string, Area>;
     allowedTimeOfDay: TimeOfDay;
-    /** The exits of this area, and the things needed to get there */
+    /** The exits of this area */
     exits: Exit[];
     /** The possible ways to get into this area, an entry in Logic.entrances */
     entrances: string[];
@@ -72,7 +73,6 @@ type Exit =
           type: 'logicalExit';
           /** a fully resolved name of another area. */
           toArea: string;
-          condition: LogicalExpression;
       }
     | {
           type: 'exitToEntrance';
@@ -80,7 +80,6 @@ type Exit =
            * Which exit this leads to, an entry in Logic.exits
            */
           toConnector: string;
-          condition: LogicalExpression;
       };
 
 export function makeDay(loc: string) {
@@ -197,6 +196,10 @@ export function parseLogic(raw: RawLogic): Logic {
         return item[1];
     };
 
+    const parseExpr = (expr: string) => {
+        return new LogicalExpression(booleanExprToLogicalExpr(bitLogic.numBits, parseExpression(expr), lookup));
+    }
+
     const vec = (id: string) => items[id][0];
     const bit = (id: string) => items[id][1];
     const dayVec = (id: string) => items[makeDay(id)][0];
@@ -252,11 +255,7 @@ export function parseLogic(raw: RawLogic): Logic {
             for (const [exit, exitRequirementExpression] of Object.entries(
                 rawArea.exits,
             )) {
-                const expr = new LogicalExpression(
-                    numItems,
-                    exitRequirementExpression,
-                    lookup,
-                );
+                const expr = parseExpr(exitRequirementExpression);
                 const fullExitName = exit.startsWith('\\')
                     ? exit
                     : `${rawArea.name}\\${exit}`;
@@ -353,11 +352,6 @@ export function parseLogic(raw: RawLogic): Logic {
                     area.exits.push({
                         type: 'logicalExit',
                         toArea: fullExitName,
-                        condition: new LogicalExpression(
-                            numItems,
-                            exitRequirementExpression,
-                            lookup,
-                        ),
                     });
                 } else if (raw.exits[fullExitName]) {
                     areasByExit[fullExitName] = area;
@@ -407,11 +401,6 @@ export function parseLogic(raw: RawLogic): Logic {
                     area.exits.push({
                         type: 'exitToEntrance',
                         toConnector: fullExitName,
-                        condition: new LogicalExpression(
-                            numItems,
-                            exitRequirementExpression,
-                            lookup,
-                        ),
                     });
                 } else {
                     throw new Error(
@@ -501,6 +490,9 @@ export function parseLogic(raw: RawLogic): Logic {
                         if (!region) {
                             throw new Error('check has no region?');
                         }
+                        if (check.type === 'tr_cube') {
+                            check.name = `${region} - ${check.name}`
+                        }
                         (checksByArea[region] ??= []).push(locName);
                     }
                 }
@@ -517,11 +509,7 @@ export function parseLogic(raw: RawLogic): Logic {
                 }
                 let timed_req: LogicalExpression;
 
-                const expr = new LogicalExpression(
-                    numItems,
-                    locationRequirementExpression,
-                    lookup,
-                );
+                const expr = parseExpr(locationRequirementExpression);
                 if (rawArea.abstract) {
                     timed_req = expr;
                 } else if (rawArea.allowed_time_of_day === TimeOfDay.Both) {

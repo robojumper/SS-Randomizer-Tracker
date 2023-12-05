@@ -1,6 +1,4 @@
 import { BitVector } from './BitVector';
-import { parseExpression } from '../logic/ExpressionParse';
-import BooleanExpression, { Item } from '../newApp/BooleanExpression';
 
 /**
  * A logical expression in DNF (disjunctive normal form).
@@ -16,18 +14,8 @@ export class LogicalExpression {
         return new LogicalExpression([new BitVector(size)]);
     }
 
-    constructor(conjs: BitVector[]);
-    constructor(size: number, expr: string, lookup: (text: string) => number);
-    constructor(
-        arg0: number | BitVector[],
-        expr?: string,
-        lookup?: (text: string) => number,
-    ) {
-        if (typeof arg0 === 'number') {
-            this.#conjunctions = convert(arg0, parseExpression(expr!), lookup!);
-        } else {
-            this.#conjunctions = arg0;
-        }
+    constructor(conjs: BitVector[]) {
+        this.#conjunctions = conjs;
     }
 
     or(other: LogicalExpression | BitVector) {
@@ -107,7 +95,7 @@ export class LogicalExpression {
     }
 }
 
-function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
+export function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
     const newExpr = [];
     for (const l of left) {
         for (const r of right) {
@@ -117,7 +105,7 @@ function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
     return newExpr;
 }
 
-function andToDnf(size: number, arr: BitVector[][]): BitVector[] {
+export function andToDnf(size: number, arr: BitVector[][]): BitVector[] {
     const newExpr = [];
     for (const tuple of cartesianProduct(...arr)) {
         const newVec = tuple.reduce(
@@ -137,35 +125,4 @@ export function cartesianProduct<T>(...allEntries: T[][]): T[][] {
                 .reduce((subResults, result) => subResults.concat(result), []),
         [[]],
     );
-}
-
-function convert(
-    size: number,
-    expr: Item,
-    lookup: (text: string) => number,
-): BitVector[] {
-    if (BooleanExpression.isExpression(expr)) {
-        switch (expr.type) {
-            case 'or':
-                return expr.items.flatMap((item) =>
-                    convert(size, item, lookup),
-                );
-            case 'and': {
-                const mapped = expr.items.map((i) => convert(size, i, lookup));
-                return andToDnf(size, mapped);
-            }
-            default: {
-                throw new Error('unreachable');
-            }
-        }
-    } else {
-        if (expr === 'True') {
-            return [new BitVector(size)];
-        } else if (expr === 'False') {
-            return [];
-        } else {
-            const bit_idx = lookup(expr);
-            return [new BitVector(size).setBit(bit_idx)];
-        }
-    }
 }
