@@ -23,6 +23,7 @@ import {
     DungeonName,
     ExitMapping,
     RegularDungeon,
+    dungeonNames,
     isDungeon,
 } from '../newApp/DerivedState';
 import { Logic, LogicalCheck, makeDay, makeNight } from '../logic/Logic';
@@ -646,12 +647,16 @@ export const areasSelector = createSelector(
                     (check) => !isCheckBanned(check, logic.checks[check]),
                 );
 
-                const [extraChecks, regularChecks] = _.partition(
+                const [extraChecks, regularChecks_] = _.partition(
                     progressChecks,
                     (check) =>
                         logic.checks[check].type === 'tr_cube' ||
                         logic.checks[check].type === 'loose_crystal',
                 );
+
+                const nonProgress = isAreaNonprogress(area);
+                const regularChecks = nonProgress ? [] : regularChecks_;
+
 
                 const remaining = regularChecks.filter(
                     (check) => !checkedChecks.includes(check),
@@ -664,7 +669,7 @@ export const areasSelector = createSelector(
                     checks: regularChecks,
                     numTotalChecks: regularChecks.length,
                     extraChecks: extraChecks,
-                    nonProgress: isAreaNonprogress(area),
+                    nonProgress,
                     name: area,
                     numChecksRemaining: remaining.length,
                     numChecksAccessible: inLogic.length,
@@ -672,12 +677,17 @@ export const areasSelector = createSelector(
             },
         );
 
-        return _.sortBy(areasList, (area) =>
-            rawCheckOrder.indexOf(
-                area.checks.find(
-                    (check) => logic.checks[check].type !== 'tr_cube',
-                )!,
-            ),
+        const dungeonOrder: readonly string[] = dungeonNames;
+
+        return _.sortBy(
+            areasList,
+            (area) => dungeonOrder.indexOf(area.name),
+            (area) =>
+                rawCheckOrder.indexOf(
+                    area.checks.find(
+                        (check) => logic.checks[check].type !== 'tr_cube',
+                    )!,
+                ),
         );
     },
 );

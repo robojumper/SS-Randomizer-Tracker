@@ -36,3 +36,38 @@ test('factorCommonSubterms', () => {
         }
     `);
 });
+
+test('flattenFalse', () => {
+    const expr = new BooleanExpression([], Op.Or);
+
+    expect(expr.flatten()).toMatchInlineSnapshot(`
+        BooleanExpression {
+          "items": Array [],
+          "type": "or",
+        }
+    `);
+});
+
+test('factorCommonSubtermsFalse', () => {
+    const expr = new BooleanExpression([], Op.Or);
+
+    expect(expr.factorCommonSubterms((a, b) => a === b)).toMatchInlineSnapshot(`
+      BooleanExpression {
+        "items": Array [],
+        "type": "or",
+      }
+  `);
+});
+
+// FIXME this is wrong
+test('removeDuplicateChildrenFalse', () => {
+    const expr = new BooleanExpression([], Op.Or);
+
+    expect(expr.removeDuplicateChildren((a, b) => a === b))
+        .toMatchInlineSnapshot(`
+    BooleanExpression {
+      "items": Array [],
+      "type": "and",
+    }
+`);
+});

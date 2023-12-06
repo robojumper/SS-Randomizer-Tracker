@@ -41,7 +41,7 @@ export interface ExitMapping {
     inLogic: boolean;
 }
 
-const dungeonNames = [
+export const dungeonNames = [
     'Skyview',
     'Earth Temple',
     'Lanayru Mining Facility',

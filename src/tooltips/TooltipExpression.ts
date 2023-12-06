@@ -29,6 +29,28 @@ export interface RootTooltipExpression {
     items: TooltipExpression[],
 }
 
+const impossible: RootTooltipExpression = {
+    op: Op.And,
+    items: [
+        {
+            type: 'item',
+            item: 'Impossible (discover an entrance first)',
+            logicalState: 'outLogic',
+        }
+    ]
+};
+
+const nothing: RootTooltipExpression = {
+    op: Op.And,
+    items: [
+        {
+            type: 'item',
+            item: 'Nothing',
+            logicalState: 'inLogic',
+        }
+    ]
+};
+
 export function booleanExprToTooltipExpr(logic: Logic, expr: BooleanExpression, logicBits: BitVector, semiLogicBits: BitVector): RootTooltipExpression {
     const reducer = (arg: ReducerArg<NonterminalRequirement>) => {
         if (arg.isReduced) {
@@ -64,6 +86,10 @@ export function booleanExprToTooltipExpr(logic: Logic, expr: BooleanExpression, 
         andReducer: reducer,
         orReducer: reducer,
     }));
+
+    if (!ntExpr.items.length) {
+        return ntExpr.op === Op.And ? nothing : impossible;
+    }
 
     if (ntExpr.op === Op.And) {
         return {

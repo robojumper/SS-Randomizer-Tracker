@@ -170,10 +170,6 @@ export class BooleanExpression {
             }
         }
 
-        if (newItems.length <= 1) {
-            return BooleanExpression.and(...newItems);
-        }
-
         return new BooleanExpression(newItems, this.type);
     }
 
