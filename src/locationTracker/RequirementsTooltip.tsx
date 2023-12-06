@@ -1,7 +1,7 @@
 import React from 'react';
 import './RequirementsTooltip.css';
 import { cloneElement } from 'react';
-import { Op } from '../newApp/BooleanExpression';
+import { Op } from '../logic/booleanlogic/BooleanExpression';
 import { RootTooltipExpression, TooltipExpression } from '../tooltips/TooltipExpression';
 import { useSelector } from 'react-redux';
 import { colorSchemeSelector } from '../customization/selectors';

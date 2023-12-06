@@ -1,5 +1,5 @@
 import { OptionType, OptionValue, TypedOptions } from "../permalink/SettingsTypes";
-import { RegularDungeon } from "./DerivedState";
+import { RegularDungeon } from "./Locations";
 
 export const dungeonCompletionRequirements: Record<RegularDungeon, string> = {
     Skyview: '\\Skyview\\Spring\\Strike Crest',

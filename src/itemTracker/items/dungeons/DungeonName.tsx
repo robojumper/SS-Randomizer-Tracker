@@ -3,7 +3,7 @@ import keyDownWrapper from '../../../KeyDownWrapper';
 import { useDispatch, useSelector } from 'react-redux';
 import { colorSchemeSelector } from '../../../customization/selectors';
 import { dungeonCompletedSelector, requiredDungeonsSelector } from '../../../tracker/selectors';
-import { DungeonName as DungeonNameType } from '../../../newApp/DerivedState';
+import { DungeonName as DungeonNameType } from '../../../logic/Locations';
 import { RootState } from '../../../store/store';
 import { clickDungeonName } from '../../../tracker/slice';
 

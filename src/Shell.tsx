@@ -1,6 +1,6 @@
 import { load } from 'js-yaml';
 import { useEffect } from 'react';
-import { RawLogic } from './newApp/UpstreamTypes';
+import { RawLogic } from './logic/UpstreamTypes';
 import NewTrackerContainer from './Tracker';
 import { OptionDefs } from './permalink/SettingsTypes';
 import { useDispatch, useSelector } from 'react-redux';

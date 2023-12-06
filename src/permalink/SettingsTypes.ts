@@ -1,4 +1,4 @@
-import { GeneratedOptions } from '../newApp/GeneratedOptions';
+import { GeneratedOptions } from './GeneratedOptions';
 
 export type BaseOption = {
     permalink: boolean | undefined;

@@ -1,9 +1,9 @@
 import _ from 'lodash';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
-import { BitVector } from '../bitlogic/BitVector';
-import { RegularDungeon } from './DerivedState';
-import { LogicalExpression } from '../bitlogic/LogicalExpression';
-import { Logic, makeDay, makeNight } from '../logic/Logic';
+import { BitVector } from './bitlogic/BitVector';
+import { RegularDungeon } from './Locations';
+import { LogicalExpression } from './bitlogic/LogicalExpression';
+import { Logic, makeDay, makeNight } from './Logic';
 import { cubeCheckToCanAccessCube, requiredDungeonsCompletedFakeRequirement, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 import { TimeOfDay } from './UpstreamTypes';
 import { completeTriforceReq, dungeonCompletionRequirements, gotOpeningReq, gotRaisingReq, hordeDoorReq, impaSongCheck, runtimeOptions, swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';

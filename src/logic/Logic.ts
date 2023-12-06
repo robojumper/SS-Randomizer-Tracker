@@ -1,19 +1,19 @@
 import _ from 'lodash';
-import { BitVector } from '../bitlogic/BitVector';
-import { LogicalExpression } from '../bitlogic/LogicalExpression';
+import { BitVector } from './bitlogic/BitVector';
+import { LogicalExpression } from './bitlogic/LogicalExpression';
 import {
     RawLogic,
     RawArea,
     TimeOfDay,
     RawEntrance,
     RawExit,
-} from '../newApp/UpstreamTypes';
+} from './UpstreamTypes';
 import {
     cubeCheckToCanAccessCube,
     requiredDungeonsCompletedFakeRequirement,
-} from '../newApp/TrackerModifications';
-import { BitLogic } from '../bitlogic/BitLogic';
-import { booleanExprToLogicalExpr, parseExpression } from './ExpressionParse';
+} from './TrackerModifications';
+import { BitLogic } from './bitlogic/BitLogic';
+import { booleanExprToLogicalExpr, parseExpression } from './booleanlogic/ExpressionParse';
 
 export interface Logic {
     bitLogic: BitLogic;

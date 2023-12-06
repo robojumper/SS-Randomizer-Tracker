@@ -1,4 +1,4 @@
-import { LogicalState } from '../newApp/DerivedState';
+import { LogicalState } from '../logic/Locations';
 
 export type ColorScheme = { [logicalState in LogicalState]: string } & {
     background: string;

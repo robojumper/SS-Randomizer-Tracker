@@ -1,6 +1,6 @@
 import { OptionDefs } from '../permalink/SettingsTypes';
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
-import { RawLogic } from '../newApp/UpstreamTypes';
+import { RawLogic } from './UpstreamTypes';
 
 export interface LogicState {
     logic: RawLogic | undefined;

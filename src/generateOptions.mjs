@@ -41,8 +41,10 @@ for (const option of data) {
         case 'multichoice':
             type = 'string[]';
             break;
+        default:
+            throw new Error("unknown option type")
     }
     output += `    '${option.command}': ${type};\n`;
 }
 output += '}\n';
-await fs.promises.writeFile('./src/newApp/GeneratedOptions.ts', output);
+await fs.promises.writeFile('./src/permalink/GeneratedOptions.ts', output);

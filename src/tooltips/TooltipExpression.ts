@@ -1,9 +1,9 @@
 import { Logic } from '../logic/Logic';
-import BooleanExpression, { Op, ReducerArg } from '../newApp/BooleanExpression';
-import { LogicalState } from '../newApp/DerivedState';
+import BooleanExpression, { Op, ReducerArg } from '../logic/booleanlogic/BooleanExpression';
+import { LogicalState } from '../logic/Locations';
 import prettyItemNames_ from '../data/prettyItemNames.json';
 import _ from 'lodash';
-import { BitVector } from '../bitlogic/BitVector';
+import { BitVector } from '../logic/bitlogic/BitVector';
 
 const prettyItemNames: Record<
     string,

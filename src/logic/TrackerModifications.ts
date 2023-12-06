@@ -1,5 +1,5 @@
 import { TypedOptions } from "../permalink/SettingsTypes";
-import { Items, State, isItem } from "./State";
+import { Items, State, isItem } from "./Inventory";
 import goddessCubesList_ from '../data/goddessCubes2.json';
 import _ from "lodash";
 import { swordsToAdd } from "./ThingsThatWouldBeNiceToHaveInTheDump";
@@ -33,7 +33,6 @@ export const triforceItems = [
 export const triforceItemReplacement = 'Triforce';
 
 export const requiredDungeonsCompletedFakeRequirement = '\\Tracker\\Required Dungeons Completed';
-
 
 export function getInitialItems(
     settings: Partial<TypedOptions>,

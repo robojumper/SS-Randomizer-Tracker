@@ -8,7 +8,7 @@ import LocationContextMenu from "./LocationContextMenu";
 import { useSelector } from "react-redux";
 import { colorSchemeSelector } from "../customization/selectors";
 import { areasSelector } from "../tracker/selectors";
-import { isDungeon } from "../newApp/DerivedState";
+import { isDungeon } from "../logic/Locations";
 
 export function NewLocationTracker({ containerHeight, activeArea, setActiveArea }: { containerHeight: number; activeArea: string | undefined, setActiveArea: (area: string) => void }) {
     const colorScheme = useSelector(colorSchemeSelector);

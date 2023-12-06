@@ -1,7 +1,7 @@
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { TypedOptions } from '../permalink/SettingsTypes';
-import { getInitialItems } from '../newApp/TrackerModifications';
-import { RegularDungeon } from '../newApp/DerivedState';
+import { getInitialItems } from '../logic/TrackerModifications';
+import { RegularDungeon } from '../logic/Locations';
 
 export const itemMaxes = {
     'Progressive Sword': 6,

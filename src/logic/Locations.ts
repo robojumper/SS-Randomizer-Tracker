@@ -1,5 +1,5 @@
-import { Logic, LogicalCheck } from '../logic/Logic';
-import { BitVector } from '../bitlogic/BitVector';
+import { Logic, LogicalCheck } from './Logic';
+import { BitVector } from './bitlogic/BitVector';
 
 export interface DerivedState {
     logic: Logic;

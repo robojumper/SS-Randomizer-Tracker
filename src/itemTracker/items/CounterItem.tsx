@@ -2,7 +2,7 @@ import { CSSProperties } from 'react';
 import ColorScheme from '../../customization/ColorScheme';
 import allImages from '../Images';
 import keyDownWrapper from '../../KeyDownWrapper';
-import { Items } from '../../newApp/State';
+import { Items } from '../../logic/Inventory';
 import { useDispatch, useSelector } from 'react-redux';
 import { clickItem } from '../../tracker/slice';
 import { rawItemCountSelector } from '../../tracker/selectors';

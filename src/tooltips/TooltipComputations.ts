@@ -1,11 +1,11 @@
 import { noop } from 'lodash';
-import { BitVector } from '../bitlogic/BitVector';
+import { BitVector } from '../logic/bitlogic/BitVector';
 import { Logic } from '../logic/Logic';
-import { LogicalExpression } from '../bitlogic/LogicalExpression';
-import { getTooltipOpaqueBits } from '../newApp/State';
-import BooleanExpression from '../newApp/BooleanExpression';
-import { anyPath, computeExpression, removeDuplicates, shallowSimplify, unifyRequirements } from '../bitlogic/BitLogic';
-import { mapToCanAccessCubeRequirement } from '../newApp/TrackerModifications';
+import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
+import { getTooltipOpaqueBits } from '../logic/Inventory';
+import BooleanExpression from '../logic/booleanlogic/BooleanExpression';
+import { anyPath, computeExpression, removeDuplicates, shallowSimplify, unifyRequirements } from '../logic/bitlogic/BitLogic';
+import { mapToCanAccessCubeRequirement } from '../logic/TrackerModifications';
 
 /**
  * This module contains various strategies to turn the requirements and implications into a more compact and readable

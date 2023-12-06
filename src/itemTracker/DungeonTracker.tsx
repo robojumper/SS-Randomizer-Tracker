@@ -31,7 +31,7 @@ import {
     Area,
     DungeonName as DungeonNameType,
     isDungeon,
-} from '../newApp/DerivedState';
+} from '../logic/Locations';
 
 const silentRealmData: Record<string, string> = {
     'Faron Silent Realm': faronTrialGate,

@@ -17,7 +17,7 @@ import clsx from 'clsx';
 import keyDownWrapper from '../KeyDownWrapper';
 import { TriggerEvent } from 'react-contexify';
 import { useContextMenu } from './context-menu';
-import { Area } from '../newApp/DerivedState';
+import { Area } from '../logic/Locations';
 import { useSelector } from 'react-redux';
 import { colorSchemeSelector } from '../customization/selectors';
 import { areaHintSelector } from '../tracker/selectors';

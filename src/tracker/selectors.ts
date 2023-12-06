@@ -15,7 +15,7 @@ import {
     randomizedExitsToDungeons,
     runtimeOptions,
     swordsToAdd,
-} from '../newApp/ThingsThatWouldBeNiceToHaveInTheDump';
+} from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import { produce } from 'immer';
 import {
     Area,
@@ -25,7 +25,7 @@ import {
     RegularDungeon,
     dungeonNames,
     isDungeon,
-} from '../newApp/DerivedState';
+} from '../logic/Locations';
 import { Logic, LogicalCheck, makeDay, makeNight } from '../logic/Logic';
 import {
     canAccessCubeToCubeCheck,
@@ -36,11 +36,11 @@ import {
     sothItems,
     triforceItemReplacement,
     triforceItems,
-} from '../newApp/TrackerModifications';
+} from '../logic/TrackerModifications';
 import _ from 'lodash';
-import { LogicalExpression } from '../bitlogic/LogicalExpression';
-import { TimeOfDay } from '../newApp/UpstreamTypes';
-import { interpretLogic } from '../bitlogic/BitLogic';
+import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
+import { TimeOfDay } from '../logic/UpstreamTypes';
+import { interpretLogic } from '../logic/bitlogic/BitLogic';
 
 /**
  * Selects the hint for a given area.
