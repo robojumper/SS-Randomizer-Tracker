@@ -27,6 +27,7 @@ import {
 } from '../newApp/DerivedState';
 import { Logic, LogicalCheck, makeDay, makeNight } from '../logic/Logic';
 import {
+    canAccessCubeToCubeCheck,
     cubeCheckToCanAccessCube,
     cubeCheckToGoddessChestCheck,
     requiredDungeonsCompletedFakeRequirement,
@@ -430,22 +431,26 @@ export const inSemiLogicBitsSelector = createSelector(
     [
         logicSelector,
         settingsImplicationsSelector,
-        checkImplicationsSelector,
         inventoryImplicationsSelector,
         inLogicBitsSelector,
+        checkedChecksSelector,
+        requiredDungeonsSelector,
     ],
     (
         logic,
         settingsImplications,
-        checkImplications,
         inventoryImplications,
         inLogicBits,
+        checkedChecks,
+        requiredDungeons,
     ) => {
-        // The assumed number of gratitude crystals is
+        // The assumed number of loose gratitude crystals is the number of
+        // loose crystal checks that are either checked or are in logic.
         const numLooseGratitudeCrystals = Object.entries(logic.checks).filter(
             ([checkId, checkDef]) =>
                 checkDef.type === 'loose_crystal' &&
-                inLogicBits.test(logic.items[checkId][1]),
+                (inLogicBits.test(logic.items[checkId][1]) ||
+                    checkedChecks.includes(checkId)),
         ).length;
 
         const gratitudeImplications = mapInventory(logic, {
@@ -456,9 +461,20 @@ export const inSemiLogicBitsSelector = createSelector(
             ...gratitudeImplications,
         };
 
+        const assumedCheckedChecks = [...checkedChecks];
+
+        for (const [canAccessItem, cubeItem] of Object.entries(canAccessCubeToCubeCheck)) {
+            if (inLogicBits.test(logic.items[canAccessItem][1])) {
+                assumedCheckedChecks.push(cubeItem);
+            }
+        }
+
+        const assumedCheckImplications = mapChecks(logic, requiredDungeons, assumedCheckedChecks);
+
         return interpretLogic(
             logic.bitLogic,
-            [settingsImplications, assumedInventory, checkImplications],
+            [settingsImplications, assumedInventory, assumedCheckImplications],
+            // Monotonicity of these requirements allows reusing inLogicBits
             inLogicBits,
         );
     },
@@ -495,7 +511,10 @@ export const checkSelector = currySelector(
             inSemiLogicBits,
             checkedChecks,
         ): Check => {
-            const checkBit = logic.items[checkId][1];
+
+            const logicalCheckId = cubeCheckToCanAccessCube[checkId] ?? checkId;
+
+            const checkBit = logic.items[logicalCheckId][1];
             const logicalState = inLogicBits.test(checkBit)
                 ? 'inLogic'
                 : inSemiLogicBits.test(checkBit)

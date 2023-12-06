@@ -144,6 +144,10 @@ export function getTooltipOpaqueBits(logic: Logic) {
         }
     }
 
+    for (const amt of [5, 10, 30, 40, 50, 70, 80]) {
+        set(`\\${amt} Gratitude Crystals`);
+    }
+
     return items;
 }
 

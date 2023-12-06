@@ -2,10 +2,10 @@ import { noop } from 'lodash';
 import { BitVector } from '../bitlogic/BitVector';
 import { Logic } from '../logic/Logic';
 import { LogicalExpression } from '../bitlogic/LogicalExpression';
-import { getTooltipOpaqueBits } from './State';
-import BooleanExpression from './BooleanExpression';
+import { getTooltipOpaqueBits } from '../newApp/State';
+import BooleanExpression from '../newApp/BooleanExpression';
 import { anyPath, computeExpression, removeDuplicates, shallowSimplify, unifyRequirements } from '../bitlogic/BitLogic';
-import { mapToCanAccessCubeRequirement } from './TrackerModifications';
+import { mapToCanAccessCubeRequirement } from '../newApp/TrackerModifications';
 
 /**
  * This module contains various strategies to turn the requirements and implications into a more compact and readable
@@ -217,6 +217,10 @@ function simplifier(logic: Logic) {
     };
 }
 
+function opaqueImplies(a: string, b: string) {
+    return a === b;
+}
+
 function dnfToRequirementExpr(
     logic: Logic,
     expression: LogicalExpression,
@@ -224,25 +228,24 @@ function dnfToRequirementExpr(
 
     const presentBits = new Set(expression.conjunctions.flatMap((c) => [...c.iter()]));
 
-    const simplify = simplifier(logic);
     const expr = BooleanExpression.or(
         ...expression.conjunctions.map((c) => bitVecToRequirements(logic, presentBits, c)),
-    ).simplify((a, b) => a === b);
+    ).simplify(opaqueImplies);
 
     function recursivelySimplify(expr: BooleanExpression) {
         for (let i = 0; i < expr.items.length; i++) {
             let item = expr.items[i];
             if (BooleanExpression.isExpression(item)) {
                 item = recursivelySimplify(item);
-                item = item.simplify(simplify);
+                item = item.simplify(opaqueImplies);
 
                 expr.items[i] = item;
             }
         }
-        return expr.simplify(simplify);
+        return expr.simplify(opaqueImplies);
     }
 
-    return recursivelySimplify(expr);
+    return recursivelySimplify(expr).simplify(simplifier(logic));
 }
 
 function bitVecToRequirements(logic: Logic, presentBits: Set<number>, vec: BitVector): BooleanExpression {

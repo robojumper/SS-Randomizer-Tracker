@@ -18,8 +18,7 @@ import GridTracker from './itemTracker/GridTracker';
 import ItemTracker from './itemTracker/ItemTracker';
 import SecondaryLocationTracker from './locationTracker/ExtraLocationTracker';
 import { NewLocationTracker } from './locationTracker/LocationTracker';
-import { WithContext } from './newApp/Context';
-import { MakeTooltipsAvailable } from './newApp/TooltipHooks';
+import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
 import { colorSchemeSelector, layoutSelector } from './customization/selectors';
 import { reset } from './tracker/slice';
@@ -52,11 +51,9 @@ function useWindowDimensions() {
 
 export default function NewTrackerContainer() {
     return (
-        <WithContext>
-            <MakeTooltipsAvailable>
-                <NewTracker />
-            </MakeTooltipsAvailable>
-        </WithContext>
+        <MakeTooltipsAvailable>
+            <NewTracker />
+        </MakeTooltipsAvailable>
     );
 }
 

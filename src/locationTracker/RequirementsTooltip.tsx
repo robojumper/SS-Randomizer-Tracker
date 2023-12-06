@@ -1,32 +1,21 @@
 import React from 'react';
-import { BitVector } from '../bitlogic/BitVector';
-import { Logic } from '../logic/Logic';
 import './RequirementsTooltip.css';
 import { cloneElement } from 'react';
-import BooleanExpression, { Item, Op } from '../newApp/BooleanExpression';
-import prettyItemNames_ from '../data/prettyItemNames.json';
-
-const prettyItemNames: Record<
-    string,
-    Record<number, string>
-> = prettyItemNames_;
+import { Op } from '../newApp/BooleanExpression';
+import { RootTooltipExpression, TooltipExpression } from '../tooltips/TooltipExpression';
+import { useSelector } from 'react-redux';
+import { colorSchemeSelector } from '../customization/selectors';
 
 export default function RequirementsTooltip({
     requirements,
-    logic,
-    inventoryBits,
 }: {
-    requirements: BooleanExpression | undefined;
-    logic: Logic;
-    inventoryBits: BitVector;
+    requirements: RootTooltipExpression | undefined;
 }) {
     return (
         <div>
             {requirements ? (
                 <TopLevelExpr
                     expr={requirements}
-                    logic={logic}
-                    inventoryBits={inventoryBits}
                 />
             ) : (
                 'Loading...'
@@ -37,54 +26,32 @@ export default function RequirementsTooltip({
 
 function TopLevelExpr({
     expr,
-    logic,
-    inventoryBits,
 }: {
-    expr: BooleanExpression;
-    logic: Logic;
-    inventoryBits: BitVector;
+    expr: RootTooltipExpression;
 }) {
-    if (expr.type === Op.And) {
-        return (
-            <>
-                {expr.items.map((item, idx) => (
-                    <li key={idx}>
-                        <Expr
-                            expr={item}
-                            logic={logic}
-                            inventoryBits={inventoryBits}
-                            parentOp={undefined}
-                        />
-                    </li>
-                ))}
-            </>
-        );
-    } else {
-        return (
-            <li>
-                <Expr
-                    expr={expr}
-                    logic={logic}
-                    inventoryBits={inventoryBits}
-                    parentOp={undefined}
-                />
-            </li>
-        );
-    }
+    return (
+        <>
+            {expr.items.map((item, idx) => (
+                <li key={idx}>
+                    <Expr
+                        expr={item}
+                        parentOp={undefined}
+                    />
+                </li>
+            ))}
+        </>
+    );
 }
 
 function Expr({
     expr,
-    logic,
-    inventoryBits,
     parentOp,
 }: {
-    expr: Item;
-    logic: Logic;
-    inventoryBits: BitVector;
+    expr: TooltipExpression;
     parentOp: Op | undefined;
 }): React.ReactElement {
-    if (typeof expr === 'object') {
+    const colorScheme = useSelector(colorSchemeSelector);
+    if (expr.type === 'expr') {
         return (
             <>
                 {parentOp && '('}
@@ -93,12 +60,10 @@ function Expr({
                         <Expr
                             key={idx}
                             expr={val}
-                            logic={logic}
-                            inventoryBits={inventoryBits}
-                            parentOp={expr.type}
+                            parentOp={expr.op}
                         />
                     )),
-                    <>{` ${expr.type} `}</>,
+                    <>{` ${expr.op} `}</>,
                 )}
                 {parentOp && ')'}
             </>
@@ -106,36 +71,14 @@ function Expr({
     } else {
         return (
             <span
-                className={
-                    inventoryBits.test(logic.items[expr][1]) ? 'met' : 'unmet'
-                }
+                style={{
+                    color: colorScheme[expr.logicalState],
+                }}
             >
-                <ItemName item={expr} />
+                {expr.item}
             </span>
         );
     }
-}
-
-const itemCountPat = /^(.+) x (\d+)$/;
-
-function ItemName({ item }: { item: string }) {
-
-    if (item in prettyItemNames) {
-        return <>{prettyItemNames[item][1]}</>;
-    }
-
-    const match = item.match(itemCountPat);
-    if (match) {
-        const [, baseName, count] = match;
-        if (baseName in prettyItemNames) {
-            const pretty = prettyItemNames[baseName][parseInt(count, 10)];
-            if (pretty) {
-                return <>{pretty}</>;
-            }
-        }
-    }
-
-    return <>{item}</>;
 }
 
 /** places a divider between each element of arr */

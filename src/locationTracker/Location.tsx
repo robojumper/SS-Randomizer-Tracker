@@ -1,6 +1,5 @@
 import { Col, Row } from 'react-bootstrap';
 import keyDownWrapper from '../KeyDownWrapper';
-import { useDerivedState } from '../newApp/Context';
 import { useContextMenu } from './context-menu';
 import { useCallback } from 'react';
 import { TriggerEvent } from 'react-contexify';
@@ -8,7 +7,7 @@ import images from '../itemTracker/Images';
 import placeholderImg from '../assets/slot test.png';
 import '../locationTracker/Location.css';
 import Tippy from '@tippyjs/react';
-import { useTooltipExpr } from '../newApp/TooltipHooks';
+import { useTooltipExpr } from '../tooltips/TooltipHooks';
 import RequirementsTooltip from './RequirementsTooltip';
 import { useDispatch, useSelector } from 'react-redux';
 import { colorSchemeSelector } from '../customization/selectors';
@@ -25,7 +24,6 @@ export default function Location({
     id: string;
 }) {
     const dispatch = useDispatch();
-    const derivedState = useDerivedState();
     const hintItem = useSelector(checkHintSelector(id));
 
     const check = useSelector(checkSelector(id));
@@ -58,7 +56,7 @@ export default function Location({
     const expr = useTooltipExpr(id);
 
     return (
-        <Tippy content={<RequirementsTooltip requirements={expr} logic={derivedState.logic} inventoryBits={derivedState.inventoryBits} />}>
+        <Tippy content={<RequirementsTooltip requirements={expr} />}>
             <div
                 className="location-container"
                 onClick={onClick}

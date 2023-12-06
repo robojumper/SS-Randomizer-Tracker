@@ -370,13 +370,16 @@ export class BooleanExpression {
         return BooleanExpression.createFlatExpression(newItems, parentExpression.type);
     }
 
+    /**
+     * (Z and A) or (Z and B) or (Z and C) or (Z and D) -> Z and (A or B or C or D)
+     */
     factorCommonSubterms(implies: BinOp<string>): BooleanExpression {
         const expr = this.flatten();
         if (expr.items.filter(BooleanExpression.isExpression).length >= 2) {
             const [booleanExprs, terminalExprs] = _.partition(expr.items, (item) => BooleanExpression.isExpression(item));
             const itemsBySize = _.groupBy(booleanExprs as BooleanExpression[], (i) => i.items.length);
             const newItems: Item[] = Object.values(itemsBySize).map((items) => new BooleanExpression(items, expr.type).removeDuplicateExpressions(implies));
-            return BooleanExpression.createFlatExpression(newItems.concat(terminalExprs), this.type);
+            return BooleanExpression.createFlatExpression(newItems.concat(terminalExprs), expr.type);
         }
 
         return expr;
