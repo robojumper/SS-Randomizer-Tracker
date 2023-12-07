@@ -650,6 +650,7 @@ export const areasSelector = createSelector(
                 const [extraChecks, regularChecks_] = _.partition(
                     progressChecks,
                     (check) =>
+                        logic.checks[check].type === 'gossip_stone' ||
                         logic.checks[check].type === 'tr_cube' ||
                         logic.checks[check].type === 'loose_crystal',
                 );

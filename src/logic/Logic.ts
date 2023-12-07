@@ -37,6 +37,7 @@ export interface LogicalCheck {
     type:
         | 'regular'
         | 'loose_crystal'
+        | 'gossip_stone'
         | 'trial_treasure'
         | 'rupee'
         | 'tadtone'
@@ -153,6 +154,13 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[cubeCheck] = {
             type: 'tr_cube',
             name: _.last(cubeCheck.split('\\'))!,
+        };
+    }
+
+    for (const [gossipStoneId, gossipStoneName] of Object.entries(raw.gossip_stones)) {
+        checks[gossipStoneId] = {
+            type: 'gossip_stone',
+            name: gossipStoneName,
         };
     }
 
@@ -482,8 +490,11 @@ export function parseLogic(raw: RawLogic): Logic {
                         let region: string | null | undefined =
                             rawArea.hint_region;
                         if (
-                            locName.includes('Goddess Cube at Ride') &&
-                            !region
+                            !region &&
+                            (locName.includes('Goddess Cube at Ride') ||
+                                locName.includes(
+                                    'Gossip Stone in Temple of Time Area',
+                                ))
                         ) {
                             region = 'Lanayru Desert';
                         }
