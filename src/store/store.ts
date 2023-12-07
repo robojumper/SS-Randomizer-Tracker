@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import customization, {
     preloadedCustomizationState,
 } from '../customization/slice';
-import tracker from '../tracker/slice';
+import tracker, { preloadedTrackerState } from '../tracker/slice';
 import logic from '../logic/slice';
 
 export const store = configureStore({
@@ -13,6 +13,7 @@ export const store = configureStore({
     },
     preloadedState: {
         customization: preloadedCustomizationState(),
+        tracker: preloadedTrackerState(),
     },
 });
 

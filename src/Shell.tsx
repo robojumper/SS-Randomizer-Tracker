@@ -10,7 +10,7 @@ import { acceptSettings } from './tracker/slice';
 import { defaultSettings } from './permalink/Settings';
 
 const baseFileUrl = (file: string) =>
-    `https://raw.githubusercontent.com/robojumper/ssrando/logic-dump/${file}.yaml`;
+    `https://raw.githubusercontent.com/robojumper/ssrando/logic-dump/${file}.yaml?cachebust=1`;
 
 
 const loadFileFromUrl = async (url: string) => {

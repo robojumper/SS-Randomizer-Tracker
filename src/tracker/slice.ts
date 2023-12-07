@@ -116,6 +116,11 @@ const initialState: TrackerState = {
     settings: undefined,
 };
 
+export function preloadedTrackerState(): TrackerState {
+    const stateJson = localStorage.getItem('ssrTrackerState');
+    return stateJson ? (JSON.parse(stateJson) as TrackerState) : initialState;
+}
+
 const trackerSlice = createSlice({
     name: 'tracker',
     initialState,

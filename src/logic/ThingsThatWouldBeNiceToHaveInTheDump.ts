@@ -11,30 +11,14 @@ export const dungeonCompletionRequirements: Record<RegularDungeon, string> = {
     'Fire Sanctuary': "\\Fire Sanctuary\\Flame Room\\Din's Flame",
 };
 
-export const randomizedExitsToDungeons = [
-    '\\Faron\\Faron Woods\\Deep Woods\\Exit to Skyview Temple',
-    '\\Eldin\\Volcano\\Near Temple Entrance\\Exit to Earth Temple',
-    '\\Lanayru\\Desert\\Top of LMF\\Exit to Lanayru Mining Facility',
-    '\\Faron\\Lake Floria\\Waterfall\\Exit to Ancient Cistern',
-    '\\Lanayru\\Lanayru Sand Sea\\Ancient Harbour\\Exit to Sandship',
-    '\\Lanayru\\Lanayru Sand Sea\\Sandship Dock Exit',
-    '\\Eldin\\Volcano Summit\\Outside Fire Sanctuary\\Exit to Fire Sanctuary',
-    '\\Skyloft\\Central Skyloft\\Near Temple Entrance\\Exit to Sky Keep',
-];
-
-export const randomizedDungeonEntrances = [
-    '\\Skyview\\Main\\Entry\\Main Entrance',
-    '\\Earth Temple\\Main\\First Room\\Main Entrance',
-    '\\Lanayru Mining Facility\\Main\\First Room\\Main Entrance',
-    '\\Ancient Cistern\\Main\\Main Room\\Main Entrance',
-    '\\Sandship\\Main\\Deck\\Main Entrance',
-    '\\Fire Sanctuary\\Main\\First Room\\Main Entrance',
-    '\\Sky Keep\\Main\\First Room\\Bottom Entrance',
-]
-
 export const nonRandomizedExits = [
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Gate of Time Exit',
     '\\Faron\\Sealed Grounds\\Hylia\'s Temple\\Gate of Time Exit'
+];
+
+export const bannedExitsAndEntrances = [
+    '\\Lanayru\\Temple of Time\\Inside\\Exit to Lanayru Mining Facility',
+    '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Entrance from Temple of Time',
 ];
 
 type OptionMapping = [string, keyof TypedOptions, OptionValue | ((val: OptionValue) => boolean)];
@@ -44,7 +28,7 @@ export const runtimeOptions: OptionMapping[] = [
     m('Open Thunderhead option', 'open-thunderhead', 'Open'),
     m('Open ET option', 'open-et', true),
     m('Open LMF option', 'open-lmf', "Open"),
-    m('LMF Nodes on option', 'open-lmf', "Main Node"),
+    m('LMF Nodes On option', 'open-lmf', "Main Node"),
     m('Floria Gates option', 'open-lake-floria', 'Open'),
     m('Talk to Yerbal option', 'open-lake-floria', 'Talk to Yerbal'),
     m('Vanilla Lake Floria option', 'open-lake-floria', 'Vanilla'),

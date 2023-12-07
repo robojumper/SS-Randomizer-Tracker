@@ -80,8 +80,17 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
             }
         };
 
+    const entranceLower = entranceSearch.toLowerCase();
+    const exitLower = exitSearch.toLowerCase();
+
+    const filteredRows = exits.filter((e) => {
+        return (
+            e.exit.name.toLowerCase().includes(exitLower) && (!entranceSearch || e.entrance?.name.toLowerCase().includes(entranceLower))
+        )
+    });
+
     const row = ({ index, style }: ListChildComponentProps) => {
-        const exit = exits[index];
+        const exit = filteredRows[index];
         return (
             <Row
                 key={exit.exit.id}
@@ -89,7 +98,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                     ...style,
                     borderBottom: '1px solid black',
                     paddingTop: '1%',
-                    filter: !exit.canAssign ? 'brightness(0.5)' : undefined,
+                    filter: !exit.canAssign ? 'opacity(0.5)' : undefined,
                 }}
             >
                 <Col style={{ display: 'flex', alignItems: 'center' }}><span>{exit.exit.name}</span></Col>
@@ -161,7 +170,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                     </Col>
                 </Row>
                 <List
-                    itemCount={exits.length}
+                    itemCount={filteredRows.length}
                     height={600}
                     width=""
                     itemSize={60}

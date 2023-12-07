@@ -42,6 +42,8 @@ export function interpretLogic(
         effectiveImplications[idx] = _.last(reqs) ?? expr;
     }
 
+    // This is an extremely simple iterate-to-fixpoint solver that works because all our
+    // implications use a DNF representation with no inverted bits, so logic is monotonous.
     const bits = startingBits?.clone() ?? new BitVector(logic.numBits);
     let changed = true;
     let iterations = 0;

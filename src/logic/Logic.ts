@@ -55,6 +55,23 @@ export interface AreaGraph {
     vanillaConnections: { [from: string]: string };
     entrances: Record<string, RawEntrance>;
     exits: Record<string, RawExit>;
+
+    
+    /** Sandship Dock Exit -> Exit to Sandship */
+    autoExits: {
+        [canonicalExit: string]: string
+    }
+    entrancePools: {
+        [key in keyof RawLogic['linked_entrances']]: Record<string, EntranceLinkage>
+    }
+}
+
+
+export interface EntranceLinkage {
+    /** Deep Woods\Exit to SV -> SV\Exit to Deep Woods  */
+    exits: [outsideExit: string, insideExit: string ];
+    /** SV\Main Entrance -> Deep Woods\Entrance from SV  */
+    entrances: [outsideEntrance: string, insideEntrance: string ]
 }
 
 export interface Area {
@@ -610,6 +627,30 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
+    const autoExits: AreaGraph['autoExits'] = {};
+    const entrancePools: AreaGraph['entrancePools'] = {
+        dungeons: {},
+        silent_realms: {},
+    };
+
+    for (const pool of ['silent_realms', 'dungeons'] as const) {
+        const data = raw.linked_entrances[pool];
+        for (const [location, entry] of Object.entries(data)) {
+            if (typeof entry.exit_from_outside !== 'string') {
+                autoExits[entry.exit_from_outside[0]] = entry.exit_from_outside[1];
+            }
+            const canonicalExit = typeof entry.exit_from_outside === 'string' ? entry.exit_from_outside : entry.exit_from_outside[0];
+
+            entrancePools[pool][location] = {
+                entrances: [
+                    vanillaConnections[canonicalExit],
+                    vanillaConnections[entry.exit_from_inside],
+                ],
+                exits: [canonicalExit, entry.exit_from_inside],
+            };
+        }
+    }
+
     return {
         bitLogic,
         allItems: rawItems,
@@ -626,6 +667,8 @@ export function parseLogic(raw: RawLogic): Logic {
             entrances: raw.entrances,
             exits: raw.exits,
             vanillaConnections,
+            autoExits,
+            entrancePools,
         },
     };
 }

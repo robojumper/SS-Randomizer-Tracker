@@ -38,7 +38,7 @@ export interface ExitMapping {
           }
         | undefined;
     canAssign: boolean;
-    inLogic: boolean;
+    // inLogic: boolean;
 }
 
 export const dungeonNames = [

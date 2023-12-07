@@ -38,6 +38,11 @@ export interface RawCheck {
     short_name: string;
 }
 
+export interface ExitLink {
+    exit_from_outside: string | string[],
+    exit_from_inside: string,
+}
+
 export interface RawLogic {
     items: string[];
     checks: Record<string, RawCheck>;
@@ -46,4 +51,12 @@ export interface RawLogic {
     exits: Record<string, RawExit>,
     entrances: Record<string, RawEntrance>,
     areas: RawArea;
+    linked_entrances: {
+        silent_realms: {
+            [realm: string]: ExitLink
+        },
+        dungeons: {
+            [dungeon: string]: ExitLink
+        }
+    }
 }

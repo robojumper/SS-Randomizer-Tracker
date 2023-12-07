@@ -1,4 +1,4 @@
-import { ChangeEvent } from 'react';
+import { ChangeEvent, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from './store/store';
 import { TrackerState, loadTracker } from './tracker/slice';
@@ -13,6 +13,10 @@ export interface ExportState {
 export default function ImportExport() {
     const state = useSelector((state: RootState) => state.tracker);
     const dispatch = useDispatch();
+
+    useEffect(() => {
+        localStorage.setItem('ssrTrackerState', JSON.stringify(state));
+    }, [state]);
 
     const doImport = (text: string) => {
         const importVal = JSON.parse(text) as ExportState;
