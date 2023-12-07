@@ -12,6 +12,7 @@ import Select, { ActionMeta, SingleValue } from 'react-select';
 import { useDispatch, useSelector } from 'react-redux';
 import { allowedStartingEntrancesSelector, exitsSelector, remainingEntrancesSelector } from '../tracker/selectors';
 import { mapEntrance } from '../tracker/slice';
+import { selectStyles } from '../customization/ComponentStyles';
 // import EntranceGraph from './EntranceGraph';
 
 type EntranceTrackerProps = {
@@ -88,12 +89,13 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                     ...style,
                     borderBottom: '1px solid black',
                     paddingTop: '1%',
-                    backgroundColor: !exit.canAssign ? 'lightgrey' : undefined,
+                    filter: !exit.canAssign ? 'brightness(0.5)' : undefined,
                 }}
             >
                 <Col style={{ display: 'flex', alignItems: 'center' }}><span>{exit.exit.name}</span></Col>
                 <Col>
                     <Select
+                        styles={selectStyles<false, Entrance>()}
                         value={exit.entrance && { label: exit.entrance.name, value: exit.entrance.id }}
                         onChange={(...args) => onEntranceChange(exit.exit.id, ...args)}
                         options={exit.exit.id === '\\Start' ? startingEntranceOptions : entranceOptions}
@@ -133,7 +135,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                             value={exitSearch}
                         />
                     </Col>
-                    <Col className="vr" style={{ background: 'white' }} />
+                    <Col className="vr" style={{ background: 'transparent' }} />
                     <Col>
                         <FormControl
                             type="search"
@@ -153,7 +155,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                             onChange={() => setClickthrough(!clickthrough)}
                         />
                     </Col>
-                    <Col className="vr" style={{ background: 'white' }} />
+                    <Col className="vr" style={{ background: 'transparent' }} />
                     <Col style={{ justifyContent: 'end' }}>
                         <Button onClick={clearFilters}>Clear Filters</Button>
                     </Col>

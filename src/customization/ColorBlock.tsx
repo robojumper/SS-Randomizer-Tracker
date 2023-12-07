@@ -24,7 +24,7 @@ export default function ColorBlock({
                 <Col
                     style={{
                         background: currentColor,
-                        border: '2px solid black',
+                        border: '2px solid var(--scheme-text)',
                     }}
                     onClick={() => setShowPicker((prevState) => !prevState)}
                 />

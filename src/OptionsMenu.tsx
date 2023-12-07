@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
     Modal,
     Button,
@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { settingsSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
 import { optionsSelector } from './logic/selectors';
+import { selectStyles } from './customization/ComponentStyles';
 
 function OptionsMenu({
     onHide,
@@ -26,6 +27,9 @@ function OptionsMenu({
     const options = useSelector(optionsSelector);
     const storedSettings = useSelector(settingsSelector);
     const dispatch = useDispatch();
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const selectAll = useCallback(() => inputRef.current?.setSelectionRange(0, inputRef.current.value.length), []);
 
     const [tempSettings, setTempSettings] = useState(
         storedSettings,
@@ -59,7 +63,7 @@ function OptionsMenu({
     }, [dispatch, onHide, tempSettings]);
 
     return (
-        <Modal show={true} size="lg" style={{ width: '90%' }}>
+        <Modal onHide={onHide} show={true} size="lg" style={{ width: '90%' }}>
             <Modal.Header closeButton>
                 <Modal.Title id="contained-modal-title-vcenter">
                     Options
@@ -67,8 +71,13 @@ function OptionsMenu({
             </Modal.Header>
             <Modal.Body className="show-grid">
                 <Row style={{ paddingBottom: '3%' }}>
-                    <Col>
+                    <Col xs={5}>
+                        Permalink
+                    </Col>
+                    <Col xs={6}>
                         <input
+                            ref={inputRef}
+                            onFocus={selectAll}
                             type="text"
                             placeholder="Permalink"
                             onChange={(e) => onChangePermalink(e.target.value)}
@@ -210,6 +219,7 @@ function Setting({
                     </Col>
                     <Col xs={6}>
                         <Select
+                            styles={selectStyles<true, { label: string, value: string }>()}
                             isMulti
                             value={(value as string[]).map((val) => ({
                                 value: val,

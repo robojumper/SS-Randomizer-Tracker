@@ -41,7 +41,7 @@ export default function CustomizationModal({
                             Object.entries(defaultColorSchemes).map(([key, scheme]) => (
                                 <Col key={key}>
                                     <Button
-                                        style={{ background: scheme.background, color: scheme.text, border: '1px solid black' }}
+                                        style={{ background: scheme.background, color: scheme.text, border: '1px solid var(--scheme-text)' }}
                                         onClick={() => updateColorScheme(scheme)}
                                     >
                                         {key}
