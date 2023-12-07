@@ -24,8 +24,4 @@
 
 .group-container {
     outline-style: none;
-
-    &.selected {
-        background-color: aquamarine;
-    }
 }

@@ -1,7 +1,6 @@
 import './dungeons.css';
 import keyDownWrapper from '../../../KeyDownWrapper';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector } from '../../../customization/selectors';
 import { dungeonCompletedSelector, requiredDungeonsSelector } from '../../../tracker/selectors';
 import { DungeonName as DungeonNameType } from '../../../logic/Locations';
 import { RootState } from '../../../store/store';
@@ -14,15 +13,12 @@ type DungeonNameProps = {
 
 const DungeonName = (props: DungeonNameProps) => {
     const { dungeonName, dungeonAbbr } = props;
-    const colorScheme = useSelector(colorSchemeSelector);
     const required = useSelector((state: RootState) => requiredDungeonsSelector(state).includes(dungeonName))
     const completed = useSelector(dungeonCompletedSelector(dungeonName));
     const dispatch = useDispatch();
 
     const currentStyle = {
-        color: required
-            ? colorScheme.required
-            : colorScheme.unrequired,
+        color: `var(--scheme-${required ? 'required' : 'unrequired'})`,
     };
 
     const completedState = completed

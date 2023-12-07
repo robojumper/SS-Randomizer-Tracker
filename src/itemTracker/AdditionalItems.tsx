@@ -1,16 +1,14 @@
 import { CSSProperties } from 'react';
 import Item from './Item';
-import ColorScheme from '../customization/ColorScheme';
 import miscItemBlock from '../assets/misc_items_block.png';
 import { useSelector } from 'react-redux';
 import { rawItemCountSelector } from '../tracker/selectors';
 
 type AdditionalItemsProps = {
-    colorScheme: ColorScheme;
     styleProps: CSSProperties;
 };
 
-const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
+const AdditionalItems = ({ styleProps }: AdditionalItemsProps) => {
     const width = styleProps.width as number;
     const pouchStyle: CSSProperties = {
         position: 'relative',
@@ -78,7 +76,6 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
                         position: 'relative',
                         left: '11%',
                         bottom: `-${bottleWidth * 0.3}px`,
-                        color: colorScheme.text,
                     }}
                 >
                     {bottleCount}
@@ -95,7 +92,6 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
                         position: 'relative',
                         left: '10%',
                         bottom: `-${tadtoneWidth * 0.25}px`,
-                        color: colorScheme.text,
                     }}
                 >
                     {tadtoneCount}
@@ -107,7 +103,6 @@ const AdditionalItems = ({ colorScheme, styleProps }: AdditionalItemsProps) => {
                     style={{
                         margin: 0,
                         fontSize: width / 20,
-                        color: colorScheme.text,
                         position: 'relative',
                         top: `${keyWidth * 0.75}px`,
                         left: '1%',

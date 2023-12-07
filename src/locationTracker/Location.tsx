@@ -10,7 +10,6 @@ import Tippy from '@tippyjs/react';
 import { useTooltipExpr } from '../tooltips/TooltipHooks';
 import RequirementsTooltip from './RequirementsTooltip';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector } from '../customization/selectors';
 import { checkHintSelector, checkSelector } from '../tracker/selectors';
 import { clickCheck } from '../tracker/slice';
 
@@ -28,8 +27,6 @@ export default function Location({
 
     const check = useSelector(checkSelector(id));
 
-    const colorScheme = useSelector(colorSchemeSelector);
-
     function onClick(e: React.UIEvent) {
         if (!(e.target as Element | null)?.id) {
             return;
@@ -40,7 +37,7 @@ export default function Location({
     const style = {
         textDecoration: check.checked ? 'line-through' : 'none',
         cursor: 'pointer',
-        color: check.checked ? colorScheme.checked : colorScheme[check.logicalState],
+        color: check.checked ? `var(--scheme-checked)` : `var(--scheme-${check.logicalState})`,
         paddingLeft: 6,
         paddingRight: 0,
     };

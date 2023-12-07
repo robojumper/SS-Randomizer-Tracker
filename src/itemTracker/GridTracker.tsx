@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import ColorScheme from '../customization/ColorScheme';
 import Item from './Item';
 import CrystalCounter from './items/sidequest/CrystalCounter';
 import GratitudeCrystals from './items/sidequest/GratitudeCrystals';
@@ -12,10 +11,9 @@ import { clickItem } from '../tracker/slice';
 
 type GridTrackerProps = {
     styleProps: CSSProperties;
-    colorScheme: ColorScheme;
 };
 
-const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
+const GridTracker = ({ styleProps }: GridTrackerProps) => {
     const dispatch = useDispatch();
     const handleExtraWalletClick = () => {
         dispatch(clickItem({ item: 'Extra Wallet', take: false }));
@@ -150,7 +148,6 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                             style={{
                                 margin: 0,
                                 fontSize: 'small',
-                                color: colorScheme.text,
                             }}
                         >
                             Caves
@@ -187,7 +184,6 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                             itemName="Empty Bottle"
                             imgWidth={imgWidth}
                             fontSize={imgWidth * 0.5}
-                            colorScheme={colorScheme}
                             ignoreItemClass
                         />
                     </td>
@@ -211,7 +207,6 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                         >
                             <CrystalCounter
                                 current={`+${walletCount * 300}`}
-                                colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.4}
                             />
                         </div>
@@ -271,7 +266,6 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                             <CounterItem
                                 itemName="Song of the Hero"
                                 imgWidth={imgWidth}
-                                colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.5}
                                 grid
                                 ignoreItemClass
@@ -341,7 +335,6 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                         >
                             <CrystalCounter
                                 current={crystalCount}
-                                colorScheme={colorScheme}
                                 fontSize={imgWidth * 0.5}
                             />
                         </div>
@@ -358,7 +351,6 @@ const GridTracker = ({ styleProps, colorScheme }: GridTrackerProps) => {
                     <td>
                         <CounterItem
                             itemName="Group of Tadtones"
-                            colorScheme={colorScheme}
                             fontSize={imgWidth / 2}
                             imgWidth={imgWidth}
                             ignoreItemClass

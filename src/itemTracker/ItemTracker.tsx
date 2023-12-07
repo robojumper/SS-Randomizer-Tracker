@@ -5,16 +5,13 @@ import SwordBlock from './SwordBlock';
 import SongBlock from './SongBlock';
 import QuestItems from './QuestItems';
 import AdditionalItems from './AdditionalItems';
-import ColorScheme from '../customization/ColorScheme';
 
 type ItemTrackerProps = {
     styleProps: CSSProperties;
-    colorScheme: ColorScheme;
 };
 
 const ItemTracker = ({
     styleProps,
-    colorScheme,
 }: ItemTrackerProps) => {
     const maxHeight = styleProps.height as number;
     const aspectRatio = 0.65;
@@ -69,7 +66,7 @@ const ItemTracker = ({
                 <tr>
                     <td style={swordBlockStyle}>
                         <div id="swordBlock">
-                            <SwordBlock styleProps={swordBlockStyle} colorScheme={colorScheme} />
+                            <SwordBlock styleProps={swordBlockStyle} />
                         </div>
                     </td>
                     <td style={songBlockStyle}>
@@ -80,10 +77,10 @@ const ItemTracker = ({
                 </tr>
                 <tr>
                     <td style={questItemsStyle}>
-                        <QuestItems styleProps={questItemsStyle} colorScheme={colorScheme} />
+                        <QuestItems styleProps={questItemsStyle} />
                     </td>
                     <td style={additionalItemsStyle}>
-                        <AdditionalItems styleProps={additionalItemsStyle} colorScheme={colorScheme} />
+                        <AdditionalItems styleProps={additionalItemsStyle} />
                     </td>
                 </tr>
                 <tr>

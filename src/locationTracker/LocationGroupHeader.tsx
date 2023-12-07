@@ -13,13 +13,11 @@ import sotsImage from '../assets/hints/sots.png';
 import barrenImage from '../assets/hints/barren.png';
 
 import 'react-contexify/dist/ReactContexify.css';
-import clsx from 'clsx';
 import keyDownWrapper from '../KeyDownWrapper';
 import { TriggerEvent } from 'react-contexify';
 import { useContextMenu } from './context-menu';
 import { Area } from '../logic/Locations';
 import { useSelector } from 'react-redux';
-import { colorSchemeSelector } from '../customization/selectors';
 import { areaHintSelector } from '../tracker/selectors';
 
 const pathImages = [g1, scaldera, moldarach, koloktos, tentalus, g2];
@@ -30,14 +28,11 @@ export interface LocationGroupContextMenuProps {
 
 export default function LocationGroupHeader({
     area,
-    selected,
     setActiveArea,
 }: {
     area: Area,
-    selected: boolean,
     setActiveArea: (area: string) => void,
 }) {
-    const colorScheme = useSelector(colorSchemeSelector);
     const onClick = useCallback(
         () => setActiveArea(area.name),
         [area.name, setActiveArea],
@@ -70,7 +65,7 @@ export default function LocationGroupHeader({
 
     return (
         <Row
-            className={clsx('group-container', { selected })}
+            className={'group-container'}
             onClick={onClick}
             onKeyDown={keyDownWrapper(onClick)}
             role="button"
@@ -78,11 +73,11 @@ export default function LocationGroupHeader({
             onContextMenu={displayMenu}
         >
             <Col sm={7}>
-                <h3 style={{ cursor: 'pointer', color: colorScheme.text }}>
+                <h3 style={{ cursor: 'pointer' }}>
                     {area.name}
                 </h3>
             </Col>
-            <Col sm={2} style={{ color: colorScheme.text }}>
+            <Col sm={2}>
                 <span>{image}</span>
             </Col>
             <Col sm={1}>
@@ -90,7 +85,6 @@ export default function LocationGroupHeader({
                     <AreaCounters
                         totalChecksLeftInArea={area.numChecksRemaining}
                         totalChecksAccessible={area.numChecksAccessible}
-                        colorScheme={colorScheme}
                     />
                 </h3>
             </Col>

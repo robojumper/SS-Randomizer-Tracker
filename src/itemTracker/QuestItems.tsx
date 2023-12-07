@@ -5,13 +5,11 @@ import CrystalCounter from './items/sidequest/CrystalCounter';
 
 import questItemBlock from '../assets/quest_items_block.png';
 
-import ColorScheme from '../customization/ColorScheme';
 import { useSelector } from 'react-redux';
 import { totalGratitudeCrystalsSelector } from '../tracker/selectors';
 
 type QuestItemProps = {
     styleProps: CSSProperties;
-    colorScheme: ColorScheme;
 };
 
 const QuestItems = (props: QuestItemProps) => {
@@ -67,7 +65,7 @@ const QuestItems = (props: QuestItemProps) => {
                 <GratitudeCrystals imgWidth={crystalWidth} />
             </div>
             <div style={counterStyle}>
-                <CrystalCounter current={crystalCount} colorScheme={props.colorScheme} fontSize={crystalWidth * 1.25} />
+                <CrystalCounter current={crystalCount} fontSize={crystalWidth * 1.25} />
             </div>
         </div>
     );

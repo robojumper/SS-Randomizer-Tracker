@@ -4,7 +4,6 @@ import allImages from './Images';
 import swordBlock from '../assets/Sword_Block.png';
 
 import CrystalCounter from './items/sidequest/CrystalCounter';
-import ColorScheme from '../customization/ColorScheme';
 import keyDownWrapper from '../KeyDownWrapper';
 import { useDispatch, useSelector } from 'react-redux';
 import { rawItemCountSelector } from '../tracker/selectors';
@@ -12,7 +11,6 @@ import { clickItem } from '../tracker/slice';
 
 type SwordBlockProperties = {
     styleProps: CSSProperties;
-    colorScheme: ColorScheme;
 };
 
 const SwordBlock = (props: SwordBlockProperties) => {
@@ -104,7 +102,6 @@ const SwordBlock = (props: SwordBlockProperties) => {
             >
                 <CrystalCounter
                     current={`+${extraWalletCount * 300}`}
-                    colorScheme={props.colorScheme}
                     fontSize={wid * 0.12}
                 />
             </div>

@@ -1,5 +1,4 @@
 import { CSSProperties } from 'react';
-import ColorScheme from '../../customization/ColorScheme';
 import allImages from '../Images';
 import keyDownWrapper from '../../KeyDownWrapper';
 import { Items } from '../../logic/Inventory';
@@ -15,7 +14,6 @@ type CounterItemProps = {
     styleProps?: CSSProperties;
     grid?: boolean;
     asSpan?: boolean;
-    colorScheme: ColorScheme;
     fontSize: number;
 };
 
@@ -27,7 +25,6 @@ const CounterItem = (props: CounterItemProps) => {
         ignoreItemClass,
         grid,
         asSpan,
-        colorScheme,
         fontSize,
     } = props;
 
@@ -80,10 +77,9 @@ const CounterItem = (props: CounterItemProps) => {
                             top: '50%',
                             left: '50%',
                             transform: 'translate(-50%, -50%)',
-                            background: colorScheme.background,
+                            background: 'var(--scheme-background)',
                             width: '80%',
                             height: '150%',
-                            color: colorScheme.text,
                             fontSize,
                             pointerEvents: 'none',
                         }}
@@ -124,7 +120,6 @@ const CounterItem = (props: CounterItemProps) => {
                         background: 'grey',
                         width: '40%',
                         height: '60%',
-                        color: colorScheme.text,
                         fontSize,
                         pointerEvents: 'none',
                     }}

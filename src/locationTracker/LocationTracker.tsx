@@ -6,12 +6,10 @@ import { Col, Row } from "react-bootstrap";
 import LocationGroupContextMenu from "./LocationGroupContextMenu";
 import LocationContextMenu from "./LocationContextMenu";
 import { useSelector } from "react-redux";
-import { colorSchemeSelector } from "../customization/selectors";
 import { areasSelector } from "../tracker/selectors";
 import { isDungeon } from "../logic/Locations";
 
 export function NewLocationTracker({ containerHeight, activeArea, setActiveArea }: { containerHeight: number; activeArea: string | undefined, setActiveArea: (area: string) => void }) {
-    const colorScheme = useSelector(colorSchemeSelector);
     const areas = useSelector(areasSelector);
 
     const selectedArea = activeArea && areas.find((a) => a.name === activeArea) || undefined;
@@ -37,7 +35,6 @@ export function NewLocationTracker({ containerHeight, activeArea, setActiveArea 
                         )
                         .map((value) => (
                             <LocationGroupHeader
-                                selected={value.name === selectedArea?.name}
                                 setActiveArea={setActiveArea}
                                 key={value.name}
                                 area={value}
@@ -55,7 +52,6 @@ export function NewLocationTracker({ containerHeight, activeArea, setActiveArea 
                 >
                     <LocationGroup
                         locations={selectedArea.checks}
-                        colorScheme={colorScheme}
                     />
                 </Row>
             )}

@@ -1,5 +1,7 @@
 import {
     CSSProperties,
+    useEffect,
+    useLayoutEffect,
     useMemo,
     useState,
     useSyncExternalStore,
@@ -49,7 +51,7 @@ function useWindowDimensions() {
     );
 }
 
-export default function NewTrackerContainer() {
+export default function TrackerContainer() {
     return (
         <MakeTooltipsAvailable>
             <NewTracker />
@@ -67,6 +69,22 @@ function NewTracker() {
     const [activeArea, setActiveArea] = useState<string | undefined>(undefined);
 
     const colorScheme = useSelector(colorSchemeSelector);
+    const layout = useSelector(layoutSelector);
+
+    useLayoutEffect(() => {
+        const html = document.querySelector('html')!;
+        Object.entries(colorScheme).forEach(([key, val]) => {
+            html.style.setProperty(`--scheme-${key}`, val.toString());
+        });
+    }, [colorScheme]);
+
+    useEffect(() => {
+        localStorage.setItem('ssrTrackerColorScheme', JSON.stringify(colorScheme));
+    }, [colorScheme]);
+
+    useEffect(() => {
+        localStorage.setItem('ssrTrackerLayout', layout);
+    }, [layout]);
 
     const itemTrackerStyle: CSSProperties = {
         position: 'fixed',
@@ -85,21 +103,17 @@ function NewTracker() {
         margin: '1%',
     };
 
-    const layout = useSelector(layoutSelector);
-
     let itemTracker;
     if (layout === 'inventory') {
         itemTracker = (
             <ItemTracker
                 styleProps={itemTrackerStyle}
-                colorScheme={colorScheme}
             />
         );
     } else if (layout === 'grid') {
         itemTracker = (
             <GridTracker
                 styleProps={gridTrackerStyle}
-                colorScheme={colorScheme}
             />
         );
     }
@@ -120,7 +134,7 @@ function NewTracker() {
                     </Col>
                     <Col>
                         <Row className="g-0">
-                            <BasicCounters colorScheme={colorScheme} />
+                            <BasicCounters />
                         </Row>
                         <Row className="g-0">
                             <DungeonTracker setActiveArea={setActiveArea} />

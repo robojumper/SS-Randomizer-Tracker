@@ -3,8 +3,6 @@ import './RequirementsTooltip.css';
 import { cloneElement } from 'react';
 import { Op } from '../logic/booleanlogic/BooleanExpression';
 import { RootTooltipExpression, TooltipExpression } from '../tooltips/TooltipExpression';
-import { useSelector } from 'react-redux';
-import { colorSchemeSelector } from '../customization/selectors';
 
 export default function RequirementsTooltip({
     requirements,
@@ -50,7 +48,6 @@ function Expr({
     expr: TooltipExpression;
     parentOp: Op | undefined;
 }): React.ReactElement {
-    const colorScheme = useSelector(colorSchemeSelector);
     if (expr.type === 'expr') {
         return (
             <>
@@ -72,7 +69,7 @@ function Expr({
         return (
             <span
                 style={{
-                    color: colorScheme[expr.logicalState],
+                    color: `var(--scheme-${expr.logicalState})`,
                 }}
             >
                 {expr.item}

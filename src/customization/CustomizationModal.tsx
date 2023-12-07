@@ -65,9 +65,9 @@ export default function CustomizationModal({
                         <h4>Tracker Settings</h4>
                     </Row>
                     <Row>
-                        <FormControl as="select" onChange={(e) => dispatch(setLayout(e.target.value as Layout))}>
-                            <option value="inventory" selected={layout === 'inventory'}>In-Game Inventory</option>
-                            <option value="grid" selected={layout === 'grid'}>Grid Layout</option>
+                        <FormControl as="select" value={layout} onChange={(e) => dispatch(setLayout(e.target.value as Layout))}>
+                            <option value="inventory">In-Game Inventory</option>
+                            <option value="grid">Grid Layout</option>
                         </FormControl>
                     </Row>
                 </Container>

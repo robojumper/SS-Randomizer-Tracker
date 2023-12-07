@@ -25,7 +25,6 @@ import { Col, Row } from 'react-bootstrap';
 import AreaCounters from '../locationTracker/AreaCounters';
 import HintMarker from '../hints/HintMarker';
 import { useSelector } from 'react-redux';
-import { colorSchemeSelector } from '../customization/selectors';
 import { areasSelector } from '../tracker/selectors';
 import {
     Area,
@@ -88,7 +87,6 @@ export default function DungeonTracker({
     const [width, setWidth] = useState(0);
     const divElement = useRef<HTMLDivElement>(null);
     const areas = useSelector(areasSelector);
-    const colorScheme = useSelector(colorSchemeSelector);
 
     const dungeons = areas.filter((a) =>
         isDungeon(a.name) && (a.name !== 'Sky Keep' || !a.nonProgress),
@@ -225,7 +223,6 @@ export default function DungeonTracker({
                                     totalChecksAccessible={
                                         d.numChecksAccessible
                                     }
-                                    colorScheme={colorScheme}
                                 />
                             </td>
                         ))}
@@ -258,7 +255,6 @@ export default function DungeonTracker({
                         <AreaCounters
                             totalChecksLeftInArea={a.numChecksRemaining}
                             totalChecksAccessible={a.numChecksAccessible}
-                            colorScheme={colorScheme}
                         />
                     </Col>
                 ))}

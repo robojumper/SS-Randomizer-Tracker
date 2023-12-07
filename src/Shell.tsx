@@ -1,7 +1,7 @@
 import { load } from 'js-yaml';
 import { useEffect } from 'react';
 import { RawLogic } from './logic/UpstreamTypes';
-import NewTrackerContainer from './Tracker';
+import TrackerContainer from './Tracker';
 import { OptionDefs } from './permalink/SettingsTypes';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadLogic } from './logic/slice';
@@ -49,6 +49,6 @@ export default function Shell() {
     }
 
     return (
-        <NewTrackerContainer />
+        <TrackerContainer />
     );
 }
