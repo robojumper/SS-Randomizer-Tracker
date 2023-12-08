@@ -230,6 +230,9 @@ export const exitRulesSelector = createSelector(
     }
 );
 
+// FIXME: The dungeon that appears in place of LMF has double exits, one will lead to Temple of Time.
+// This isn't accounted for here
+
 export const exitsSelector = createSelector(
     [logicSelector, exitRulesSelector, mappedExitsSelector],
     (logic, exitRules, mappedExits) => {
@@ -687,6 +690,21 @@ export const areaNonprogressSelector = createSelector(
     },
 );
 
+export const areaHiddenSelector = createSelector(
+    [
+        areaNonprogressSelector,
+        settingSelector('randomize-entrances'),
+    ],
+    (areaNonprogress, randomEntranceSetting) => {
+        return (area: string) =>
+            areaNonprogress(area) &&
+            (!isDungeon(area) ||
+                (area === 'Sky Keep' &&
+                    randomEntranceSetting !==
+                        'All Surface Dungeons + Sky Keep'));
+    },
+);
+
 export const isCheckBannedSelector = createSelector(
     [
         logicSelector,
@@ -757,6 +775,7 @@ export const areasSelector = createSelector(
         isCheckBannedSelector,
         inLogicBitsSelector,
         areaNonprogressSelector,
+        areaHiddenSelector,
         rawCheckOrderSelector,
     ],
     (
@@ -765,9 +784,10 @@ export const areasSelector = createSelector(
         isCheckBanned,
         inLogicBits,
         isAreaNonprogress,
+        isAreaHidden,
         rawCheckOrder,
     ): Area[] => {
-        const areasList = Object.entries(logic.checksByArea).map(
+        const areasList: Area[] = Object.entries(logic.checksByArea).map(
             ([area, checks]) => {
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),
@@ -782,6 +802,7 @@ export const areasSelector = createSelector(
                 );
 
                 const nonProgress = isAreaNonprogress(area);
+                const hidden = isAreaHidden(area);
                 const regularChecks = nonProgress ? [] : regularChecks_;
 
 
@@ -797,6 +818,7 @@ export const areasSelector = createSelector(
                     numTotalChecks: regularChecks.length,
                     extraChecks: extraChecks,
                     nonProgress,
+                    hidden,
                     name: area,
                     numChecksRemaining: remaining.length,
                     numChecksAccessible: inLogic.length,

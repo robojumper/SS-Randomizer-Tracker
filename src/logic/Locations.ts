@@ -9,6 +9,7 @@ export interface DerivedState {
 export interface Area<N extends string = string> {
     name: N;
     nonProgress: boolean;
+    hidden: boolean;
     numTotalChecks: number;
     numChecksRemaining: number;
     numChecksAccessible: number;

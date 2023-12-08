@@ -33,7 +33,7 @@ export const runtimeOptions: OptionMapping[] = [
     m('Talk to Yerbal option', 'open-lake-floria', 'Talk to Yerbal'),
     m('Vanilla Lake Floria option', 'open-lake-floria', 'Vanilla'),
     m('Randomized Beedle option', 'shopsanity', (val) => val !== 'Vanilla'),
-    m('Gondo Upgrades On option', 'gondo-upgrades', true),
+    m('Gondo Upgrades On option', 'gondo-upgrades', false),
     m('No BiT crashes', 'bit-patches', 'Fix BiT Crashes'),
     m('Nonlethal Hot Cave', 'damage-multiplier', (val) => val < 12),
     m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),

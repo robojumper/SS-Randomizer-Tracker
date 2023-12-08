@@ -89,7 +89,7 @@ export default function DungeonTracker({
     const areas = useSelector(areasSelector);
 
     const dungeons = areas.filter((a) =>
-        isDungeon(a.name) && (a.name !== 'Sky Keep' || !a.nonProgress),
+        isDungeon(a.name) && !a.hidden,
     ) as Area<DungeonNameType>[];
     const silentRealms = areas.filter((a) => a.name.includes('Silent Realm'));
 
