@@ -34,7 +34,7 @@ export default function Shell() {
                 loadFile<RawLogic>('dump'),
                 loadFile<OptionDefs>('options'),
             ]);
-            dispatch(acceptSettings({ settings: defaultSettings(options) }))
+            dispatch(acceptSettings({ settings: defaultSettings(options), initialLoad: true }))
             dispatch(loadLogic({ logic, options }));
         };
 

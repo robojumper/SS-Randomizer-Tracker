@@ -219,9 +219,12 @@ const trackerSlice = createSlice({
         },
         acceptSettings: (
             state,
-            action: PayloadAction<{ settings: TypedOptions }>,
+            action: PayloadAction<{ settings: TypedOptions, initialLoad?: boolean }>,
         ) => {
-            const { settings } = action.payload;
+            const { settings, initialLoad } = action.payload;
+            if (initialLoad && state.settings) {
+                return;
+            }
             state.settings = settings;
             if (!state.hasModifiedInventory) {
                 state.inventory = getInitialItems(settings);

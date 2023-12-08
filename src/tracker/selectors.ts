@@ -375,7 +375,7 @@ function mapSettings(
     const nightVec = (id: string) => logic.items[makeNight(id)][0];
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
 
-    const raiseGotExpr = settings['got-start']
+    const raiseGotExpr = settings['got-start'] === 'Raised'
         ? LogicalExpression.true(logic.bitLogic.numBits)
         : new LogicalExpression([vec(impaSongCheck)]);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
@@ -615,16 +615,10 @@ export const inSemiLogicBitsSelector = createSelector(
 
 export const dungeonCompletedSelector = currySelector(
     createSelectorWeakMap(
-        [
-            (_state: RootState, name: DungeonName) => name,
-            logicSelector,
-            inLogicBitsSelector,
-        ],
-        (name, logic, inLogicBits) =>
+        [(_state: RootState, name: DungeonName) => name, checkedChecksSelector],
+        (name, checkedChecks) =>
             name !== 'Sky Keep' &&
-            inLogicBits.test(
-                logic.items[dungeonCompletionRequirements[name]][1],
-            ),
+            checkedChecks.includes(dungeonCompletionRequirements[name]),
     ),
 );
 
