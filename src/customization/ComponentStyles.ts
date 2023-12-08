@@ -22,5 +22,9 @@ export function selectStyles<IsMulti extends boolean, Option>(): StylesConfig<Op
                 ? '#0d6efd'
                 : 'var(--scheme-background)',
         }),
+        singleValue: (baseStyles) => ({
+            ...baseStyles,
+            color: `color-mix(in srgb, var(--scheme-text) 90%, transparent)`
+        })
     };
 }
