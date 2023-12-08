@@ -1,5 +1,5 @@
 import _ from 'lodash';
-import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { OptionDefs, AllTypedOptions } from '../permalink/SettingsTypes';
 import { BitVector } from './bitlogic/BitVector';
 import { RegularDungeon } from './Locations';
 import { LogicalExpression } from './bitlogic/LogicalExpression';
@@ -99,7 +99,7 @@ export interface State {
     /**
      * Fully decoded settings.
      */
-    settings: TypedOptions;
+    settings: AllTypedOptions;
 }
 
 export function mapInventory(logic: Logic, inventory: State['inventory'], checkedChecks: State['checkedChecks']) {
@@ -157,7 +157,7 @@ export function mapSettings(
     mappedExits: State['mappedExits'],
     activeVanillaConnections: Record<string, string>,
     // requiredDungeons: string[],
-    settings: TypedOptions,
+    settings: AllTypedOptions,
 ) {
     const implications: { [bitIndex: number]: LogicalExpression } = {};
 
@@ -293,7 +293,7 @@ export function mapState(
     mappedExits: State['mappedExits'],
     activeVanillaConnections: Record<string, string>,
     requiredDungeons: string[],
-    settings: TypedOptions,
+    settings: AllTypedOptions,
 ): {
     items: BitVector;
     implications: { [bitIndex: number]: LogicalExpression };

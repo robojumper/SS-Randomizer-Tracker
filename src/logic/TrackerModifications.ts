@@ -35,7 +35,7 @@ export const triforceItemReplacement = 'Triforce';
 export const requiredDungeonsCompletedFakeRequirement = '\\Tracker\\Required Dungeons Completed';
 
 export function getInitialItems(
-    settings: Partial<TypedOptions>,
+    settings: TypedOptions,
 ): State['inventory'] {
     const items: State['inventory'] = {};
     const add = (item: Items, count: number = 1) => {

@@ -1,14 +1,14 @@
 import _ from 'lodash';
 import PackedBitsWriter from './PackedBitsWriter';
 import PackedBitsReader from './PackedBitsReader';
-import { OptionValue, OptionDefs, TypedOptions } from './SettingsTypes';
+import { OptionValue, OptionDefs, AllTypedOptions } from './SettingsTypes';
 
 export function decodePermalink(
     optionDefs: OptionDefs,
     permalink: string,
-): TypedOptions {
+): AllTypedOptions {
     const permaNoSeed = permalink.split('#')[0];
-    const settings: Partial<Record<keyof TypedOptions, OptionValue>> = {};
+    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
     const reader = PackedBitsReader.fromBase64(permaNoSeed);
     _.forEach(optionDefs, (option) => {
         if (option.permalink !== false) {
@@ -30,22 +30,22 @@ export function decodePermalink(
             }
         }
     });
-    return settings as TypedOptions;
+    return settings as AllTypedOptions;
 }
 
-export function defaultSettings(optionDefs: OptionDefs): TypedOptions {
-    const settings: Partial<Record<keyof TypedOptions, OptionValue>> = {};
+export function defaultSettings(optionDefs: OptionDefs): AllTypedOptions {
+    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
     _.forEach(optionDefs, (option) => {
         if (option.permalink !== false) {
             settings[option.command] = option.default;
         }
     });
-    return settings as TypedOptions;
+    return settings as AllTypedOptions;
 }
 
 export function encodePermalink(
     optionDefs: OptionDefs,
-    settings: TypedOptions,
+    settings: AllTypedOptions,
 ): string {
     const writer = new PackedBitsWriter();
     _.forEach(optionDefs, (option) => {

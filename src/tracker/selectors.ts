@@ -56,9 +56,14 @@ export const checkHintSelector = currySelector(
 );
 
 /**
- * Selects the current settings.
+ * Selects ALL settings, even the ones not logically relevant.
  */
-export const settingsSelector = (state: RootState) => state.tracker.settings!;
+export const allSettingsSelector = (state: RootState) => state.tracker.settings!;
+
+/**
+ * Selects the current logical settings.
+ */
+export const settingsSelector = (state: RootState): TypedOptions => state.tracker.settings!;
 
 /**
  * Selects a particular settings value.
@@ -350,23 +355,14 @@ function mapSettings(
     }
 
     for (const option of options) {
-        if (option.type === 'multichoice') {
-            if (
-                option.command === 'starting-items' ||
-                option.command === 'excluded-locations'
-            ) {
-                continue;
-            }
-            const vals = settings[option.command] as string[];
-            const trick =
-                option.command === 'enabled-tricks-glitched' ||
-                option.command === 'enabled-tricks-bitless';
+        if (
+            option.type === 'multichoice' &&
+            (option.command === 'enabled-tricks-glitched' ||
+                option.command === 'enabled-tricks-bitless')
+        ) {
+            const vals = settings[option.command];
             for (const option of vals) {
-                if (trick) {
-                    trySet(`${option} Trick`);
-                } else {
-                    trySet(`${option} option`);
-                }
+                trySet(`${option} Trick`);
             }
         }
     }

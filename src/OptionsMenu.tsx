@@ -14,10 +14,11 @@ import { Option, OptionValue } from './permalink/SettingsTypes';
 import { decodePermalink, encodePermalink } from './permalink/Settings';
 import Tippy from '@tippyjs/react';
 import { useDispatch, useSelector } from 'react-redux';
-import { settingsSelector } from './tracker/selectors';
+import { allSettingsSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
 import { optionsSelector } from './logic/selectors';
 import { selectStyles } from './customization/ComponentStyles';
+import { inLogicOptions } from './logic/ThingsThatWouldBeNiceToHaveInTheDump';
 
 function OptionsMenu({
     onHide,
@@ -25,7 +26,7 @@ function OptionsMenu({
     onHide: () => void;
 }) {
     const options = useSelector(optionsSelector);
-    const storedSettings = useSelector(settingsSelector);
+    const storedSettings = useSelector(allSettingsSelector);
     const dispatch = useDispatch();
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -71,9 +72,7 @@ function OptionsMenu({
             </Modal.Header>
             <Modal.Body className="show-grid">
                 <Row style={{ paddingBottom: '3%' }}>
-                    <Col xs={5}>
-                        Permalink
-                    </Col>
+                    <Col xs={5}>Permalink</Col>
                     <Col xs={6}>
                         <input
                             ref={inputRef}
@@ -88,13 +87,17 @@ function OptionsMenu({
                 </Row>
 
                 <Row style={{ height: '600px', overflowY: 'auto' }}>
-                    {options
-                        .filter((def) => def.permalink !== false)
-                        .map((def) => (
+                    {inLogicOptions.map((option) => {
+                        const def = options.find(
+                            (def) => def.command === option,
+                        )!;
+                        return (
                             <Row key={def.name}>
                                 <Setting
                                     def={def}
-                                    value={tempSettings[def.command] as OptionValue}
+                                    value={
+                                        tempSettings[def.command] as OptionValue
+                                    }
                                     setValue={(value) =>
                                         setTempSettings((existing) => ({
                                             ...existing,
@@ -103,7 +106,8 @@ function OptionsMenu({
                                     }
                                 />
                             </Row>
-                        ))}
+                        );
+                    })}
                 </Row>
             </Modal.Body>
             <Modal.Footer>
@@ -187,8 +191,8 @@ function Setting({
                             onChange={(e) => setValue(e.target.value)}
                             value={value as string}
                         >
-                            {def.choices.map((val) => (
-                                <option key={val}>{val}</option>
+                            {def.choices.map((val, idx) => (
+                                <option key={`val-${idx}`}>{val}</option>
                             ))}
                         </FormControl>
                     </Col>

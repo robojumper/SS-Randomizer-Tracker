@@ -1,10 +1,11 @@
+import { LogicOptions } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import { GeneratedOptions } from './GeneratedOptions';
 
 export type BaseOption = {
     permalink: boolean | undefined;
     help: string;
     name: string;
-    command: keyof TypedOptions;
+    command: keyof AllTypedOptions;
 };
 
 export type BooleanOption = BaseOption & {
@@ -44,7 +45,7 @@ export type OptionDefs = Option[];
 export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
 
-export interface TypedOptions
+export interface AllTypedOptions
     extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity'> {
     rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
     shopsanity: GeneratedOptions['shopsanity'] | 'Vanilla' | undefined;
@@ -52,3 +53,5 @@ export interface TypedOptions
     'rupin-shopsanity': boolean | undefined;
     'luv-shopsanity': boolean | undefined;
 }
+
+export type TypedOptions = Pick<AllTypedOptions, LogicOptions>;

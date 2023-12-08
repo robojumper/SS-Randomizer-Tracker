@@ -1,4 +1,4 @@
-import { OptionType, OptionValue, TypedOptions } from "../permalink/SettingsTypes";
+import { AllTypedOptions, OptionType, OptionValue, TypedOptions } from "../permalink/SettingsTypes";
 import { RegularDungeon } from "./Locations";
 
 export const dungeonCompletionRequirements: Record<RegularDungeon, string> = {
@@ -39,6 +39,46 @@ export const runtimeOptions: OptionMapping[] = [
     m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),
     m('FS Lava Flow option', 'fs-lava-flow', true),
 ];
+
+/** The tracker will only show these options, and tracker logic code is only allowed to access these! */
+const inLogicOptions_ = [
+    'starting-sword',
+    'starting-bottles',
+    'starting-crystal-packs',
+    'starting-tadtones',
+    'starting-items',
+    'starting-tablet-count',
+    'got-start',
+    'got-dungeon-requirement',
+    'got-sword-requirement',
+    'required-dungeon-count',
+    'empty-unrequired-dungeons',
+    'triforce-required',
+    'triforce-shuffle',
+    'open-thunderhead',
+    'open-lake-floria',
+    'open-et',
+    'open-lmf',
+    'fs-lava-flow',
+    'shopsanity',
+    'rupeesanity',
+    'tadtonesanity',
+    'treasuresanity-in-silent-realms',
+    'trial-treasure-amount',
+    'gondo-upgrades',
+    'bit-patches',
+    'damage-multiplier',
+    'upgraded-skyward-strike',
+    'random-start-entrance',
+    'randomize-entrances',
+    'randomize-trials',
+    'excluded-locations',
+    'enabled-tricks-bitless',
+    'enabled-tricks-glitched',
+] satisfies (keyof AllTypedOptions)[];
+
+export type LogicOptions = (typeof inLogicOptions_)[number];
+export const inLogicOptions: string[] = inLogicOptions_;
 
 export const impaSongCheck = '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
 export const completeTriforceReq = '\\Complete Triforce';
