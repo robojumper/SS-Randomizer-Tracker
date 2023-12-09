@@ -18,7 +18,9 @@ export const nonRandomizedExits = [
 
 export const bannedExitsAndEntrances = [
     '\\Lanayru\\Temple of Time\\Inside\\Exit to Lanayru Mining Facility',
+    '\\Lanayru\\Temple of Time\\Inside\\Entrance from Lanayru Mining Facility',
     '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Entrance from Temple of Time',
+    '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Exit to Temple of Time',
 ];
 
 type OptionMapping = [string, keyof TypedOptions, OptionValue | ((val: OptionValue) => boolean)];
