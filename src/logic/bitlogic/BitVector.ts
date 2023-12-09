@@ -87,6 +87,13 @@ export class BitVector {
         return (this.#data | other.#data) === other.#data;
     }
 
+    equals(other: BitVector) {
+        if (other.#size !== this.#size) {
+            throw new Error("eq BigInt with wrong size");
+        }
+        return this.#data === other.#data;
+    }
+
     /**
      * slow
      */
