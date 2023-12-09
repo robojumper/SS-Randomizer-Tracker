@@ -104,9 +104,11 @@ export function anyPath(
         return undefined;
     }
 
-    visitedExpressions.add(idx);
+    if (revealedExpressions.has(idx)) {
+        return undefined;
+    }
 
-    const thisBit = new BitVector(opaqueBits.size).setBit(idx);
+    visitedExpressions.add(idx);
 
     for (const conj of implications[idx].conjunctions) {
         for (const bit of conj.iter()) {
@@ -119,14 +121,14 @@ export function anyPath(
                     visitedExpressions,
                 );
                 if (moreBits) {
-                    return thisBit.or(moreBits);
+                    return new BitVector(opaqueBits.size).setBit(bit).or(moreBits);
                 }
             }
         }
     }
 
     visitedExpressions.delete(idx);
-    return thisBit;
+    return new BitVector(opaqueBits.size);
 }
 
 /**

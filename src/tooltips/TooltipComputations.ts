@@ -167,35 +167,48 @@ async function computationTask(
 
         const bit = store.logic.items[checkId][1];
 
-        const potentialPath = anyPath(
-            store.opaqueBits,
-            store.implications,
-            bit,
-            store.revealed,
-        );
-
-        await delay(0);
-
-        if (potentialPath) {
-            for (const precomputeBit of potentialPath.iter()) {
-                if (
-                    !store.opaqueBits.test(precomputeBit) &&
-                    !store.revealed.has(precomputeBit)
-                ) {
-                    // And then precompute some non-opaque requirements. This persists between tooltips, so
-                    // different checks can reuse these results.
-                    // Note that even though the result of `anyPath` is obviously path-dependent and depends on the check in question,
-                    // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
-                    store.implications[precomputeBit] = computeExpression(
-                        store.opaqueBits,
-                        store.implications,
-                        precomputeBit,
-                    );
-                    store.revealed.add(precomputeBit);
-                    await delay(0);
+        // We precompute some requirements because it improves performance.
+        // However, we can sometimes end up precomputing trivial requirements
+        // like \Distance Activator for X Rupee items while expensive requirements
+        // like \Can Medium Rupee Farm end up being not revealed yet. So
+        // we always perform a minimum amount of work per item.
+        let numRevealedInPrecomputation = 0;
+        while (numRevealedInPrecomputation < 5) {
+            const potentialPath = anyPath(
+                store.opaqueBits,
+                store.implications,
+                bit,
+                store.revealed,
+            );
+    
+            await delay(0);
+    
+            if (potentialPath && potentialPath.numSetBits > 0) {
+                for (const precomputeBit of potentialPath.iter()) {
+                    if (
+                        !store.opaqueBits.test(precomputeBit) &&
+                        !store.revealed.has(precomputeBit)
+                    ) {
+                        // And then precompute some non-opaque requirements. This persists between tooltips, so
+                        // different checks can reuse these results.
+                        // Note that even though the result of `anyPath` is obviously path-dependent and depends on the check in question,
+                        // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
+                        store.implications[precomputeBit] = computeExpression(
+                            store.opaqueBits,
+                            store.implications,
+                            precomputeBit,
+                        );
+                        store.revealed.add(precomputeBit);
+                        numRevealedInPrecomputation += 1;
+                        await delay(0);
+                    }
                 }
+            } else {
+                break;
             }
         }
+
+        console.log('computing', store.logic.allItems[bit]);
 
         const opaqueOnlyExpr = computeExpression(
             store.opaqueBits,
