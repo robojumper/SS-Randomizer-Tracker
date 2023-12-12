@@ -4,7 +4,7 @@ import { BitVector } from './BitVector';
  * A logical expression in DNF (disjunctive normal form).
  */
 export class LogicalExpression {
-    #conjunctions: BitVector[];
+    conjunctions: BitVector[];
 
     static false() {
         return new LogicalExpression([]);
@@ -15,16 +15,16 @@ export class LogicalExpression {
     }
 
     constructor(conjs: BitVector[]) {
-        this.#conjunctions = conjs;
+        this.conjunctions = conjs;
     }
 
     or(other: LogicalExpression | BitVector) {
         if (other instanceof BitVector) {
-            return new LogicalExpression([...this.#conjunctions, other]);
+            return new LogicalExpression([...this.conjunctions, other]);
         } else {
             return new LogicalExpression([
-                ...this.#conjunctions,
-                ...other.#conjunctions,
+                ...this.conjunctions,
+                ...other.conjunctions,
             ]);
         }
     }
@@ -32,23 +32,23 @@ export class LogicalExpression {
     and(other: LogicalExpression | BitVector) {
         if (other instanceof BitVector) {
             return new LogicalExpression(
-                andToDnf2(this.#conjunctions, [other]),
+                andToDnf2(this.conjunctions, [other]),
             );
         }
 
         const size =
-            this.#conjunctions[0]?.size ?? other.#conjunctions[0]?.size;
+            this.conjunctions[0]?.size ?? other.conjunctions[0]?.size;
         if (size === undefined) {
             return LogicalExpression.false();
         }
         return new LogicalExpression(
-            andToDnf2(this.#conjunctions, other.#conjunctions),
+            andToDnf2(this.conjunctions, other.conjunctions),
         );
     }
 
     drop_unless(drop: number, unless: number) {
         return new LogicalExpression(
-            this.#conjunctions.map((c) =>
+            this.conjunctions.map((c) =>
                 c.test(unless) ? c : c.clearBit(drop),
             ),
         );
@@ -56,8 +56,8 @@ export class LogicalExpression {
 
     removeDuplicates() {
         const terms: BitVector[] = [];
-        for (let i = 0; i < this.#conjunctions.length; i++) {
-            const candidate = this.#conjunctions[i];
+        for (let i = 0; i < this.conjunctions.length; i++) {
+            const candidate = this.conjunctions[i];
             const weakerTerm = terms.findIndex((t) => t.isSubsetOf(candidate));
             if (weakerTerm !== -1) {
                 continue;
@@ -76,21 +76,17 @@ export class LogicalExpression {
     }
 
     eval(vec: BitVector) {
-        return this.#conjunctions.some((c) => c.isSubsetOf(vec));
-    }
-
-    get conjunctions() {
-        return this.#conjunctions;
+        return this.conjunctions.some((c) => c.isSubsetOf(vec));
     }
 
     isTriviallyFalse() {
-        return this.#conjunctions.length === 0;
+        return this.conjunctions.length === 0;
     }
 
     isTriviallyTrue() {
         return (
-            this.#conjunctions.length > 0 &&
-            this.#conjunctions.some((c) => c.numSetBits === 0)
+            this.conjunctions.length > 0 &&
+            this.conjunctions.some((c) => c.numSetBits === 0)
         );
     }
 }

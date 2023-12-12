@@ -24,74 +24,75 @@ function union<T>(a: Set<T>, b: Set<T>): Set<T> {
  * A fixed-size bit vector.
  */
 export class BitVector {
-    #size: number;
-    #data: bigint;
-    #intSet: Set<number>;
+    domainSize: number;
+    data: bigint;
+    intSet: Set<number>;
 
     constructor(size: number);
     constructor(size: number, bits: bigint, intSet: Set<number>);
 
     constructor(size: number, bits?: bigint, intSet?: Set<number>) {
-        this.#size = size;
+        this.domainSize = size;
         if (bits && bits >= (ONE << BigInt(size))) {
             throw new Error("constructing BigInt with wrong size");
         }
-        this.#data = bits ?? ZERO;
-        this.#intSet = intSet ?? new Set();
+        this.data = bits ?? ZERO;
+        this.intSet = intSet ?? new Set();
     }
 
     /**
      * Vector domain size
      */
     get size() {
-        return this.#size;
+        return this.domainSize;
     }
 
     setBit(bit: number): this {
-        this.#data |= ONE << BigInt(bit);
-        this.#intSet.add(bit);
+        this.data |= ONE << BigInt(bit);
+        this.intSet.add(bit);
         return this;
     }
 
     clearBit(bit: number): this {
-        this.#data = this.#data & (invert(this.#size, ONE << BigInt(bit)));
-        this.#intSet.delete(bit);
+        this.data = this.data & (invert(this.domainSize, ONE << BigInt(bit)));
+        this.intSet.delete(bit);
         return this;
     }
 
     and(other: BitVector) {
-        if (other.#size !== this.#size) {
+        if (other.domainSize !== this.domainSize) {
             throw new Error("and BigInt with wrong size");
         }
-        return new BitVector(this.#size, other.#data & this.#data, intersection(other.#intSet, this.#intSet));
+        return new BitVector(this.domainSize, other.data & this.data, intersection(other.intSet, this.intSet));
     }
 
     or(other: BitVector) {
-        if (other.#size !== this.#size) {
+        if (other.domainSize !== this.domainSize) {
             throw new Error("or BigInt with wrong size");
         }
-        return new BitVector(this.#size, other.#data | this.#data, union(other.#intSet, this.#intSet));
+        return new BitVector(this.domainSize, other.data | this.data, union(other.intSet, this.intSet));
     }
 
     test(bit: number) {
-        if (bit >= this.#size) {
+        if (bit >= this.domainSize) {
             throw new Error("wrong size")
         }
-        return this.#intSet.has(bit);
+        return this.intSet.has(bit);
     }
 
     isSubsetOf(other: BitVector) {
-        if (other.#size !== this.#size) {
+        if (other.domainSize !== this.domainSize) {
             throw new Error("or BigInt with wrong size");
         }
-        return (this.#data | other.#data) === other.#data;
+
+        return this.numSetBits <= other.numSetBits && (this.data | other.data) === other.data;
     }
 
     equals(other: BitVector) {
-        if (other.#size !== this.#size) {
+        if (other.domainSize !== this.domainSize) {
             throw new Error("eq BigInt with wrong size");
         }
-        return this.#data === other.#data;
+        return this.data === other.data;
     }
 
     /**
@@ -99,8 +100,8 @@ export class BitVector {
      */
     toString() {
         let str = "";
-        for (let bit = this.#size - 1; bit >= 0; bit--) {
-            if (this.#data & (ONE << BigInt(bit))) {
+        for (let bit = this.domainSize - 1; bit >= 0; bit--) {
+            if (this.data & (ONE << BigInt(bit))) {
                 str += '1';
             } else {
                 str += '0';
@@ -110,18 +111,18 @@ export class BitVector {
     }
 
     clone() {
-        return new BitVector(this.#size, this.#data, new Set(this.#intSet));
+        return new BitVector(this.domainSize, this.data, new Set(this.intSet));
     }
 
     isEmpty() {
-        return this.#data === ZERO;
+        return this.data === ZERO;
     }
 
     iter() {
-        return this.#intSet.values()
+        return this.intSet.values()
     }
 
     get numSetBits() {
-        return this.#intSet.size
+        return this.intSet.size
     }
 }
