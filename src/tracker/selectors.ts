@@ -2,7 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { logicSelector, optionsSelector } from '../logic/selectors';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { RootState } from '../store/store';
-import { createSelectorWeakMap, currySelector } from '../utils/redux';
+import { currySelector } from '../utils/redux';
 import { Items, TrackerState } from './slice';
 import {
     bannedExitsAndEntrances,
@@ -613,7 +613,7 @@ export const inSemiLogicBitsSelector = createSelector(
 );
 
 export const dungeonCompletedSelector = currySelector(
-    createSelectorWeakMap(
+    createSelector(
         [(_state: RootState, name: DungeonName) => name, checkedChecksSelector],
         (name, checkedChecks) =>
             name !== 'Sky Keep' &&
@@ -622,7 +622,7 @@ export const dungeonCompletedSelector = currySelector(
 );
 
 export const checkSelector = currySelector(
-    createSelectorWeakMap(
+    createSelector(
         [
             (_state: RootState, checkId: string) => checkId,
             logicSelector,

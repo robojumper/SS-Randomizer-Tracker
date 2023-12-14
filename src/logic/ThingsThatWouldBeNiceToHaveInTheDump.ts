@@ -31,7 +31,7 @@ export const runtimeOptions: OptionMapping[] = [
     m('Open ET option', 'open-et', true),
     m('Open LMF option', 'open-lmf', "Open"),
     m('LMF Nodes On option', 'open-lmf', "Main Node"),
-    m('Floria Gates option', 'open-lake-floria', 'Open'),
+    m('Open Lake Floria option', 'open-lake-floria', 'Open'),
     m('Talk to Yerbal option', 'open-lake-floria', 'Talk to Yerbal'),
     m('Vanilla Lake Floria option', 'open-lake-floria', 'Vanilla'),
     m('Randomized Beedle option', 'shopsanity', (val) => val !== 'Vanilla'),

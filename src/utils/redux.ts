@@ -1,4 +1,3 @@
-import { createSelectorCreator, weakMapMemoize } from '@reduxjs/toolkit';
 import { RootState } from '../store/store';
 
 /**
@@ -37,6 +36,3 @@ export function currySelector<K, R>(
     fn.selector = selector;
     return fn;
 }
-
-
-export const createSelectorWeakMap = createSelectorCreator({ memoize: weakMapMemoize, argsMemoize: weakMapMemoize });
