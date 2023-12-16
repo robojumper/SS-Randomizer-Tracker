@@ -118,7 +118,8 @@ const initialState: TrackerState = {
 
 export function preloadedTrackerState(): TrackerState {
     const stateJson = localStorage.getItem('ssrTrackerState');
-    return stateJson ? (JSON.parse(stateJson) as TrackerState) : initialState;
+    const state = stateJson ? JSON.parse(stateJson) as Partial<TrackerState> : undefined;
+    return {...initialState, ...state};
 }
 
 const trackerSlice = createSlice({
