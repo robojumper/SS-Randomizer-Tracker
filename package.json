@@ -19,6 +19,7 @@
     "react-color": "^2.19.3",
     "react-contexify": "^6.0.0",
     "react-dom": "^18.2.0",
+    "react-error-boundary": "^4.0.12",
     "react-redux": "^9.0.4",
     "react-router-dom": "^6.6.2",
     "react-scripts": "^5.0.1",

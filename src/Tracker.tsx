@@ -24,6 +24,8 @@ import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
 import { colorSchemeSelector, layoutSelector } from './customization/selectors';
 import { reset } from './tracker/slice';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorPage from './ErrorPage';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -53,9 +55,11 @@ function useWindowDimensions() {
 
 export default function TrackerContainer() {
     return (
-        <MakeTooltipsAvailable>
-            <NewTracker />
-        </MakeTooltipsAvailable>
+        <ErrorBoundary FallbackComponent={ErrorPage}>
+            <MakeTooltipsAvailable>
+                <NewTracker />
+            </MakeTooltipsAvailable>
+        </ErrorBoundary>
     );
 }
 
