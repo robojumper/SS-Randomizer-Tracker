@@ -817,9 +817,21 @@ export const areasSelector = createSelector(
                 );
 
                 return {
-                    checks: regularChecks,
+                    checks: _.sortBy(
+                        regularChecks,
+                        (check) =>
+                            rawCheckOrder.indexOf(
+                                check
+                            )
+                    ),
                     numTotalChecks: regularChecks.length,
-                    extraChecks: extraChecks,
+                    extraChecks: _.sortBy(
+                        extraChecks,
+                        (check) =>
+                            rawCheckOrder.indexOf(
+                                check
+                            )
+                    ),
                     nonProgress,
                     hidden,
                     name: area,
@@ -830,6 +842,8 @@ export const areasSelector = createSelector(
         ));
 
         const dungeonOrder: readonly string[] = dungeonNames;
+        console.log(rawCheckOrder);
+        console.log(areasList);
 
         return _.sortBy(
             areasList,
