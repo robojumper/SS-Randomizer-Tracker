@@ -110,7 +110,6 @@ export class BooleanExpression {
         for (let i = 0; i < iterations; i++) {
             updatedExpression = updatedExpression.removeDuplicateChildren(implies);
             updatedExpression = updatedExpression.removeDuplicateExpressions(implies);
-            updatedExpression = updatedExpression.factorCommonSubterms(implies);
         }
 
         return updatedExpression;
@@ -341,44 +340,19 @@ export class BooleanExpression {
             return !parentExpression.expressionIsSubsumed(expression, index, implies);
         });
 
-        const isEqualTo = (left: Item, right: Item) => {
-            if (BooleanExpression.isExpression(left)) {
-                return left.isEqualTo(right, (a, b) => a === b);
-            } else if (BooleanExpression.isExpression(right)) {
-                return right.isEqualTo(left, (a, b) => a === b);
-            } else {
-                return left === right;
-            }
-        }
-
-        if (parentExpression.type === Op.Or && newItems.length >= 2 && _.every(_.map(newItems, BooleanExpression.isExpression))) {
+        if (this.type === Op.Or && newItems.length >= 2 && _.every(_.map(newItems, BooleanExpression.isExpression))) {
             const commonFactors: Item[] = [];
             const booleanItems = newItems as BooleanExpression[];
             _.forEach(booleanItems[0].items, (item) => {
-                if (booleanItems.every((expr) => expr.items.some((i) => isEqualTo(item, i)))) {
+                if (_.every(_.map(booleanItems, (expr) => _.includes(expr.items, item)))) {
                     commonFactors.push(item);
                 }
             });
             if (commonFactors.length) {
-                return new BooleanExpression([...commonFactors, new BooleanExpression(booleanItems.map((expr) => new BooleanExpression(expr.items.filter((item) => !commonFactors.some((c) => isEqualTo(c, item))), expr.type)), parentExpression.type)], parentExpression.oppositeType());
+                return new BooleanExpression([...commonFactors, new BooleanExpression([...(newItems.filter((item) => !commonFactors.includes(item)))], this.type)], this.oppositeType());
             }
         }
-        return BooleanExpression.createFlatExpression(newItems, parentExpression.type);
-    }
-
-    /**
-     * (Z and A) or (Z and B) or (Z and C) or (Z and D) -> Z and (A or B or C or D)
-     */
-    factorCommonSubterms(implies: BinOp<string>): BooleanExpression {
-        const expr = this.flatten();
-        if (expr.items.filter(BooleanExpression.isExpression).length >= 2) {
-            const [booleanExprs, terminalExprs] = _.partition(expr.items, (item) => BooleanExpression.isExpression(item));
-            const itemsBySize = _.groupBy(booleanExprs as BooleanExpression[], (i) => i.items.length);
-            const newItems: Item[] = Object.values(itemsBySize).map((items) => new BooleanExpression(items, expr.type).removeDuplicateExpressions(implies));
-            return BooleanExpression.createFlatExpression(newItems.concat(terminalExprs), expr.type);
-        }
-
-        return expr;
+        return BooleanExpression.createFlatExpression(newItems, this.type);
     }
 }
 
