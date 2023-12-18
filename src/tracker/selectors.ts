@@ -749,7 +749,10 @@ export const isCheckBannedSelector = createSelector(
         };
 
         return (checkId: string, check: LogicalCheck) =>
-            bannedChecks.has(check.name) ||
+            // Loose crystal checks can be banned to not require picking them up
+            // in logic, but we want to allow marking them as collected, since
+            // this is semilogic?
+            (check.type !== 'loose_crystal' && bannedChecks.has(check.name)) ||
             isExcessRelic(check) ||
             isBannedCubeCheckViaChest(checkId, check) ||
             (rupeesExcluded && check.type === 'rupee') ||
@@ -783,11 +786,15 @@ export const areasSelector = createSelector(
         isAreaHidden,
         rawCheckOrder,
     ): Area[] => {
-        const areasList: Area[] = Object.entries(logic.checksByArea).map(
+        const areasList: Area[] = _.compact(Object.entries(logic.checksByArea).map(
             ([area, checks]) => {
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),
                 );
+
+                if (!progressChecks.length) {
+                    return undefined;
+                }
 
                 const [extraChecks, regularChecks_] = _.partition(
                     progressChecks,
@@ -820,7 +827,7 @@ export const areasSelector = createSelector(
                     numChecksAccessible: inLogic.length,
                 };
             },
-        );
+        ));
 
         const dungeonOrder: readonly string[] = dungeonNames;
 
