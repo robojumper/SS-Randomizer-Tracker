@@ -842,8 +842,6 @@ export const areasSelector = createSelector(
         ));
 
         const dungeonOrder: readonly string[] = dungeonNames;
-        console.log(rawCheckOrder);
-        console.log(areasList);
 
         return _.sortBy(
             areasList,
