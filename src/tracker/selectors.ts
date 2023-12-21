@@ -25,7 +25,13 @@ import {
     dungeonNames,
     isDungeon,
 } from '../logic/Locations';
-import { AreaGraph, Logic, LogicalCheck, makeDay, makeNight } from '../logic/Logic';
+import {
+    AreaGraph,
+    Logic,
+    LogicalCheck,
+    makeDay,
+    makeNight,
+} from '../logic/Logic';
 import {
     canAccessCubeToCubeCheck,
     cubeCheckToCanAccessCube,
@@ -58,12 +64,14 @@ export const checkHintSelector = currySelector(
 /**
  * Selects ALL settings, even the ones not logically relevant.
  */
-export const allSettingsSelector = (state: RootState) => state.tracker.settings!;
+export const allSettingsSelector = (state: RootState) =>
+    state.tracker.settings!;
 
 /**
  * Selects the current logical settings.
  */
-export const settingsSelector = (state: RootState): TypedOptions => state.tracker.settings!;
+export const settingsSelector = (state: RootState): TypedOptions =>
+    state.tracker.settings!;
 
 /**
  * Selects a particular settings value.
@@ -126,30 +134,28 @@ export const itemCountsSelector = createSelector(
 export const allowedStartingEntrancesSelector = createSelector(
     [logicSelector, settingSelector('random-start-entrance')],
     (logic, randomizeStart) => {
-        return (
-            Object.entries(logic.areaGraph.entrances)
-                .filter(([, def]) => {
-                    if (def['can-start-at'] === false) {
-                        return false;
-                    }
+        return Object.entries(logic.areaGraph.entrances)
+            .filter(([, def]) => {
+                if (def['can-start-at'] === false) {
+                    return false;
+                }
 
-                    switch (randomizeStart) {
-                        case 'Vanilla':
-                            return false;
-                        case 'Bird Statues':
-                            return def.subtype === 'bird-statue-entrance';
-                        case 'Any Surface Region':
-                        case 'Any':
-                            return true;
-                        default:
-                            return true;
-                    }
-                })
-                .map(([id, def]) => ({
-                    id,
-                    name: def.short_name,
-                }))
-        );
+                switch (randomizeStart) {
+                    case 'Vanilla':
+                        return false;
+                    case 'Bird Statues':
+                        return def.subtype === 'bird-statue-entrance';
+                    case 'Any Surface Region':
+                    case 'Any':
+                        return true;
+                    default:
+                        return true;
+                }
+            })
+            .map(([id, def]) => ({
+                id,
+                name: def.short_name,
+            }));
     },
 );
 
@@ -165,15 +171,15 @@ type ExitMapSource =
       }
     | {
           type: 'linked';
-          pool: keyof AreaGraph['entrancePools']
+          pool: keyof AreaGraph['entrancePools'];
           location: string;
       }
     | {
-        type: 'randomStartingEntrance';
-    }
+          type: 'randomStartingEntrance';
+      }
     | {
-        type: 'random';
-    };
+          type: 'random';
+      };
 
 /** Defines how exits should be resolved. */
 export const exitRulesSelector = createSelector(
@@ -183,7 +189,12 @@ export const exitRulesSelector = createSelector(
         settingSelector('randomize-entrances'),
         settingSelector('randomize-trials'),
     ],
-    (logic, startingEntranceSetting, randomEntranceSetting, randomTrialsSetting) => {
+    (
+        logic,
+        startingEntranceSetting,
+        randomEntranceSetting,
+        randomTrialsSetting,
+    ) => {
         const result: Record<string, ExitMapSource> = {};
 
         const followToCanonicalEntrance = _.invert(logic.areaGraph.autoExits);
@@ -199,14 +210,22 @@ export const exitRulesSelector = createSelector(
             }
 
             if (followToCanonicalEntrance[exitId]) {
-                result[exitId] = { type: 'follow', otherExit: followToCanonicalEntrance[exitId] };
+                result[exitId] = {
+                    type: 'follow',
+                    otherExit: followToCanonicalEntrance[exitId],
+                };
                 continue;
             }
 
             const poolData = (() => {
-                for (const [pool_, locations] of Object.entries(logic.areaGraph.entrancePools)) {
-                    const pool = pool_ as keyof typeof logic.areaGraph.entrancePools;
-                    for (const [location, linkage] of Object.entries(locations)) {
+                for (const [pool_, locations] of Object.entries(
+                    logic.areaGraph.entrancePools,
+                )) {
+                    const pool =
+                        pool_ as keyof typeof logic.areaGraph.entrancePools;
+                    for (const [location, linkage] of Object.entries(
+                        locations,
+                    )) {
                         if (linkage.exits[0] === exitId) {
                             return [pool, location, true] as const;
                         } else if (linkage.exits[1] === exitId) {
@@ -218,7 +237,10 @@ export const exitRulesSelector = createSelector(
 
             if (poolData) {
                 const [pool, location, isOutsideExit] = poolData;
-                if (pool === 'dungeons' && randomEntranceSetting !== 'None' || pool === 'silent_realms' && randomTrialsSetting) {
+                if (
+                    (pool === 'dungeons' && randomEntranceSetting !== 'None') ||
+                    (pool === 'silent_realms' && randomTrialsSetting)
+                ) {
                     if (isOutsideExit) {
                         result[exitId] = { type: 'random' };
                     } else {
@@ -232,7 +254,7 @@ export const exitRulesSelector = createSelector(
         }
 
         return result;
-    }
+    },
 );
 
 // FIXME: The dungeon that appears in place of LMF has double exits, one will lead to Temple of Time.
@@ -244,42 +266,59 @@ export const exitsSelector = createSelector(
         const result: { [exitId: string]: ExitMapping } = {};
         const rules = Object.entries(exitRules);
 
-        const makeEntrance = (id: string | undefined): ExitMapping['entrance'] => id ? {
-            id,
-            name: logic.areaGraph.entrances[id].short_name,
-        } : undefined;
+        const makeEntrance = (
+            id: string | undefined,
+        ): ExitMapping['entrance'] =>
+            id
+                ? {
+                    id,
+                    name: logic.areaGraph.entrances[id].short_name,
+                }
+                : undefined;
         const makeExit = (id: string): ExitMapping['exit'] => ({
             id,
             name: logic.areaGraph.exits[id].short_name,
         });
 
-        for (const [exitId] of rules.filter(([, rule]) => rule.type === 'vanilla')) {
+        for (const [exitId] of rules.filter(
+            ([, rule]) => rule.type === 'vanilla',
+        )) {
             result[exitId] = {
                 canAssign: false,
-                entrance: makeEntrance(logic.areaGraph.vanillaConnections[exitId]),
+                entrance: makeEntrance(
+                    logic.areaGraph.vanillaConnections[exitId],
+                ),
                 exit: makeExit(exitId),
-            }
+            };
         }
 
-        for (const [exitId] of rules.filter(([, rule]) => rule.type === 'random' || rule.type === 'randomStartingEntrance')) {
+        for (const [exitId] of rules.filter(
+            ([, rule]) =>
+                rule.type === 'random' ||
+                rule.type === 'randomStartingEntrance',
+        )) {
             result[exitId] = {
                 canAssign: true,
                 entrance: makeEntrance(mappedExits[exitId]),
                 exit: makeExit(exitId),
-            }
+            };
         }
 
-        for (const [exitId, rule] of rules.filter(([, rule]) => rule.type === 'follow')) {
+        for (const [exitId, rule] of rules.filter(
+            ([, rule]) => rule.type === 'follow',
+        )) {
             if (rule.type === 'follow') {
                 result[exitId] = {
                     canAssign: false,
                     entrance: result[rule.otherExit].entrance,
                     exit: makeExit(exitId),
-                }
+                };
             }
         }
 
-        for (const [exitId, rule] of rules.filter(([, rule]) => rule.type === 'linked')) {
+        for (const [exitId, rule] of rules.filter(
+            ([, rule]) => rule.type === 'linked',
+        )) {
             if (rule.type === 'linked') {
                 // This is unfortunately somewhat complex. This might be an exit like "ET - Main Exit",
                 // and if the Deep Woods - Exit to SV leads to ET - Main Entrance, then we know this
@@ -289,26 +328,30 @@ export const exitsSelector = createSelector(
                 // This is the corresponding entrance for this exit
                 const neededEntrance = pool[location].entrances[1];
                 // Find the exit that was mapped to an entrance in this location
-                const sourceLocation = Object.entries(pool).find(([, linkage]) => result[linkage.exits[0]].entrance?.id === neededEntrance)?.[0];
-                
+                const sourceLocation = Object.entries(pool).find(
+                    ([, linkage]) =>
+                        result[linkage.exits[0]].entrance?.id ===
+                        neededEntrance,
+                )?.[0];
+
                 if (!sourceLocation) {
                     result[exitId] = {
                         canAssign: false,
                         entrance: undefined,
                         exit: makeExit(exitId),
-                    }    
+                    };
                 } else {
                     const reverseEntrance = pool[sourceLocation].entrances[0];
                     result[exitId] = {
                         canAssign: false,
                         entrance: makeEntrance(reverseEntrance),
                         exit: makeExit(exitId),
-                    }
+                    };
                 }
             }
         }
         return _.sortBy(Object.values(result), (exit) => !exit.canAssign);
-    }
+    },
 );
 
 /**
@@ -317,12 +360,7 @@ export const exitsSelector = createSelector(
  * cached tooltips and recalculate requirements (after logic has loaded, this is only settings and mapped exits).
  */
 export const settingsImplicationsSelector = createSelector(
-    [
-        logicSelector,
-        optionsSelector,
-        settingsSelector,
-        exitsSelector,
-    ],
+    [logicSelector, optionsSelector, settingsSelector, exitsSelector],
     mapSettings,
 );
 
@@ -374,9 +412,10 @@ function mapSettings(
     const nightVec = (id: string) => logic.items[makeNight(id)][0];
     const nightBit = (id: string) => logic.items[makeNight(id)][1];
 
-    const raiseGotExpr = settings['got-start'] === 'Raised'
-        ? LogicalExpression.true(logic.bitLogic.numBits)
-        : new LogicalExpression([vec(impaSongCheck)]);
+    const raiseGotExpr =
+        settings['got-start'] === 'Raised'
+            ? LogicalExpression.true(logic.bitLogic.numBits)
+            : new LogicalExpression([vec(impaSongCheck)]);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = new LogicalExpression([
         vec(`Progressive Sword x ${neededSwords}`),
@@ -494,7 +533,7 @@ function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
 export const requiredDungeonsSelector = createSelector(
     [
         (state: RootState) => state.tracker.requiredDungeons,
-        settingSelector('required-dungeon-count')
+        settingSelector('required-dungeon-count'),
     ],
     (selectedRequiredDungeons, numRequiredDungeons) => {
         if (numRequiredDungeons === 6) {
@@ -502,7 +541,7 @@ export const requiredDungeonsSelector = createSelector(
         } else {
             return selectedRequiredDungeons.slice();
         }
-    }
+    },
 );
 
 export const checkImplicationsSelector = createSelector(
@@ -595,13 +634,19 @@ export const inSemiLogicBitsSelector = createSelector(
 
         const assumedCheckedChecks = [...checkedChecks];
 
-        for (const [canAccessItem, cubeItem] of Object.entries(canAccessCubeToCubeCheck)) {
+        for (const [canAccessItem, cubeItem] of Object.entries(
+            canAccessCubeToCubeCheck,
+        )) {
             if (inLogicBits.test(logic.items[canAccessItem][1])) {
                 assumedCheckedChecks.push(cubeItem);
             }
         }
 
-        const assumedCheckImplications = mapChecks(logic, requiredDungeons, assumedCheckedChecks);
+        const assumedCheckImplications = mapChecks(
+            logic,
+            requiredDungeons,
+            assumedCheckedChecks,
+        );
 
         return interpretLogic(
             logic.bitLogic,
@@ -637,7 +682,6 @@ export const checkSelector = currySelector(
             inSemiLogicBits,
             checkedChecks,
         ): Check => {
-
             const logicalCheckId = cubeCheckToCanAccessCube[checkId] ?? checkId;
 
             const checkBit = logic.items[logicalCheckId][1];
@@ -687,10 +731,7 @@ export const areaNonprogressSelector = createSelector(
 );
 
 export const areaHiddenSelector = createSelector(
-    [
-        areaNonprogressSelector,
-        settingSelector('randomize-entrances'),
-    ],
+    [areaNonprogressSelector, settingSelector('randomize-entrances')],
     (areaNonprogress, randomEntranceSetting) => {
         return (area: string) =>
             areaNonprogress(area) &&
@@ -761,12 +802,6 @@ export const isCheckBannedSelector = createSelector(
     },
 );
 
-const rawCheckOrderSelector = createSelector([logicSelector], (logic) =>
-    Object.entries(logic.checks)
-        .filter(([, check]) => check.type !== 'tr_cube')
-        .map(([checkId]) => checkId),
-);
-
 export const areasSelector = createSelector(
     [
         logicSelector,
@@ -775,7 +810,6 @@ export const areasSelector = createSelector(
         inLogicBitsSelector,
         areaNonprogressSelector,
         areaHiddenSelector,
-        rawCheckOrderSelector,
     ],
     (
         logic,
@@ -784,10 +818,10 @@ export const areasSelector = createSelector(
         inLogicBits,
         isAreaNonprogress,
         isAreaHidden,
-        rawCheckOrder,
-    ): Area[] => {
-        const areasList: Area[] = _.compact(Object.entries(logic.checksByArea).map(
-            ([area, checks]) => {
+    ): Area[] =>
+        _.compact(
+            logic.areas.map((area) => {
+                const checks = logic.checksByArea[area];
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),
                 );
@@ -808,7 +842,6 @@ export const areasSelector = createSelector(
                 const hidden = isAreaHidden(area);
                 const regularChecks = nonProgress ? [] : regularChecks_;
 
-
                 const remaining = regularChecks.filter(
                     (check) => !checkedChecks.includes(check),
                 );
@@ -826,22 +859,8 @@ export const areasSelector = createSelector(
                     numChecksRemaining: remaining.length,
                     numChecksAccessible: inLogic.length,
                 };
-            },
-        ));
-
-        const dungeonOrder: readonly string[] = dungeonNames;
-
-        return _.sortBy(
-            areasList,
-            (area) => dungeonOrder.indexOf(area.name),
-            (area) =>
-                rawCheckOrder.indexOf(
-                    area.checks.find(
-                        (check) => logic.checks[check].type !== 'tr_cube',
-                    )!,
-                ),
-        );
-    },
+            }),
+        ),
 );
 
 export const totalCountersSelector = createSelector(
@@ -865,16 +884,14 @@ export const remainingEntrancesSelector = createSelector(
     [logicSelector, exitRulesSelector, exitsSelector],
     (logic, exitRules, exits) => {
         const usedEntrances = new Set(
-            _.compact(
-                exits.map(
-                    (exit) => exit.entrance?.id,
-                ),
-            ),
+            _.compact(exits.map((exit) => exit.entrance?.id)),
         );
         for (const [exitId, rule] of Object.entries(exitRules)) {
             if (rule.type === 'linked') {
                 const pool = logic.areaGraph.entrancePools[rule.pool];
-                const entry = Object.values(pool).find((linkage) => linkage.exits[1] === exitId);
+                const entry = Object.values(pool).find(
+                    (linkage) => linkage.exits[1] === exitId,
+                );
                 if (entry) {
                     usedEntrances.add(entry.entrances[1]);
                 }

@@ -49,7 +49,7 @@ export class LogicalExpression {
     drop_unless(drop: number, unless: number) {
         return new LogicalExpression(
             this.conjunctions.map((c) =>
-                c.test(unless) ? c : c.clearBit(drop),
+                c.test(unless) ? c : c.clone().clearBit(drop),
             ),
         );
     }

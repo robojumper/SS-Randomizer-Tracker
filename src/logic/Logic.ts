@@ -14,6 +14,7 @@ import {
 } from './TrackerModifications';
 import { BitLogic } from './bitlogic/BitLogic';
 import { booleanExprToLogicalExpr, parseExpression } from './booleanlogic/ExpressionParse';
+import { dungeonNames } from './Locations';
 
 export interface Logic {
     bitLogic: BitLogic;
@@ -30,6 +31,7 @@ export interface Logic {
     items: Record<string, [vec: BitVector, bitIndex: number]>;
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
+    areas: string[];
     checksByArea: Record<string, string[]>;
 }
 
@@ -651,6 +653,23 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
+    const dungeonOrder: readonly string[] = dungeonNames;
+
+    const rawCheckOrder = Object.keys(raw.checks);
+    for (const area of Object.keys(checksByArea)) {
+        // TODO compareBy, sort in place
+        checksByArea[area] = _.sortBy(checksByArea[area], (check) => {
+            const idx = rawCheckOrder.indexOf(check);
+            return idx !== -1 ? idx : Number.MAX_SAFE_INTEGER;
+        });
+    }
+
+    const areas = _.sortBy(
+        Object.keys(checksByArea),
+        (area) => dungeonOrder.indexOf(area),
+        (area) => rawCheckOrder.indexOf(checksByArea[area][0]),
+    );
+
     return {
         bitLogic,
         allItems: rawItems,
@@ -658,6 +677,7 @@ export function parseLogic(raw: RawLogic): Logic {
         reverseDominators,
         items,
         checks,
+        areas,
         checksByArea,
         areaGraph: {
             areas: allAreas,
