@@ -12,7 +12,7 @@ import {
     cubeCheckToCanAccessCube,
     requiredDungeonsCompletedFakeRequirement,
 } from './TrackerModifications';
-import { BitLogic } from './bitlogic/BitLogic';
+import { BitLogic, removeDuplicates, shallowSimplify, unifyRequirements } from './bitlogic/BitLogic';
 import { booleanExprToLogicalExpr, parseExpression } from './booleanlogic/ExpressionParse';
 import { dungeonNames } from './Locations';
 
@@ -79,7 +79,6 @@ export interface EntranceLinkage {
 export interface Area {
     abstract: boolean;
     name: string;
-    locations: [location: BitVector, predicate: LogicalExpression][];
     subAreas: Record<string, Area>;
     allowedTimeOfDay: TimeOfDay;
     /** The exits of this area */
@@ -162,6 +161,12 @@ export function parseLogic(raw: RawLogic): Logic {
         requiredDungeonsCompletedFakeRequirement,
     ];
 
+    // Pessimistically, all items are opaque
+    const opaqueItems = new BitVector(rawItems.length);
+    for (let i = 0; i < rawItems.length; i++) {
+        opaqueItems.setBit(i);
+    }
+
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
         return {
             name: check.short_name,
@@ -242,7 +247,6 @@ export function parseLogic(raw: RawLogic): Logic {
             exits: [],
             entrances: [],
             subAreas: {},
-            locations: [],
         };
         allAreas[area.name] = area;
         if (!_.isEmpty(rawArea.sub_areas)) {
@@ -292,6 +296,8 @@ export function parseLogic(raw: RawLogic): Logic {
                     if (destArea.allowedTimeOfDay === TimeOfDay.Both) {
                         const dest_area_day_idx = dayBit(destArea.name);
                         const dest_area_night_idx = nightBit(destArea.name);
+                        opaqueItems.clearBit(dest_area_day_idx);
+                        opaqueItems.clearBit(dest_area_night_idx);
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
                             bitLogic.implications[dest_area_day_idx] =
@@ -374,6 +380,7 @@ export function parseLogic(raw: RawLogic): Logic {
                                     timedReq.and(vec(area.name)),
                                 );
                         }
+                        opaqueItems.clearBit(areaBit);
                     }
 
                     area.exits.push({
@@ -383,6 +390,7 @@ export function parseLogic(raw: RawLogic): Logic {
                 } else if (raw.exits[fullExitName]) {
                     areasByExit[fullExitName] = area;
                     const exitBit = items[fullExitName][1];
+                    opaqueItems.clearBit(exitBit);
                     if (area.abstract) {
                         if (fullExitName !== '\\Start') {
                             throw new Error(
@@ -465,31 +473,30 @@ export function parseLogic(raw: RawLogic): Logic {
                     bitLogic.implications[areaNightBit] = bitLogic.implications[
                         areaNightBit
                     ].or(nightVec(fullEntranceName));
+                    opaqueItems.clearBit(areaDayBit);
+                    opaqueItems.clearBit(areaNightBit);
                 } else {
                     const entranceBit = vec(fullEntranceName);
+                    let areaBit: number;
                     if (area.allowedTimeOfDay === TimeOfDay.Both) {
                         if (
                             entranceDef.allowed_time_of_day ===
                             TimeOfDay.DayOnly
                         ) {
-                            const bit = dayBit(area.name);
-                            bitLogic.implications[bit] =
-                                bitLogic.implications[bit].or(entranceBit);
+                            areaBit = dayBit(area.name);
                         } else if (
                             entranceDef.allowed_time_of_day ===
                             TimeOfDay.NightOnly
                         ) {
-                            const bit = nightBit(area.name);
-                            bitLogic.implications[bit] =
-                                bitLogic.implications[bit].or(entranceBit);
+                            areaBit = nightBit(area.name);
                         } else {
                             throw new Error('bad ToD requirement');
                         }
                     } else {
-                        const areaBit = bit(area.name);
-                        bitLogic.implications[areaBit] =
-                            bitLogic.implications[areaBit].or(entranceBit);
+                        areaBit = bit(area.name);
                     }
+                    bitLogic.implications[areaBit] = bitLogic.implications[areaBit].or(entranceBit);
+                    opaqueItems.clearBit(areaBit);
                 }
             }
         }
@@ -559,14 +566,13 @@ export function parseLogic(raw: RawLogic): Logic {
                     rawArea.allowed_time_of_day === TimeOfDay.NightOnly
                 ) {
                     timed_req = expr
-                        .drop_unless(dummy_night_bit, dummy_night_bit)
+                        .drop_unless(dummy_night_bit, dummy_day_bit)
                         .and(vec(area.name));
                 } else {
                     throw new Error('bad ToD requirement');
                 }
                 bitLogic.implications[locVec[1]] =
                     bitLogic.implications[locVec[1]].or(timed_req);
-                area.locations.push([locVec[0], expr]);
             }
         }
 
@@ -641,7 +647,10 @@ export function parseLogic(raw: RawLogic): Logic {
             if (typeof entry.exit_from_outside !== 'string') {
                 autoExits[entry.exit_from_outside[0]] = entry.exit_from_outside[1];
             }
-            const canonicalExit = typeof entry.exit_from_outside === 'string' ? entry.exit_from_outside : entry.exit_from_outside[0];
+            const canonicalExit =
+                typeof entry.exit_from_outside === 'string'
+                    ? entry.exit_from_outside
+                    : entry.exit_from_outside[0];
 
             entrancePools[pool][location] = {
                 entrances: [
@@ -669,6 +678,24 @@ export function parseLogic(raw: RawLogic): Logic {
         (area) => dungeonOrder.indexOf(area),
         (area) => rawCheckOrder.indexOf(checksByArea[area][0]),
     );
+
+    // Some cheap optimizations - these have opaque entrances,
+    // so not much opportunity here.
+    do {
+        removeDuplicates(bitLogic.implications);
+        while (shallowSimplify(opaqueItems, bitLogic.implications)) {
+            removeDuplicates(bitLogic.implications);
+        }
+    } while (unifyRequirements(opaqueItems, bitLogic.implications));
+
+    // In theory, we could also do some more aggressive optimizations
+    // with opaque entrances but we do have to be mindful of the size
+    // of our resulting expressions, otherwise subsequent tooltip
+    // calculations will be difficult to execute in a performant manner.
+    // As it turns out, "just walking somewhere in-game" is a great way
+    // to meet a lot of requirements when entrances are revealed, but with opaque
+    // entrances, every entrance has to be considered uniquely reachable with no way
+    // to bound our exploration or to simplify these expressions as we go.
 
     return {
         bitLogic,
