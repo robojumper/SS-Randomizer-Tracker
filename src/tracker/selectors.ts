@@ -29,8 +29,6 @@ import {
     AreaGraph,
     Logic,
     LogicalCheck,
-    makeDay,
-    makeNight,
 } from '../logic/Logic';
 import {
     canAccessCubeToCubeCheck,
@@ -46,6 +44,8 @@ import _ from 'lodash';
 import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 import { TimeOfDay } from '../logic/UpstreamTypes';
 import { interpretLogic } from '../logic/bitlogic/BitLogic';
+import { validateSettings } from '../permalink/Settings';
+import { LogicBuilder } from '../logic/LogicBuilder';
 
 /**
  * Selects the hint for a given area.
@@ -64,17 +64,19 @@ export const checkHintSelector = currySelector(
 /**
  * Selects ALL settings, even the ones not logically relevant.
  */
-export const allSettingsSelector = (state: RootState) =>
-    state.tracker.settings!;
+export const allSettingsSelector = createSelector(
+    [optionsSelector, (state: RootState) => state.tracker.settings!],
+    validateSettings,
+);
 
 /**
  * Selects the current logical settings.
  */
-export const settingsSelector = (state: RootState): TypedOptions =>
-    state.tracker.settings!;
+export const settingsSelector: (state: RootState) => TypedOptions =
+    allSettingsSelector;
 
 /**
- * Selects a particular settings value.
+ * Selects a particular logical settings value.
  */
 export const settingSelector: <K extends keyof TypedOptions>(
     setting: K,
@@ -82,7 +84,7 @@ export const settingSelector: <K extends keyof TypedOptions>(
     <K extends keyof TypedOptions>(
         state: RootState,
         setting: K,
-    ): TypedOptions[K] => state.tracker.settings![setting],
+    ): TypedOptions[K] => settingsSelector(state)[setting],
 );
 
 export const rawItemCountsSelector = (state: RootState) =>
@@ -100,7 +102,7 @@ function getNumLooseGratitudeCrystals(
     checkedChecks: TrackerState['checkedChecks'],
 ) {
     return checkedChecks.filter(
-        (check) => logic.checks[check].type === 'loose_crystal',
+        (check) => logic.checks[check]?.type === 'loose_crystal',
     ).length;
 }
 
@@ -267,14 +269,22 @@ export const exitsSelector = createSelector(
         const rules = Object.entries(exitRules);
 
         const makeEntrance = (
-            id: string | undefined,
-        ): ExitMapping['entrance'] =>
-            id
-                ? {
-                    id,
-                    name: logic.areaGraph.entrances[id].short_name,
-                }
-                : undefined;
+            entranceId: string | undefined,
+        ): ExitMapping['entrance'] => {
+            if (!entranceId) {
+                return undefined;
+            }
+            const rawEntrance = logic.areaGraph.entrances[entranceId];
+            if (rawEntrance) {
+                return {
+                    id: entranceId,
+                    name: rawEntrance.short_name,
+                };
+            } else {
+                console.error('unknown entrance', entranceId);
+            }
+        };
+            
         const makeExit = (id: string): ExitMapping['exit'] => ({
             id,
             name: logic.areaGraph.exits[id].short_name,
@@ -371,15 +381,7 @@ function mapSettings(
     exits: ExitMapping[],
 ) {
     const implications: { [bitIndex: number]: LogicalExpression } = {};
-
-    const trySet = (id: string) => {
-        const item = logic.items[id];
-        if (!item) {
-            console.warn('invalid item', id);
-            return;
-        }
-        implications[item[1]] = LogicalExpression.true(logic.bitLogic.numBits);
-    };
+    const b = new LogicBuilder(logic.bitLogic, logic.allItems, implications);
 
     for (const option of runtimeOptions) {
         const [item, command, expect] = option;
@@ -388,7 +390,7 @@ function mapSettings(
             val !== undefined &&
             (typeof expect === 'function' ? expect(val) : expect === val);
         if (match) {
-            trySet(item);
+            b.set(item, b.true());
         }
     }
 
@@ -400,33 +402,22 @@ function mapSettings(
         ) {
             const vals = settings[option.command];
             for (const option of vals) {
-                trySet(`${option} Trick`);
+                b.set(`${option} Trick`, b.true());
             }
         }
     }
 
-    const vec = (id: string) => logic.items[id][0];
-    const bit = (id: string) => logic.items[id][1];
-    const dayVec = (id: string) => logic.items[makeDay(id)][0];
-    const dayBit = (id: string) => logic.items[makeDay(id)][1];
-    const nightVec = (id: string) => logic.items[makeNight(id)][0];
-    const nightBit = (id: string) => logic.items[makeNight(id)][1];
-
     const raiseGotExpr =
         settings['got-start'] === 'Raised'
-            ? LogicalExpression.true(logic.bitLogic.numBits)
-            : new LogicalExpression([vec(impaSongCheck)]);
+            ? b.true()
+            : b.singleBit(impaSongCheck);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
-    let openGotExpr = new LogicalExpression([
-        vec(`Progressive Sword x ${neededSwords}`),
-    ]);
+    let openGotExpr = b.singleBit(`Progressive Sword x ${neededSwords}`);
     let hordeDoorExpr = settings['triforce-required']
-        ? new LogicalExpression([vec(completeTriforceReq)])
-        : LogicalExpression.true(logic.bitLogic.numBits);
+        ? b.singleBit(completeTriforceReq)
+        : b.true();
 
-    const dungeonsExpr = new LogicalExpression([
-        logic.items[requiredDungeonsCompletedFakeRequirement][0],
-    ]);
+    const dungeonsExpr = b.singleBit(requiredDungeonsCompletedFakeRequirement);
 
     if (settings['got-dungeon-requirement'] === 'Required') {
         openGotExpr = openGotExpr.and(dungeonsExpr);
@@ -434,13 +425,13 @@ function mapSettings(
         hordeDoorExpr = hordeDoorExpr.and(dungeonsExpr);
     }
 
-    implications[bit(gotOpeningReq)] = openGotExpr;
-    implications[bit(gotRaisingReq)] = raiseGotExpr;
-    implications[bit(hordeDoorReq)] = hordeDoorExpr;
+    b.set(gotOpeningReq, openGotExpr);
+    b.set(gotRaisingReq, raiseGotExpr);
+    b.set(hordeDoorReq, hordeDoorExpr);
 
     const mapConnection = (from: string, to: string) => {
         const exitArea = logic.areaGraph.areasByExit[from];
-        const exitExpr = new LogicalExpression([vec(from)]);
+        const exitExpr = b.singleBit(from);
 
         let dayReq: LogicalExpression;
         let nightReq: LogicalExpression;
@@ -449,37 +440,28 @@ function mapSettings(
             dayReq = exitExpr;
             nightReq = exitExpr;
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.Both) {
-            dayReq = exitExpr.and(dayVec(exitArea.name));
-            nightReq = exitExpr.and(nightVec(exitArea.name));
+            dayReq = exitExpr.and(b.singleBit(b.day(exitArea.name)));
+            nightReq = exitExpr.and(b.singleBit(b.night(exitArea.name)));
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
             dayReq = exitExpr;
-            nightReq = LogicalExpression.false();
+            nightReq = b.false();
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.NightOnly) {
-            dayReq = LogicalExpression.false();
+            dayReq = b.false();
             nightReq = exitExpr;
         } else {
             throw new Error('bad ToD');
         }
 
         const entranceDef = logic.areaGraph.entrances[to];
-        let bitReq: [bit: number, req: LogicalExpression][];
         if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
-            bitReq = [
-                [dayBit(to), dayReq],
-                [nightBit(to), nightReq],
-            ];
+            b.addAlternative(b.day(to), dayReq);
+            b.addAlternative(b.night(to), nightReq);
         } else if (entranceDef.allowed_time_of_day === TimeOfDay.DayOnly) {
-            bitReq = [[bit(to), dayReq]];
+            b.addAlternative(to, dayReq);
         } else if (entranceDef.allowed_time_of_day === TimeOfDay.NightOnly) {
-            bitReq = [[bit(to), nightReq]];
+            b.addAlternative(to, nightReq);
         } else {
             throw new Error('bad ToD');
-        }
-
-        for (const [bitIdx, expr] of bitReq) {
-            implications[bitIdx] = (
-                implications[bitIdx] ?? LogicalExpression.false()
-            ).or(expr);
         }
     };
 
@@ -499,10 +481,7 @@ export const inventoryImplicationsSelector = createSelector(
 
 function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const implications: { [bitIndex: number]: LogicalExpression } = {};
-    const set = (id: string) => {
-        const item = logic.items[id];
-        implications[item[1]] = LogicalExpression.true(logic.bitLogic.numBits);
-    };
+    const b = new LogicBuilder(logic.bitLogic, logic.allItems, implications);
 
     for (const [item, count] of Object.entries(itemCounts)) {
         if (count === undefined || item === 'Sailcloth') {
@@ -510,18 +489,18 @@ function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
         }
         if (item === sothItemReplacement) {
             for (let i = 1; i <= count; i++) {
-                set(sothItems[i - 1]);
+                b.set(sothItems[i - 1], b.true());
             }
         } else if (item === triforceItemReplacement) {
             for (let i = 1; i <= count; i++) {
-                set(triforceItems[i - 1]);
+                b.set(triforceItems[i - 1], b.true());
             }
         } else {
             for (let i = 1; i <= count; i++) {
                 if (i === 1) {
-                    set(item);
+                    b.set(item, b.true());
                 } else {
-                    set(`${item} x ${i}`);
+                    b.set(`${item} x ${i}`, b.true());
                 }
             }
         }
@@ -555,10 +534,24 @@ function mapChecks(
     checkedChecks: string[],
 ) {
     const implications: { [bitIndex: number]: LogicalExpression } = {};
+    const b = new LogicBuilder(logic.bitLogic, logic.allItems, implications);
 
     const validRequiredDungeons = requiredDungeons.filter(
         (d) => d in dungeonCompletionRequirements,
     );
+
+    // If this is a goddess cube check, mark the requirement as checked
+    // since this is the requirement used by the goddess chests.
+    for (const check of checkedChecks) {
+        if (cubeCheckToCanAccessCube[check]) {
+            if (logic.checks[check]) {
+                b.set(check, b.true());
+            } else {
+                console.error('unknown check', check)
+            }
+        }
+    }
+
     const requiredDungeonsCompleted =
         validRequiredDungeons.length > 0 &&
         validRequiredDungeons.every((d) =>
@@ -567,18 +560,10 @@ function mapChecks(
             ),
         );
 
-    for (const check of checkedChecks) {
-        if (cubeCheckToCanAccessCube[check]) {
-            implications[logic.items[check][1]] = LogicalExpression.true(
-                logic.bitLogic.numBits,
-            );
-        }
-    }
-
-    implications[logic.items[requiredDungeonsCompletedFakeRequirement][1]] =
-        requiredDungeonsCompleted
-            ? LogicalExpression.true(logic.bitLogic.numBits)
-            : LogicalExpression.false();
+    b.set(
+        requiredDungeonsCompletedFakeRequirement,
+        requiredDungeonsCompleted ? b.true() : b.false(),
+    );
 
     return implications;
 }
@@ -620,7 +605,7 @@ export const inSemiLogicBitsSelector = createSelector(
         const numLooseGratitudeCrystals = Object.entries(logic.checks).filter(
             ([checkId, checkDef]) =>
                 checkDef.type === 'loose_crystal' &&
-                (inLogicBits.test(logic.items[checkId][1]) ||
+                (inLogicBits.test(logic.itemBits[checkId]) ||
                     checkedChecks.includes(checkId)),
         ).length;
 
@@ -637,7 +622,7 @@ export const inSemiLogicBitsSelector = createSelector(
         for (const [canAccessItem, cubeItem] of Object.entries(
             canAccessCubeToCubeCheck,
         )) {
-            if (inLogicBits.test(logic.items[canAccessItem][1])) {
+            if (inLogicBits.test(logic.itemBits[canAccessItem])) {
                 assumedCheckedChecks.push(cubeItem);
             }
         }
@@ -684,7 +669,7 @@ export const checkSelector = currySelector(
         ): Check => {
             const logicalCheckId = cubeCheckToCanAccessCube[checkId] ?? checkId;
 
-            const checkBit = logic.items[logicalCheckId][1];
+            const checkBit = logic.itemBits[logicalCheckId];
             const logicalState = inLogicBits.test(checkBit)
                 ? 'inLogic'
                 : inSemiLogicBits.test(checkBit)
@@ -846,7 +831,7 @@ export const areasSelector = createSelector(
                     (check) => !checkedChecks.includes(check),
                 );
                 const inLogic = remaining.filter((check) =>
-                    inLogicBits.test(logic.items[check][1]),
+                    inLogicBits.test(logic.itemBits[check]),
                 );
 
                 return {

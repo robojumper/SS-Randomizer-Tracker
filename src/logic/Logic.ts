@@ -12,9 +12,18 @@ import {
     cubeCheckToCanAccessCube,
     requiredDungeonsCompletedFakeRequirement,
 } from './TrackerModifications';
-import { BitLogic, removeDuplicates, shallowSimplify, unifyRequirements } from './bitlogic/BitLogic';
-import { booleanExprToLogicalExpr, parseExpression } from './booleanlogic/ExpressionParse';
+import {
+    BitLogic,
+    removeDuplicates,
+    shallowSimplify,
+    unifyRequirements,
+} from './bitlogic/BitLogic';
+import {
+    booleanExprToLogicalExpr,
+    parseExpression,
+} from './booleanlogic/ExpressionParse';
 import { dungeonNames } from './Locations';
+import { LogicBuilder } from './LogicBuilder';
 
 export interface Logic {
     bitLogic: BitLogic;
@@ -28,7 +37,7 @@ export interface Logic {
     dominators: Record<string, string[]>;
     /** Maps from items K to items V such that for every V: K -> V */
     reverseDominators: Record<string, string[]>;
-    items: Record<string, [vec: BitVector, bitIndex: number]>;
+    itemBits: Record<string, number>,
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
     areas: string[];
@@ -58,22 +67,23 @@ export interface AreaGraph {
     entrances: Record<string, RawEntrance>;
     exits: Record<string, RawExit>;
 
-    
     /** Sandship Dock Exit -> Exit to Sandship */
     autoExits: {
-        [canonicalExit: string]: string
-    }
+        [canonicalExit: string]: string;
+    };
     entrancePools: {
-        [key in keyof RawLogic['linked_entrances']]: Record<string, EntranceLinkage>
-    }
+        [key in keyof RawLogic['linked_entrances']]: Record<
+            string,
+            EntranceLinkage
+        >;
+    };
 }
-
 
 export interface EntranceLinkage {
     /** Deep Woods\Exit to SV -> SV\Exit to Deep Woods  */
-    exits: [outsideExit: string, insideExit: string ];
+    exits: [outsideExit: string, insideExit: string];
     /** SV\Main Entrance -> Deep Woods\Entrance from SV  */
-    entrances: [outsideEntrance: string, insideEntrance: string ]
+    entrances: [outsideEntrance: string, insideEntrance: string];
 }
 
 export interface Area {
@@ -181,7 +191,9 @@ export function parseLogic(raw: RawLogic): Logic {
         };
     }
 
-    for (const [gossipStoneId, gossipStoneName] of Object.entries(raw.gossip_stones)) {
+    for (const [gossipStoneId, gossipStoneName] of Object.entries(
+        raw.gossip_stones,
+    )) {
         checks[gossipStoneId] = {
             type: 'gossip_stone',
             name: gossipStoneName,
@@ -202,7 +214,7 @@ export function parseLogic(raw: RawLogic): Logic {
         ),
     };
 
-    const items: Logic['items'] = {};
+    const itemBits: Logic['itemBits'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
     const checksByArea: Logic['checksByArea'] = {};
 
@@ -211,33 +223,26 @@ export function parseLogic(raw: RawLogic): Logic {
     } = {};
     let idx = 0;
     for (const rawItem of rawItems) {
-        items[rawItem] = [new BitVector(numItems).setBit(idx), idx];
+        itemBits[rawItem] = idx;
         idx++;
     }
 
-    const dummy_day_bit = items['Day'][1];
-    const dummy_night_bit = items['Night'][1];
+    const b = new LogicBuilder(bitLogic, rawItems, bitLogic.implications);
+
+    const dummy_day_bit = itemBits['Day'];
+    const dummy_night_bit = itemBits['Night'];
 
     const allAreas: AreaGraph['areas'] = {};
 
-    const lookup = (id: string) => {
-        const item = items[id];
-        if (!item) {
-            throw new Error('bad item ' + id);
-        }
-        return item[1];
-    };
-
     const parseExpr = (expr: string) => {
-        return new LogicalExpression(booleanExprToLogicalExpr(bitLogic.numBits, parseExpression(expr), lookup));
-    }
-
-    const vec = (id: string) => items[id][0];
-    const bit = (id: string) => items[id][1];
-    const dayVec = (id: string) => items[makeDay(id)][0];
-    const dayBit = (id: string) => items[makeDay(id)][1];
-    const nightVec = (id: string) => items[makeNight(id)][0];
-    const nightBit = (id: string) => items[makeNight(id)][1];
+        return new LogicalExpression(
+            booleanExprToLogicalExpr(
+                bitLogic.numBits,
+                parseExpression(expr),
+                (item: string) => b.bit(item),
+            ),
+        );
+    };
 
     function createAreaIndex(rawArea: RawArea) {
         const area: Area = {
@@ -272,14 +277,8 @@ export function parseLogic(raw: RawLogic): Logic {
                 throw new Error(`cannot sleep in ${rawArea.name}`);
             }
 
-            const areaDayIdx = dayBit(rawArea.name);
-            const areaNightIdx = nightBit(rawArea.name);
-            bitLogic.implications[areaDayIdx] = bitLogic.implications[
-                areaDayIdx
-            ].or(nightVec(rawArea.name));
-            bitLogic.implications[areaNightIdx] = bitLogic.implications[
-                areaNightIdx
-            ].or(dayVec(rawArea.name));
+            b.addAlternative(b.day(rawArea.name), b.singleBit(b.night(rawArea.name)));
+            b.addAlternative(b.night(rawArea.name), b.singleBit(b.day(rawArea.name)));
         }
 
         if (rawArea.exits) {
@@ -294,67 +293,52 @@ export function parseLogic(raw: RawLogic): Logic {
                     // logical exit
                     const destArea = allAreas[fullExitName];
                     if (destArea.allowedTimeOfDay === TimeOfDay.Both) {
-                        const dest_area_day_idx = dayBit(destArea.name);
-                        const dest_area_night_idx = nightBit(destArea.name);
-                        opaqueItems.clearBit(dest_area_day_idx);
-                        opaqueItems.clearBit(dest_area_night_idx);
+                        opaqueItems.clearBit(b.bit(b.day(destArea.name)));
+                        opaqueItems.clearBit(b.bit(b.night(destArea.name)));
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            bitLogic.implications[dest_area_day_idx] =
-                                bitLogic.implications[dest_area_day_idx].or(
-                                    expr
-                                        .drop_unless(
-                                            dummy_day_bit,
-                                            dummy_night_bit,
-                                        )
-                                        .and(dayVec(rawArea.name)),
-                                );
-                            bitLogic.implications[dest_area_night_idx] =
-                                bitLogic.implications[dest_area_night_idx].or(
-                                    expr
-                                        .drop_unless(
-                                            dummy_night_bit,
-                                            dummy_day_bit,
-                                        )
-                                        .and(nightVec(rawArea.name)),
-                                );
+                            b.addAlternative(
+                                b.day(destArea.name),
+                                expr
+                                    .drop_unless(dummy_day_bit, dummy_night_bit)
+                                    .and(b.singleBit(b.day(rawArea.name))),
+                            );
+                            b.addAlternative(
+                                b.night(destArea.name),
+                                expr
+                                    .drop_unless(dummy_night_bit, dummy_day_bit)
+                                    .and(b.singleBit(b.night(rawArea.name))),
+                            );
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.DayOnly
                         ) {
-                            bitLogic.implications[dest_area_day_idx] =
-                                bitLogic.implications[dest_area_day_idx].or(
-                                    expr
-                                        .drop_unless(
-                                            dummy_day_bit,
-                                            dummy_night_bit,
-                                        )
-                                        .and(vec(rawArea.name)),
-                                );
+                            b.addAlternative(
+                                b.day(destArea.name),
+                                expr
+                                    .drop_unless(dummy_day_bit, dummy_night_bit)
+                                    .and(b.singleBit(rawArea.name)),
+                            );
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.NightOnly
                         ) {
-                            bitLogic.implications[dest_area_night_idx] =
-                                bitLogic.implications[dest_area_night_idx].or(
-                                    expr
-                                        .drop_unless(
-                                            dummy_night_bit,
-                                            dummy_day_bit,
-                                        )
-                                        .and(vec(rawArea.name)),
-                                );
+                            b.addAlternative(
+                                b.night(destArea.name),
+                                expr
+                                    .drop_unless(dummy_night_bit, dummy_day_bit)
+                                    .and(b.singleBit(rawArea.name)),
+                            );
                         } else {
                             throw new Error('bad ToD requirement');
                         }
                     } else {
-                        const areaBit = bit(destArea.name);
                         let timedReq: LogicalExpression;
-                        let timedArea: () => BitVector;
+                        let timedArea: () => LogicalExpression;
                         if (destArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
                             timedReq = expr.drop_unless(
                                 dummy_day_bit,
                                 dummy_night_bit,
                             );
-                            timedArea = () => dayVec(area.name);
+                            timedArea = () => b.singleBit(b.day(area.name));
                         } else if (
                             destArea.allowedTimeOfDay === TimeOfDay.NightOnly
                         ) {
@@ -362,25 +346,19 @@ export function parseLogic(raw: RawLogic): Logic {
                                 dummy_night_bit,
                                 dummy_day_bit,
                             );
-                            timedArea = () => nightVec(area.name);
+                            timedArea = () => b.singleBit(b.night(area.name));
                         } else {
                             throw new Error('bad ToD requirement');
                         }
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            bitLogic.implications[areaBit] =
-                                bitLogic.implications[areaBit].or(
-                                    timedReq.and(timedArea()),
-                                );
+                            b.addAlternative(destArea.name, timedReq.and(timedArea()));
                         } else if (
                             area.allowedTimeOfDay === destArea.allowedTimeOfDay
                         ) {
-                            bitLogic.implications[areaBit] =
-                                bitLogic.implications[areaBit].or(
-                                    timedReq.and(vec(area.name)),
-                                );
+                            b.addAlternative(destArea.name, timedReq.and(b.singleBit(area.name)));
                         }
-                        opaqueItems.clearBit(areaBit);
+                        opaqueItems.clearBit(b.bit(destArea.name));
                     }
 
                     area.exits.push({
@@ -389,45 +367,40 @@ export function parseLogic(raw: RawLogic): Logic {
                     });
                 } else if (raw.exits[fullExitName]) {
                     areasByExit[fullExitName] = area;
-                    const exitBit = items[fullExitName][1];
-                    opaqueItems.clearBit(exitBit);
+                    opaqueItems.clearBit(b.bit(fullExitName));
                     if (area.abstract) {
                         if (fullExitName !== '\\Start') {
                             throw new Error(
                                 'abstract area can only exit to start',
                             );
                         }
-                        bitLogic.implications[exitBit] = expr;
+                        b.set(fullExitName, expr);
                     } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                        bitLogic.implications[exitBit] = bitLogic.implications[
-                            exitBit
-                        ].or(
+                        b.addAlternative(
+                            fullExitName,
                             expr
                                 .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(dayVec(rawArea.name)),
+                                .and(b.singleBit(b.day(rawArea.name))),
                         );
-                        bitLogic.implications[exitBit] = bitLogic.implications[
-                            exitBit
-                        ].or(
+                        b.addAlternative(
+                            fullExitName,
                             expr
                                 .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(nightVec(rawArea.name)),
+                                .and(b.singleBit(b.night(rawArea.name))),
                         );
                     } else if (area.allowedTimeOfDay === TimeOfDay.DayOnly) {
-                        bitLogic.implications[exitBit] = bitLogic.implications[
-                            exitBit
-                        ].or(
+                        b.addAlternative(
+                            fullExitName,
                             expr
                                 .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(vec(rawArea.name)),
+                                .and(b.singleBit(rawArea.name)),
                         );
                     } else if (area.allowedTimeOfDay === TimeOfDay.NightOnly) {
-                        bitLogic.implications[exitBit] = bitLogic.implications[
-                            exitBit
-                        ].or(
+                        b.addAlternative(
+                            fullExitName,
                             expr
                                 .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(vec(rawArea.name)),
+                                .and(b.singleBit(rawArea.name)),
                         );
                     } else {
                         throw new Error('bad ToD requirement');
@@ -465,38 +438,37 @@ export function parseLogic(raw: RawLogic): Logic {
                 };
 
                 if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
-                    const areaDayBit = dayBit(area.name);
-                    const areaNightBit = nightBit(area.name);
-                    bitLogic.implications[areaDayBit] = bitLogic.implications[
-                        areaDayBit
-                    ].or(dayVec(fullEntranceName));
-                    bitLogic.implications[areaNightBit] = bitLogic.implications[
-                        areaNightBit
-                    ].or(nightVec(fullEntranceName));
-                    opaqueItems.clearBit(areaDayBit);
-                    opaqueItems.clearBit(areaNightBit);
+                    b.addAlternative(
+                        b.day(area.name),
+                        b.singleBit(b.day(fullEntranceName)),
+                    );
+                    b.addAlternative(
+                        b.night(area.name),
+                        b.singleBit(b.night(fullEntranceName)),
+                    );
+                    opaqueItems.clearBit(b.bit(b.day(area.name)));
+                    opaqueItems.clearBit(b.bit(b.night(area.name)));
                 } else {
-                    const entranceBit = vec(fullEntranceName);
-                    let areaBit: number;
+                    let areaReq: string;
                     if (area.allowedTimeOfDay === TimeOfDay.Both) {
                         if (
                             entranceDef.allowed_time_of_day ===
                             TimeOfDay.DayOnly
                         ) {
-                            areaBit = dayBit(area.name);
+                            areaReq = b.day(area.name);
                         } else if (
                             entranceDef.allowed_time_of_day ===
                             TimeOfDay.NightOnly
                         ) {
-                            areaBit = nightBit(area.name);
+                            areaReq = b.night(area.name);
                         } else {
                             throw new Error('bad ToD requirement');
                         }
                     } else {
-                        areaBit = bit(area.name);
+                        areaReq = area.name;
                     }
-                    bitLogic.implications[areaBit] = bitLogic.implications[areaBit].or(entranceBit);
-                    opaqueItems.clearBit(areaBit);
+                    b.addAlternative(areaReq, b.singleBit(fullEntranceName));
+                    opaqueItems.clearBit(b.bit(areaReq));
                 }
             }
         }
@@ -528,7 +500,7 @@ export function parseLogic(raw: RawLogic): Logic {
                             throw new Error('check has no region?');
                         }
                         if (check.type === 'tr_cube') {
-                            check.name = `${region} - ${check.name}`
+                            check.name = `${region} - ${check.name}`;
                         }
                         (checksByArea[region] ??= []).push(locName);
                     }
@@ -540,7 +512,7 @@ export function parseLogic(raw: RawLogic): Logic {
                     locName = canAccessReq;
                 }
 
-                const locVec = items[locName];
+                const locVec = itemBits[locName];
                 if (!locVec) {
                     throw new Error('bad requirement ' + locName);
                 }
@@ -552,27 +524,26 @@ export function parseLogic(raw: RawLogic): Logic {
                 } else if (rawArea.allowed_time_of_day === TimeOfDay.Both) {
                     timed_req = expr
                         .drop_unless(dummy_day_bit, dummy_night_bit)
-                        .and(dayVec(area.name))
+                        .and(b.singleBit(b.day(area.name)))
                         .or(
                             expr
                                 .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(nightVec(area.name)),
+                                .and(b.singleBit(b.night(area.name)))
                         );
                 } else if (rawArea.allowed_time_of_day === TimeOfDay.DayOnly) {
                     timed_req = expr
                         .drop_unless(dummy_day_bit, dummy_night_bit)
-                        .and(vec(area.name));
+                        .and(b.singleBit(area.name));
                 } else if (
                     rawArea.allowed_time_of_day === TimeOfDay.NightOnly
                 ) {
                     timed_req = expr
                         .drop_unless(dummy_night_bit, dummy_day_bit)
-                        .and(vec(area.name));
+                        .and(b.singleBit(area.name));
                 } else {
                     throw new Error('bad ToD requirement');
                 }
-                bitLogic.implications[locVec[1]] =
-                    bitLogic.implications[locVec[1]].or(timed_req);
+                b.addAlternative(locName, timed_req);
             }
         }
 
@@ -645,7 +616,8 @@ export function parseLogic(raw: RawLogic): Logic {
         const data = raw.linked_entrances[pool];
         for (const [location, entry] of Object.entries(data)) {
             if (typeof entry.exit_from_outside !== 'string') {
-                autoExits[entry.exit_from_outside[0]] = entry.exit_from_outside[1];
+                autoExits[entry.exit_from_outside[0]] =
+                    entry.exit_from_outside[1];
             }
             const canonicalExit =
                 typeof entry.exit_from_outside === 'string'
@@ -702,7 +674,7 @@ export function parseLogic(raw: RawLogic): Logic {
         allItems: rawItems,
         dominators,
         reverseDominators,
-        items,
+        itemBits,
         checks,
         areas,
         checksByArea,

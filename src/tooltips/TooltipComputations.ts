@@ -50,8 +50,8 @@ function delay(ms: number) {
 
 export class TooltipComputer {
     logic: Logic;
-    #subscriptions: Record<string, { checkId: string; callback: () => void }>;
-    #results: Record<string, BooleanExpression>;
+    subscriptions: Record<string, { checkId: string; callback: () => void }>;
+    results: Record<string, BooleanExpression>;
 
     opaqueBits: BitVector;
     implications: LogicalExpression[];
@@ -62,10 +62,10 @@ export class TooltipComputer {
 
     constructor(logic: Logic, implications: Record<number, LogicalExpression>) {
         this.logic = logic;
-        this.#subscriptions = {};
+        this.subscriptions = {};
         this.revealed = new Set();
         this.wakeupWorker = noop;
-        this.#results = {};
+        this.results = {};
         this.opaqueBits = getTooltipOpaqueBits(logic);
 
         this.implications = this.logic.bitLogic.implications.map((val, idx) => {
@@ -83,13 +83,13 @@ export class TooltipComputer {
     }
 
     notifyAll() {
-        for (const entry of Object.values(this.#subscriptions)) {
+        for (const entry of Object.values(this.subscriptions)) {
             entry.callback();
         }
     }
 
     notify(check: string) {
-        for (const entry of Object.values(this.#subscriptions)) {
+        for (const entry of Object.values(this.subscriptions)) {
             if (entry.checkId === check) {
                 entry.callback();
             }
@@ -97,13 +97,13 @@ export class TooltipComputer {
     }
 
     subscribe(subscriptionId: string, checkId: string, callback: () => void) {
-        this.#subscriptions[subscriptionId] = { checkId, callback };
+        this.subscriptions[subscriptionId] = { checkId, callback };
         this.wakeupWorker();
-        return () => delete this.#subscriptions[subscriptionId];
+        return () => delete this.subscriptions[subscriptionId];
     }
 
     getSnapshot(checkId: string): BooleanExpression | undefined {
-        return this.#results[checkId];
+        return this.results[checkId];
     }
 
     destroy() {
@@ -116,8 +116,8 @@ export class TooltipComputer {
             return undefined;
         }
 
-        const checkId = Object.values(this.#subscriptions).find(
-            (check) => !this.#results[check.checkId],
+        const checkId = Object.values(this.subscriptions).find(
+            (check) => !this.results[check.checkId],
         )?.checkId;
         if (!checkId) {
             return undefined;
@@ -129,7 +129,7 @@ export class TooltipComputer {
     }
 
     acceptTaskResult(checkId: string, result: BooleanExpression) {
-        this.#results[checkId] = result;
+        this.results[checkId] = result;
         this.notify(checkId);
     }
 }
@@ -172,7 +172,7 @@ async function computationTask(
             checkId = mapToCanAccessCubeRequirement(checkId);
         }
 
-        const bit = store.logic.items[checkId][1];
+        const bit = store.logic.itemBits[checkId];
 
         // We precompute some requirements because it improves performance.
         // However, we can sometimes end up precomputing trivial requirements
@@ -287,7 +287,7 @@ function dnfToRequirementExpr(
             const lst = logic.reverseDominators[logic.allItems[bit]];
             if (lst) {
                 for (const rev of lst) {
-                    const revBit = logic.items[rev][1];
+                    const revBit = logic.itemBits[rev];
                     if (allPresentVariables.has(revBit)) {
                         conj.setBit(revBit);
                     }

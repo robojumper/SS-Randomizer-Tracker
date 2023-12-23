@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import PackedBitsWriter from './PackedBitsWriter';
 import PackedBitsReader from './PackedBitsReader';
-import { OptionValue, OptionDefs, AllTypedOptions } from './SettingsTypes';
+import { Option, OptionValue, OptionDefs, AllTypedOptions } from './SettingsTypes';
 
 export function decodePermalink(
     optionDefs: OptionDefs,
@@ -40,6 +40,43 @@ export function defaultSettings(optionDefs: OptionDefs): AllTypedOptions {
             settings[option.command] = option.default;
         }
     });
+    return settings as AllTypedOptions;
+}
+
+function validateValue(option: Option, value: unknown): OptionValue | undefined {
+    switch (option.type) {
+        case 'boolean':
+            return typeof value === 'boolean' ? value : undefined;
+        case 'singlechoice':
+            return typeof value === 'string' && option.choices.includes(value) ? value : undefined;
+        case 'multichoice': {
+            const values = _.isArray(value)
+                ? value.filter(
+                    (choice) =>
+                        typeof choice === 'string' &&
+                        option.choices.includes(choice),
+                )
+                : [];
+            return values.length ? values : undefined;
+        }
+        case 'int':
+            return typeof value === 'number' &&
+                Number.isInteger(value) &&
+                value >= option.min &&
+                value <= option.max
+                ? value
+                : undefined;
+    }
+}
+
+export function validateSettings(optionDefs: OptionDefs, userSettings: AllTypedOptions): AllTypedOptions {
+    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
+    for (const optionDef of optionDefs) {
+        const key = optionDef.command;
+        const value = userSettings[key];
+        settings[key] = validateValue(optionDef, value) ?? optionDef.default;
+    }
+
     return settings as AllTypedOptions;
 }
 

@@ -11,7 +11,7 @@ import {
 import Select, { ActionMeta, MultiValue } from 'react-select';
 import 'tippy.js/dist/tippy.css';
 import { AllTypedOptions, Option, OptionValue } from './permalink/SettingsTypes';
-import { decodePermalink, encodePermalink } from './permalink/Settings';
+import { decodePermalink, encodePermalink, validateSettings } from './permalink/Settings';
 import Tippy from '@tippyjs/react';
 import { useDispatch, useSelector } from 'react-redux';
 import { allSettingsSelector } from './tracker/selectors';
@@ -37,8 +37,8 @@ function OptionsMenu({
     const [tempSettings, setTempSettings] = useState<Partial<AllTypedOptions>>({});
 
     const mergedSettings: AllTypedOptions = useMemo(
-        () => ({ ...storedSettings, ...tempSettings }),
-        [storedSettings, tempSettings],
+        () => validateSettings(options, { ...storedSettings, ...tempSettings }),
+        [options, storedSettings, tempSettings],
     );
 
     const permalink = useMemo(

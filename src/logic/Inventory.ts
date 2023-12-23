@@ -99,7 +99,14 @@ export interface State {
 
 export function getTooltipOpaqueBits(logic: Logic) {
     const items = new BitVector(logic.bitLogic.numBits);
-    const set = (id: string) => items.setBit(logic.items[id][1]);
+    const set = (id: string) => {
+        const bit = logic.itemBits[id];
+        if (bit !== undefined) {
+            items.setBit(bit)
+        } else {
+            console.error('unknown item', id);
+        }
+    };
 
     for (const [item, count] of Object.entries(itemMaxes)) {
         if (count === undefined || item === 'Sailcloth') {

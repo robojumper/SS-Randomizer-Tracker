@@ -59,7 +59,7 @@ export function booleanExprToTooltipExpr(logic: Logic, expr: BooleanExpression, 
                 items: [...arg.accumulator.items, arg.item]
             }
         } else {
-            const bit = logic.items[arg.item][1];
+            const bit = logic.itemBits[arg.item];
             const wrappedItem: TerminalRequirement = {
                 type: 'item',
                 item: getReadableItemName(logic, arg.item),
