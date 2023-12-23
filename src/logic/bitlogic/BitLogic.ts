@@ -146,6 +146,11 @@ export function computeExpression(
         return result;
     }
     visitedExpressions.add(idx);
+
+    // TODO this is a standard BRANCH algorithm but we don't have a BOUND.
+    // It'd be useful to know when we've found the minimum requirements and
+    // when exploring additional paths wouldn't help.
+
     nextConj: for (const conj of implications[idx].conjunctions) {
         let tmpExpr = LogicalExpression.true(opaqueBits.size);
         const conjOpaqueBits = opaqueBits.and(conj);

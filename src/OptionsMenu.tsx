@@ -10,7 +10,7 @@ import {
 } from 'react-bootstrap';
 import Select, { ActionMeta, MultiValue } from 'react-select';
 import 'tippy.js/dist/tippy.css';
-import { Option, OptionValue } from './permalink/SettingsTypes';
+import { AllTypedOptions, Option, OptionValue } from './permalink/SettingsTypes';
 import { decodePermalink, encodePermalink } from './permalink/Settings';
 import Tippy from '@tippyjs/react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -21,8 +21,10 @@ import { selectStyles } from './customization/ComponentStyles';
 import { inLogicOptions } from './logic/ThingsThatWouldBeNiceToHaveInTheDump';
 
 function OptionsMenu({
+    show,
     onHide,
 }: {
+    show: boolean,
     onHide: () => void;
 }) {
     const options = useSelector(optionsSelector);
@@ -32,13 +34,16 @@ function OptionsMenu({
 
     const selectAll = useCallback(() => inputRef.current?.setSelectionRange(0, inputRef.current.value.length), []);
 
-    const [tempSettings, setTempSettings] = useState(
-        storedSettings,
+    const [tempSettings, setTempSettings] = useState<Partial<AllTypedOptions>>({});
+
+    const mergedSettings: AllTypedOptions = useMemo(
+        () => ({ ...storedSettings, ...tempSettings }),
+        [storedSettings, tempSettings],
     );
 
     const permalink = useMemo(
-        () => encodePermalink(options, tempSettings),
-        [options, tempSettings],
+        () => encodePermalink(options, mergedSettings),
+        [options, mergedSettings],
     );
 
     const onChangePermalink = useCallback(
@@ -53,18 +58,23 @@ function OptionsMenu({
         [options],
     );
 
-    const onAccept = useCallback(() => {
-        dispatch(acceptSettings({ settings: tempSettings }));
+    const onDismiss = useCallback(() => {
+        setTempSettings({});
         onHide();
-    }, [dispatch, onHide, tempSettings]);
+    }, [onHide]);
+
+    const onAccept = useCallback(() => {
+        dispatch(acceptSettings({ settings: mergedSettings }));
+        onDismiss();
+    }, [dispatch, mergedSettings, onDismiss]);
 
     const onAcceptWithReset = useCallback(() => {
-        dispatch(reset({ settings: tempSettings }));
-        onHide();
-    }, [dispatch, onHide, tempSettings]);
+        dispatch(reset({ settings: mergedSettings }));
+        onDismiss();
+    }, [dispatch, mergedSettings, onDismiss]);
 
     return (
-        <Modal onHide={onHide} show={true} size="lg" style={{ width: '90%' }}>
+        <Modal onHide={onDismiss} show={show} size="lg" style={{ width: '90%' }}>
             <Modal.Header closeButton>
                 <Modal.Title id="contained-modal-title-vcenter">
                     Options
@@ -96,7 +106,7 @@ function OptionsMenu({
                                 <Setting
                                     def={def}
                                     value={
-                                        tempSettings[def.command] as OptionValue
+                                        mergedSettings[def.command] as OptionValue
                                     }
                                     setValue={(value) =>
                                         setTempSettings((existing) => ({
@@ -113,7 +123,7 @@ function OptionsMenu({
             <Modal.Footer>
                 <Button onClick={onAccept}>Accept</Button>
                 <Button onClick={onAcceptWithReset}>Accept and Reset</Button>
-                <Button onClick={onHide}>Cancel</Button>
+                <Button onClick={onDismiss}>Cancel</Button>
             </Modal.Footer>
         </Modal>
     );

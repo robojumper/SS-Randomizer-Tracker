@@ -134,7 +134,11 @@ function NewTracker() {
                 <Row>
                     <Col>{itemTracker}</Col>
                     <Col>
-                        <NewLocationTracker activeArea={activeArea} setActiveArea={setActiveArea} containerHeight={height * 0.95} />
+                        <NewLocationTracker
+                            activeArea={activeArea}
+                            setActiveArea={setActiveArea}
+                            containerHeight={height * 0.95}
+                        />
                     </Col>
                     <Col>
                         <Row className="g-0">
@@ -143,8 +147,22 @@ function NewTracker() {
                         <Row className="g-0">
                             <DungeonTracker setActiveArea={setActiveArea} />
                         </Row>
-                        <Row style={{ paddingRight: '10%', paddingTop: '2.5%', height: (height * 0.95) / 2 }} className="g-0">
-                            <Col style={{ overflowY: 'scroll', overflowX: 'auto', height: (height * 0.95) - 447 }} className="g-0">
+                        <Row
+                            style={{
+                                paddingRight: '10%',
+                                paddingTop: '2.5%',
+                                height: (height * 0.95) / 2,
+                            }}
+                            className="g-0"
+                        >
+                            <Col
+                                style={{
+                                    overflowY: 'scroll',
+                                    overflowX: 'auto',
+                                    height: height * 0.95 - 447,
+                                }}
+                                className="g-0"
+                            >
                                 <SecondaryLocationTracker
                                     className="overflowAuto"
                                     containerHeight={(height * 0.95) / 2}
@@ -194,7 +212,9 @@ function NewTracker() {
                     <Col>
                         <Button
                             variant="primary"
-                            onClick={() => dispatch(reset({ settings: undefined }))}
+                            onClick={() =>
+                                dispatch(reset({ settings: undefined }))
+                            }
                         >
                             Reset
                         </Button>
@@ -209,11 +229,10 @@ function NewTracker() {
                 show={showEntranceDialog}
                 onHide={() => setShowEntranceDialog(false)}
             />
-            {showOptionsDialog && (
-                <OptionsMenu
-                    onHide={() => setShowOptionsDialog(false)}
-                />
-            )}
+            <OptionsMenu
+                show={showOptionsDialog}
+                onHide={() => setShowOptionsDialog(false)}
+            />
         </div>
     );
 }
