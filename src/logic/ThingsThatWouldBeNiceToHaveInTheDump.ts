@@ -73,6 +73,7 @@ const inLogicOptions_ = [
     'upgraded-skyward-strike',
     'random-start-entrance',
     'randomize-entrances',
+    'randomize-dungeon-entrances',
     'randomize-trials',
     'excluded-locations',
     'enabled-tricks-bitless',

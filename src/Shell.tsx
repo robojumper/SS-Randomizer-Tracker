@@ -1,51 +1,39 @@
-import { load } from 'js-yaml';
-import { useEffect } from 'react';
-import { RawLogic } from './logic/UpstreamTypes';
+import { useCallback, useEffect, useState } from 'react';
 import TrackerContainer from './Tracker';
-import { OptionDefs } from './permalink/SettingsTypes';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadLogic } from './logic/slice';
 import { rawLogicSelector, rawOptionsSelector } from './logic/selectors';
 import { acceptSettings } from './tracker/slice';
 import { defaultSettings } from './permalink/Settings';
-
-const baseFileUrl = (file: string) =>
-    `https://raw.githubusercontent.com/robojumper/ssrando/logic-dump/${file}.yaml?cachebust=1`;
-
-
-const loadFileFromUrl = async (url: string) => {
-    const response = await fetch(url);
-    return response.text();
-};
-
-const loadFile = async <T,>(file: string) => {
-    const fileUrl = baseFileUrl(file);
-    const data = await loadFileFromUrl(fileUrl);
-    return load(data) as T;
-};
+import { RemoteReference, defaultUpstream, formatRemote, loadRemoteLogic, promptRemote } from './loader/LogicLoader';
 
 export default function Shell() {
     const dispatch = useDispatch();
+    const [loadingRemote, setLoadingRemote] = useState<RemoteReference | undefined>();
+
+    const load = useCallback(async () => {
+        const storedRemote = localStorage.getItem('ssrTrackerRemoteLogic');
+        const remote = storedRemote !== null ? JSON.parse(storedRemote) as RemoteReference : defaultUpstream;
+        setLoadingRemote(remote);
+        const [logic, options] = await loadRemoteLogic(remote);
+        dispatch(acceptSettings({ settings: defaultSettings(options), initialLoad: true }))
+        dispatch(loadLogic({ logic, options, remote }));
+        setLoadingRemote(undefined);
+    }, [dispatch]);
 
     useEffect(() => {
-        const load = async () => {
-
-            const [logic, options] = await Promise.all([
-                loadFile<RawLogic>('dump'),
-                loadFile<OptionDefs>('options'),
-            ]);
-            dispatch(acceptSettings({ settings: defaultSettings(options), initialLoad: true }))
-            dispatch(loadLogic({ logic, options }));
-        };
-
         load();
-    }, [dispatch]);
+    }, [load]);
 
     const logic = useSelector(rawLogicSelector);
     const options = useSelector(rawOptionsSelector);
 
     if (!logic || !options) {
-        return <>Loading...</>;
+        return <>
+            Loading {loadingRemote ? formatRemote(loadingRemote) : ''}...
+            <br />
+            <button onClick={() => promptRemote(dispatch, loadingRemote, true)}>Load a different version</button>
+        </>;
     }
 
     return (

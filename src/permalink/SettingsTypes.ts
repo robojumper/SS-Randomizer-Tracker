@@ -46,12 +46,21 @@ export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
 
 export interface AllTypedOptions
-    extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity'> {
+    extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity' | 'randomize-entrances'> {
     rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
+
+    // TODO: Use these
+    // Bizzare Bazaar splits Shopsanity into three settings
+    // https://github.com/ssrando/ssrando/pull/442
     shopsanity: GeneratedOptions['shopsanity'] | 'Vanilla' | undefined;
     'beedle-shopsanity': boolean | undefined;
     'rupin-shopsanity': boolean | undefined;
     'luv-shopsanity': boolean | undefined;
+
+    // ER renames randomize-entrances -> randomize-dungeon-entrances
+    // https://github.com/ssrando/ssrando/pull/497
+    'randomize-entrances': GeneratedOptions['randomize-entrances'] | 'All' | 'Vanilla',
+    'randomize-dungeon-entrances': GeneratedOptions['randomize-entrances'] | undefined,
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOptions>;

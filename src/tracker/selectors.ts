@@ -189,17 +189,24 @@ export const exitRulesSelector = createSelector(
         logicSelector,
         settingSelector('random-start-entrance'),
         settingSelector('randomize-entrances'),
+        settingSelector('randomize-dungeon-entrances'),
         settingSelector('randomize-trials'),
     ],
     (
         logic,
         startingEntranceSetting,
         randomEntranceSetting,
+        randomDungeonEntranceSetting,
         randomTrialsSetting,
     ) => {
         const result: Record<string, ExitMapSource> = {};
 
         const followToCanonicalEntrance = _.invert(logic.areaGraph.autoExits);
+
+        const everythingRandomized = randomEntranceSetting === 'All';
+        const dungeonEntrancesRandomized = randomDungeonEntranceSetting
+            ? randomDungeonEntranceSetting !== 'None'
+            : randomEntranceSetting !== 'None';
 
         for (const exitId of Object.keys(logic.areaGraph.exits)) {
             if (bannedExitsAndEntrances.includes(exitId)) {
@@ -217,6 +224,10 @@ export const exitRulesSelector = createSelector(
                     otherExit: followToCanonicalEntrance[exitId],
                 };
                 continue;
+            }
+
+            if (everythingRandomized) {
+                result[exitId] = { type: 'random' };
             }
 
             const poolData = (() => {
@@ -240,7 +251,7 @@ export const exitRulesSelector = createSelector(
             if (poolData) {
                 const [pool, location, isOutsideExit] = poolData;
                 if (
-                    (pool === 'dungeons' && randomEntranceSetting !== 'None') ||
+                    (pool === 'dungeons' && dungeonEntrancesRandomized) ||
                     (pool === 'silent_realms' && randomTrialsSetting)
                 ) {
                     if (isOutsideExit) {
@@ -716,13 +727,14 @@ export const areaNonprogressSelector = createSelector(
 );
 
 export const areaHiddenSelector = createSelector(
-    [areaNonprogressSelector, settingSelector('randomize-entrances')],
-    (areaNonprogress, randomEntranceSetting) => {
+    [areaNonprogressSelector, settingSelector('randomize-entrances'), settingSelector('randomize-dungeon-entrances')],
+    (areaNonprogress, randomEntranceSetting, randomDungeonEntranceSetting) => {
+        const dungeonEntranceSetting = randomDungeonEntranceSetting ?? randomEntranceSetting;
         return (area: string) =>
             areaNonprogress(area) &&
             (!isDungeon(area) ||
                 (area === 'Sky Keep' &&
-                    randomEntranceSetting !==
+                dungeonEntranceSetting !==
                         'All Surface Dungeons + Sky Keep'));
     },
 );

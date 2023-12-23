@@ -100,7 +100,10 @@ function OptionsMenu({
                     {inLogicOptions.map((option) => {
                         const def = options.find(
                             (def) => def.command === option,
-                        )!;
+                        );
+                        if (!def) {
+                            return null;
+                        }
                         return (
                             <Row key={def.name}>
                                 <Setting
@@ -121,8 +124,8 @@ function OptionsMenu({
                 </Row>
             </Modal.Body>
             <Modal.Footer>
-                <Button onClick={onAccept}>Accept</Button>
-                <Button onClick={onAcceptWithReset}>Accept and Reset</Button>
+                <Button onClick={onAccept}>Accept Settings</Button>
+                <Button onClick={onAcceptWithReset}>Accept and Reset Tracker</Button>
                 <Button onClick={onDismiss}>Cancel</Button>
             </Modal.Footer>
         </Modal>

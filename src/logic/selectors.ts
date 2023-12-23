@@ -2,6 +2,7 @@ import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../store/store';
 import { parseLogic } from './Logic';
 import { MultiChoiceOption } from '../permalink/SettingsTypes';
+import { formatRemote } from '../loader/LogicLoader';
 
 export const rawLogicSelector = (state: RootState) => state.logic.logic!;
 export const rawOptionsSelector = (state: RootState) => state.logic.options!;
@@ -21,3 +22,8 @@ export const optionsSelector = createSelector([rawLogicSelector, rawOptionsSelec
 
     return parsedOptions;
 })
+
+export const shownLogicUpstreamSelector = createSelector(
+    [(state: RootState) => state.logic.remote!],
+    formatRemote,
+);

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { optionsSelector } from './logic/selectors';
 import { reset } from './tracker/slice';
 import { defaultSettings } from './permalink/Settings';
+import { promptRemote } from './loader/LogicLoader';
 
 export default function ErrorPage({
     error,
@@ -25,6 +26,7 @@ export default function ErrorPage({
             <p>Something went wrong:</p>
             <pre style={{ color: 'red' }}>{errorMsg}</pre>
             <button onClick={doReset}>Reset Tracker</button>
+            <button onClick={() => promptRemote(dispatch, undefined, true)}>Load a different version</button>
         </div>
     );
 }

@@ -26,6 +26,9 @@ import { colorSchemeSelector, layoutSelector } from './customization/selectors';
 import { reset } from './tracker/slice';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorPage from './ErrorPage';
+import { shownLogicUpstreamSelector } from './logic/selectors';
+import { promptRemote } from './loader/LogicLoader';
+import { RootState } from './store/store';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -74,6 +77,8 @@ function NewTracker() {
 
     const colorScheme = useSelector(colorSchemeSelector);
     const layout = useSelector(layoutSelector);
+    const rawRemote = useSelector((state: RootState) => state.logic.remote!);
+    const remote = useSelector(shownLogicUpstreamSelector);
 
     useLayoutEffect(() => {
         const html = document.querySelector('html')!;
@@ -89,6 +94,10 @@ function NewTracker() {
     useEffect(() => {
         localStorage.setItem('ssrTrackerLayout', layout);
     }, [layout]);
+
+    useEffect(() => {
+        localStorage.setItem('ssrTrackerRemoteLogic', JSON.stringify(rawRemote));
+    }, [rawRemote]);
 
     const itemTrackerStyle: CSSProperties = {
         position: 'fixed',
@@ -180,44 +189,44 @@ function NewTracker() {
                         width: '100%',
                         padding: '0.5%',
                         height: height * 0.05,
+                        alignContent: 'center',
                     }}
                 >
-                    <Col>
+                    <Col xs="auto">
                         <ImportExport />
                     </Col>
-                    <Col>
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowCustomizationDialog(true)}
-                        >
-                            Customization
-                        </Button>
+                    <Col xs>
+                        <div style={{display: 'flex', flexFlow: 'row nowrap', justifyContent: 'space-between'}}>
+                            <Button
+                                variant="primary"
+                                onClick={() => setShowCustomizationDialog(true)}
+                            >
+                                Customization
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => setShowEntranceDialog(true)}
+                            >
+                                Entrances
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() => setShowOptionsDialog(true)}
+                            >
+                                Options
+                            </Button>
+                            <Button
+                                variant="primary"
+                                onClick={() =>
+                                    dispatch(reset({ settings: undefined }))
+                                }
+                            >
+                                Reset
+                            </Button>
+                        </div>
                     </Col>
-                    <Col>
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowEntranceDialog(true)}
-                        >
-                            Entrances
-                        </Button>
-                    </Col>
-                    <Col>
-                        <Button
-                            variant="primary"
-                            onClick={() => setShowOptionsDialog(true)}
-                        >
-                            Options
-                        </Button>
-                    </Col>
-                    <Col>
-                        <Button
-                            variant="primary"
-                            onClick={() =>
-                                dispatch(reset({ settings: undefined }))
-                            }
-                        >
-                            Reset
-                        </Button>
+                    <Col xs="auto">
+                        <span onClick={() => promptRemote(dispatch, rawRemote)}>{remote}</span>
                     </Col>
                 </Row>
             </Container>
