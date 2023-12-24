@@ -18,7 +18,7 @@ import EntranceTracker from './entranceTracker/EntranceTracker';
 import DungeonTracker from './itemTracker/DungeonTracker';
 import GridTracker from './itemTracker/GridTracker';
 import ItemTracker from './itemTracker/ItemTracker';
-import SecondaryLocationTracker from './locationTracker/ExtraLocationTracker';
+import ExtraLocationTracker from './locationTracker/ExtraLocationTracker';
 import { NewLocationTracker } from './locationTracker/LocationTracker';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
@@ -161,21 +161,16 @@ function NewTracker() {
                                 paddingRight: '10%',
                                 paddingTop: '2.5%',
                                 height: (height * 0.95) / 2,
+                                overflow: 'auto',
                             }}
                             className="g-0"
                         >
                             <Col
-                                style={{
-                                    overflowY: 'scroll',
-                                    overflowX: 'auto',
-                                    height: height * 0.95 - 447,
-                                }}
                                 className="g-0"
                             >
-                                <SecondaryLocationTracker
-                                    className="overflowAuto"
-                                    containerHeight={(height * 0.95) / 2}
+                                <ExtraLocationTracker
                                     activeArea={activeArea}
+                                    setActiveArea={setActiveArea}
                                 />
                             </Col>
                         </Row>

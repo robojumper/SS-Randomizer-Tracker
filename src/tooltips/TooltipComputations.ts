@@ -168,7 +168,7 @@ async function computationTask(
         console.log('analyzing', task.checkId);
 
         let checkId = task.checkId;
-        if (store.logic.checks[checkId].type === 'tr_cube') {
+        if (store.logic.checks[checkId]?.type === 'tr_cube') {
             checkId = mapToCanAccessCubeRequirement(checkId);
         }
 

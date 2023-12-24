@@ -14,7 +14,12 @@ export interface Area<N extends string = string> {
     numChecksRemaining: number;
     numChecksAccessible: number;
     checks: string[];
-    extraChecks: string[];
+    extraChecks: {
+        tr_cube?: string[];
+        loose_crystal?: string[];
+        gossip_stone?: string[];
+    };
+    exits: string[];
 }
 
 export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic';
@@ -36,6 +41,7 @@ export interface ExitMapping {
         | {
               id: string;
               name: string;
+              region: string;
           }
         | undefined;
     canAssign: boolean;

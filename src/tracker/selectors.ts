@@ -227,7 +227,20 @@ export const exitRulesSelector = createSelector(
             }
 
             if (everythingRandomized) {
-                result[exitId] = { type: 'random' };
+                // These don't appear to ever be randomized?
+                if (
+                    logic.areaGraph.exits[exitId].short_name.includes(
+                        'First Time Dive',
+                    ) ||
+                    logic.areaGraph.exits[exitId].short_name.includes(
+                        'Statue Dive',
+                    )
+                ) {
+                    result[exitId] = { type: 'vanilla' };
+                } else {
+                    result[exitId] = { type: 'random' };
+                }
+                continue;
             }
 
             const poolData = (() => {
@@ -290,6 +303,7 @@ export const exitsSelector = createSelector(
                 return {
                     id: entranceId,
                     name: rawEntrance.short_name,
+                    region: logic.areaGraph.entranceHintAreas[entranceId],
                 };
             } else {
                 console.error('unknown entrance', entranceId);
@@ -670,6 +684,7 @@ export const checkSelector = currySelector(
             inLogicBitsSelector,
             inSemiLogicBitsSelector,
             checkedChecksSelector,
+            mappedExitsSelector,
         ],
         (
             checkId,
@@ -677,6 +692,7 @@ export const checkSelector = currySelector(
             inLogicBits,
             inSemiLogicBits,
             checkedChecks,
+            mappedExits,
         ): Check => {
             const logicalCheckId = cubeCheckToCanAccessCube[checkId] ?? checkId;
 
@@ -686,18 +702,31 @@ export const checkSelector = currySelector(
                 : inSemiLogicBits.test(checkBit)
                     ? 'semiLogic'
                     : 'outLogic';
-            const checkName = logic.checks[checkId].name;
-            const shortCheckName = checkName.includes('-')
-                ? checkName.substring(checkName.indexOf('-') + 1).trim()
-                : checkName;
 
-            return {
-                checked: checkedChecks.includes(checkId),
-                checkId,
-                checkName: shortCheckName,
-                type: logic.checks[checkId].type,
-                logicalState,
-            };
+            if (logic.checks[checkId]) {
+                const checkName = logic.checks[checkId].name;
+                const shortCheckName = checkName.includes('-')
+                    ? checkName.substring(checkName.indexOf('-') + 1).trim()
+                    : checkName;
+                return {
+                    checked: checkedChecks.includes(checkId),
+                    checkId,
+                    checkName: shortCheckName,
+                    type: logic.checks[checkId].type,
+                    logicalState,
+                };
+            } else if (logic.areaGraph.exits[checkId]) {
+                const shortCheckName = logic.areaGraph.exits[checkId].short_name;
+                return {
+                    checked: Boolean(mappedExits[checkId]),
+                    checkId,
+                    checkName: shortCheckName,
+                    type: 'exit',
+                    logicalState,
+                };
+            } else {
+                throw new Error('unknown check ' + checkId);
+            }
         },
     ),
 );
@@ -807,6 +836,7 @@ export const areasSelector = createSelector(
         inLogicBitsSelector,
         areaNonprogressSelector,
         areaHiddenSelector,
+        exitRulesSelector,
     ],
     (
         logic,
@@ -815,9 +845,10 @@ export const areasSelector = createSelector(
         inLogicBits,
         isAreaNonprogress,
         isAreaHidden,
+        exitRules,
     ): Area[] =>
         _.compact(
-            logic.areas.map((area) => {
+            logic.areas.map((area): Area | undefined => {
                 const checks = logic.checksByArea[area];
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),
@@ -846,10 +877,13 @@ export const areasSelector = createSelector(
                     inLogicBits.test(logic.itemBits[check]),
                 );
 
+                const exits = logic.exitsByArea[area].filter((exit) => exitRules[exit]?.type === 'random');
+
                 return {
                     checks: regularChecks,
+                    exits,
                     numTotalChecks: regularChecks.length,
-                    extraChecks: extraChecks,
+                    extraChecks: _.groupBy(extraChecks, (check) => logic.checks[check].type),
                     nonProgress,
                     hidden,
                     name: area,
@@ -878,11 +912,21 @@ export const totalCountersSelector = createSelector(
 );
 
 export const remainingEntrancesSelector = createSelector(
-    [logicSelector, exitRulesSelector, exitsSelector],
-    (logic, exitRules, exits) => {
-        const usedEntrances = new Set(
-            _.compact(exits.map((exit) => exit.entrance?.id)),
-        );
+    [logicSelector, exitRulesSelector, exitsSelector, settingSelector('randomize-entrances')],
+    (logic, exitRules, exits, randomizeEntrances) => {
+        // Some entrances can be double mapped with ER?
+        const usedEntrances =
+            randomizeEntrances !== 'All'
+                ? new Set(
+                    _.compact(
+                        exits.map((exit) =>
+                            exit.exit.id !== '\\Start'
+                                ? exit.entrance?.id
+                                : undefined,
+                        ),
+                    ),
+                )
+                : new Set();
         for (const [exitId, rule] of Object.entries(exitRules)) {
             if (rule.type === 'linked') {
                 const pool = logic.areaGraph.entrancePools[rule.pool];

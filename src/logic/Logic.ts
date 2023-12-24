@@ -42,6 +42,7 @@ export interface Logic {
     checks: Record<string, LogicalCheck>;
     areas: string[];
     checksByArea: Record<string, string[]>;
+    exitsByArea: Record<string, string[]>;
 }
 
 export interface LogicalCheck {
@@ -65,6 +66,7 @@ export interface AreaGraph {
     areasByExit: Record<string, Area>;
     vanillaConnections: { [from: string]: string };
     entrances: Record<string, RawEntrance>;
+    entranceHintAreas: Record<string, string>;
     exits: Record<string, RawExit>;
 
     /** Sandship Dock Exit -> Exit to Sandship */
@@ -217,9 +219,11 @@ export function parseLogic(raw: RawLogic): Logic {
     const itemBits: Logic['itemBits'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
     const checksByArea: Logic['checksByArea'] = {};
+    const exitsByArea: Logic['exitsByArea'] = {};
+    const entranceHintAreas: AreaGraph['entranceHintAreas'] = {};
 
     const entrancesByShortName: {
-        [shortName: string]: { def: RawEntrance; id: string };
+        [shortName: string]: { def: RawEntrance; id: string, region: string };
     } = {};
     let idx = 0;
     for (const rawItem of rawItems) {
@@ -243,6 +247,10 @@ export function parseLogic(raw: RawLogic): Logic {
             ),
         );
     };
+
+    // Locations found in areas where we didn't find a corresponding check.
+    // We better mention this "virtual" check in some other requirement.
+    const nonCheckLocations = new Set<string>();
 
     function createAreaIndex(rawArea: RawArea) {
         const area: Area = {
@@ -279,6 +287,23 @@ export function parseLogic(raw: RawLogic): Logic {
 
             b.addAlternative(b.day(rawArea.name), b.singleBit(b.night(rawArea.name)));
             b.addAlternative(b.night(rawArea.name), b.singleBit(b.day(rawArea.name)));
+        }
+
+        const getHintRegion = (locName: string) => {
+            let region: string | null | undefined =
+                rawArea.hint_region;
+            if (
+                !region &&
+                (locName.includes('Temple of Time') ||
+                    locName.includes('Goddess Cube at Ride') ||
+                    locName.includes('Gossip Stone in Temple of Time Area'))
+            ) {
+                region = 'Lanayru Desert';
+            }
+            if (!region) {
+                throw new Error(`check ${locName} has no region?`);
+            }
+            return region;
         }
 
         if (rawArea.exits) {
@@ -366,6 +391,7 @@ export function parseLogic(raw: RawLogic): Logic {
                         toArea: fullExitName,
                     });
                 } else if (raw.exits[fullExitName]) {
+                    // map exit
                     areasByExit[fullExitName] = area;
                     opaqueItems.clearBit(b.bit(fullExitName));
                     if (area.abstract) {
@@ -375,41 +401,50 @@ export function parseLogic(raw: RawLogic): Logic {
                             );
                         }
                         b.set(fullExitName, expr);
-                    } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                        b.addAlternative(
-                            fullExitName,
-                            expr
-                                .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(b.singleBit(b.day(rawArea.name))),
-                        );
-                        b.addAlternative(
-                            fullExitName,
-                            expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(b.night(rawArea.name))),
-                        );
-                    } else if (area.allowedTimeOfDay === TimeOfDay.DayOnly) {
-                        b.addAlternative(
-                            fullExitName,
-                            expr
-                                .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(b.singleBit(rawArea.name)),
-                        );
-                    } else if (area.allowedTimeOfDay === TimeOfDay.NightOnly) {
-                        b.addAlternative(
-                            fullExitName,
-                            expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(rawArea.name)),
-                        );
                     } else {
-                        throw new Error('bad ToD requirement');
-                    }
+                        const region = getHintRegion(fullExitName);
 
-                    area.exits.push({
-                        type: 'exitToEntrance',
-                        toConnector: fullExitName,
-                    });
+                        if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                            b.addAlternative(
+                                fullExitName,
+                                expr
+                                    .drop_unless(dummy_day_bit, dummy_night_bit)
+                                    .and(b.singleBit(b.day(rawArea.name))),
+                            );
+                            b.addAlternative(
+                                fullExitName,
+                                expr
+                                    .drop_unless(dummy_night_bit, dummy_day_bit)
+                                    .and(b.singleBit(b.night(rawArea.name))),
+                            );
+                        } else if (
+                            area.allowedTimeOfDay === TimeOfDay.DayOnly
+                        ) {
+                            b.addAlternative(
+                                fullExitName,
+                                expr
+                                    .drop_unless(dummy_day_bit, dummy_night_bit)
+                                    .and(b.singleBit(rawArea.name)),
+                            );
+                        } else if (
+                            area.allowedTimeOfDay === TimeOfDay.NightOnly
+                        ) {
+                            b.addAlternative(
+                                fullExitName,
+                                expr
+                                    .drop_unless(dummy_night_bit, dummy_day_bit)
+                                    .and(b.singleBit(rawArea.name)),
+                            );
+                        } else {
+                            throw new Error('bad ToD requirement');
+                        }
+
+                        (exitsByArea[region] ??= []).push(fullExitName);
+                        area.exits.push({
+                            type: 'exitToEntrance',
+                            toConnector: fullExitName,
+                        });
+                    }
                 } else {
                     throw new Error(
                         `${rawArea.name} area ${fullExitName} not resolved`,
@@ -425,16 +460,21 @@ export function parseLogic(raw: RawLogic): Logic {
                 const fullEntranceName = `${rawArea.name}\\${entrance}`;
                 const entranceDef = raw.entrances[fullEntranceName];
 
+                const region = getHintRegion(fullEntranceName);
+                entranceHintAreas[fullEntranceName] = region;
+
                 // Are both of these needed???
 
                 entrancesByShortName[entranceDef.short_name] = {
                     def: entranceDef,
                     id: fullEntranceName,
+                    region,
                 };
 
                 entrancesByShortName[entrance] = {
                     def: entranceDef,
                     id: fullEntranceName,
+                    region,
                 };
 
                 if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
@@ -485,24 +525,13 @@ export function parseLogic(raw: RawLogic): Logic {
                 if (!location.startsWith('\\')) {
                     const check = checks[locName];
                     if (check) {
-                        let region: string | null | undefined =
-                            rawArea.hint_region;
-                        if (
-                            !region &&
-                            (locName.includes('Goddess Cube at Ride') ||
-                                locName.includes(
-                                    'Gossip Stone in Temple of Time Area',
-                                ))
-                        ) {
-                            region = 'Lanayru Desert';
-                        }
-                        if (!region) {
-                            throw new Error('check has no region?');
-                        }
+                        const region = getHintRegion(locName);
                         if (check.type === 'tr_cube') {
                             check.name = `${region} - ${check.name}`;
                         }
                         (checksByArea[region] ??= []).push(locName);
+                    } else {
+                        nonCheckLocations.add(locName);
                     }
                 }
 
@@ -598,6 +627,19 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
+    // check for orphaned locations
+    const mentionedBits = new Set(
+        bitLogic.implications.flatMap((expr) =>
+            expr.conjunctions.flatMap((vec) => [...vec.iter()]),
+        ),
+    );
+
+    for (const loc of nonCheckLocations) {
+        if (!mentionedBits.has(b.bit(loc))) {
+            console.warn('unused location', loc);
+        }
+    }
+
     const vanillaConnections: AreaGraph['vanillaConnections'] = {};
     for (const [exitId, exitDef] of Object.entries(raw.exits)) {
         if (exitDef.vanilla) {
@@ -678,11 +720,13 @@ export function parseLogic(raw: RawLogic): Logic {
         checks,
         areas,
         checksByArea,
+        exitsByArea,
         areaGraph: {
             areas: allAreas,
             rootArea,
             areasByEntrance,
             areasByExit,
+            entranceHintAreas,
             entrances: raw.entrances,
             exits: raw.exits,
             vanillaConnections,

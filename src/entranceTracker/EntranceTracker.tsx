@@ -83,10 +83,21 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
     const entranceLower = entranceSearch.toLowerCase();
     const exitLower = exitSearch.toLowerCase();
 
+    const matches = (name: string, searchString: string) => {
+        if (!searchString) {
+            return true;
+        }
+        const fragments = searchString.split(' ');
+        return fragments.every((fragment) => name.includes(fragment.trim()));
+    }
+
     const filteredRows = exits.filter((e) => {
         return (
-            e.exit.name.toLowerCase().includes(exitLower) && (!entranceSearch || e.entrance?.name.toLowerCase().includes(entranceLower))
-        )
+            matches(e.exit.name.toLowerCase(), exitLower) &&
+            (!entranceSearch ||
+                (e.entrance &&
+                    matches(e.entrance.name.toLowerCase(), entranceLower)))
+        );
     });
 
     const row = ({ index, style }: ListChildComponentProps) => {
@@ -110,6 +121,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                         options={exit.exit.id === '\\Start' ? startingEntranceOptions : entranceOptions}
                         name={exit.entrance?.name}
                         isDisabled={!exit.canAssign}
+                        filterOption={(option, search) => matches(option.data.label.toLowerCase(), search.toLowerCase())}
                     />
                 </Col>
                 <Col xs="auto">
@@ -117,7 +129,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                         disabled={!exit.entrance}
                         onClick={() =>
                             setExitSearch(
-                                exit.entrance?.name.split('(')[0] ?? '',
+                                exit.entrance?.name.split('-')[0].trim() ?? '',
                             )
                         }
                     >
