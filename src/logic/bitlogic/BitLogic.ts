@@ -252,7 +252,7 @@ export function shallowSimplify(
     opaqueBits: BitVector,
     requirements: LogicalExpression[],
 ) {
-    const simplificationBits = new BitVector(opaqueBits.size);
+    const inliningCandidates = new BitVector(opaqueBits.size);
 
     let simplified = false;
 
@@ -261,7 +261,7 @@ export function shallowSimplify(
             !opaqueBits.test(item) &&
             requirements[item].conjunctions.length <= 1
         ) {
-            simplificationBits.setBit(item);
+            inliningCandidates.setBit(item);
         }
     }
 
@@ -271,21 +271,19 @@ export function shallowSimplify(
         }
         let newExpr = LogicalExpression.false();
         for (const conj of expr.conjunctions) {
-            if (!conj.and(simplificationBits).isEmpty()) {
+            if (!conj.and(inliningCandidates).isEmpty()) {
                 simplified = true;
                 let newItems = new BitVector(opaqueBits.size);
                 let skip = false;
                 for (const reqItem of conj.iter()) {
-                    if (!simplificationBits.test(reqItem)) {
+                    if (!inliningCandidates.test(reqItem)) {
                         newItems.setBit(reqItem);
                     } else {
                         const revealed = requirements[reqItem];
 
-                        /*
                         if (revealed.isTriviallyTrue()) {
                             continue;
                         }
-                        */
 
                         if (revealed.isTriviallyFalse()) {
                             skip = true;

@@ -220,12 +220,12 @@ async function computationTask(
             store.requirements,
             bit,
         );
-        await delay(0);
         store.requirements[bit] = opaqueOnlyExpr;
         store.acceptTaskResult(
             task.checkId,
             dnfToRequirementExpr(store.logic, opaqueOnlyExpr.conjunctions),
         );
+        await delay(0);
     }
 }
 
