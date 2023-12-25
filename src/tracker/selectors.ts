@@ -213,6 +213,11 @@ export const exitRulesSelector = createSelector(
                 continue;
             }
 
+            if (nonRandomizedExits.includes(exitId)) {
+                result[exitId] = { type: 'vanilla' };
+                continue;
+            }
+
             if (exitId === '\\Start' && startingEntranceSetting !== 'Vanilla') {
                 result[exitId] = { type: 'randomStartingEntrance' };
                 continue;
@@ -226,7 +231,12 @@ export const exitRulesSelector = createSelector(
                 continue;
             }
 
+            const dungeonNames_: readonly string[] = dungeonNames;
             if (everythingRandomized) {
+                const vanillaEntranceRegion =
+                    logic.areaGraph.entranceHintAreas[
+                        logic.areaGraph.vanillaConnections[exitId]
+                    ];
                 // These don't appear to ever be randomized?
                 if (
                     logic.areaGraph.exits[exitId].short_name.includes(
@@ -234,6 +244,11 @@ export const exitRulesSelector = createSelector(
                     ) ||
                     logic.areaGraph.exits[exitId].short_name.includes(
                         'Statue Dive',
+                    ) ||
+                    (vanillaEntranceRegion &&
+                        dungeonNames_.includes(vanillaEntranceRegion)) ||
+                    dungeonNames.some((name) =>
+                        logic.exitsByArea[name].includes(exitId),
                     )
                 ) {
                     result[exitId] = { type: 'vanilla' };

@@ -50,14 +50,7 @@ function validateValue(option: Option, value: unknown): OptionValue | undefined 
         case 'singlechoice':
             return typeof value === 'string' && option.choices.includes(value) ? value : undefined;
         case 'multichoice': {
-            const values = _.isArray(value)
-                ? value.filter(
-                    (choice) =>
-                        typeof choice === 'string' &&
-                        option.choices.includes(choice),
-                )
-                : [];
-            return values.length ? values : undefined;
+            return _.isArray(value) ? value : undefined;
         }
         case 'int':
             return typeof value === 'number' &&
