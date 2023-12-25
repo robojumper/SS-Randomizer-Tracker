@@ -2,7 +2,7 @@ import { load } from 'js-yaml';
 import { RawLogic } from '../logic/UpstreamTypes';
 import { OptionDefs } from '../permalink/SettingsTypes';
 import { AppDispatch } from '../store/store';
-import { loadLogic } from '../logic/slice';
+import { loadLogic, setLoadingError } from '../logic/slice';
 import { acceptSettings } from '../tracker/slice';
 import { defaultSettings } from '../permalink/Settings';
 
@@ -85,7 +85,7 @@ export async function loadRemoteLogic(remote: RemoteReference): Promise<[RawLogi
     return [logic, options];
 }
 
-export function promptRemote(dispatch: AppDispatch, currentRemote: RemoteReference | undefined, firstTime = false) {
+export async function promptRemote(dispatch: AppDispatch, currentRemote: RemoteReference | undefined, firstTime = false) {
     const val = prompt('Enter Randomizer Version or branch', currentRemote?.type === 'releaseVersion' ? currentRemote.versionTag : "");
     if (!val) {
         return;
@@ -95,13 +95,15 @@ export function promptRemote(dispatch: AppDispatch, currentRemote: RemoteReferen
         alert('Invalid Randomizer Version (try v.2.1.1)');
     }
 
-    (async () => {
-        try {
-            const [logic, options] = await loadRemoteLogic(remote!);
-            dispatch(acceptSettings({ settings: defaultSettings(options), initialLoad: firstTime }))
-            dispatch(loadLogic({ logic, options, remote: remote! }));
-        } catch (e) {
-            alert('Failed to load: ' + (e && typeof e === 'object' && 'message' in e ? e.message as string : JSON.stringify(e)));
-        }
-    })();
+    try {
+        await loadRemote(dispatch, remote!, firstTime);
+    } catch (e) {
+        dispatch(setLoadingError({ error: e ?? 'Unknown error' }));
+    }
+}
+
+export async function loadRemote(dispatch: AppDispatch, remote: RemoteReference, firstTime = false) {
+    const [logic, options] = await loadRemoteLogic(remote);
+    dispatch(acceptSettings({ settings: defaultSettings(options), initialLoad: firstTime }))
+    dispatch(loadLogic({ logic, options, remote: remote }));
 }
