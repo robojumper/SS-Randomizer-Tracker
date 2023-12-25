@@ -787,6 +787,9 @@ export const isCheckBannedSelector = createSelector(
         settingSelector('excluded-locations'),
         settingSelector('rupeesanity'),
         settingSelector('shopsanity'),
+        settingSelector('beedle-shopsanity'),
+        settingSelector('rupin-shopsanity'),
+        settingSelector('luv-shopsanity'),
         settingSelector('tadtonesanity'),
         settingSelector('treasuresanity-in-silent-realms'),
         settingSelector('trial-treasure-amount'),
@@ -796,6 +799,9 @@ export const isCheckBannedSelector = createSelector(
         bannedLocations,
         rupeeSanity,
         shopSanity,
+        beedleShopsanity,
+        rupinShopSanity,
+        luvShopSanity,
         tadtoneSanity,
         silentRealmTreasuresanity,
         silentRealmTreasureAmount,
@@ -806,7 +812,12 @@ export const isCheckBannedSelector = createSelector(
         const maxRelics = silentRealmTreasuresanity
             ? silentRealmTreasureAmount
             : 0;
-        const banBeedle = shopSanity === 'Vanilla' || shopSanity === false;
+        const banBeedle =
+            shopSanity !== undefined
+                ? shopSanity !== true
+                : beedleShopsanity !== true;
+        const banGearShop = rupinShopSanity !== true;
+        const banPotionShop = luvShopSanity !== true;
 
         const trialTreasurePattern = /Relic (\d+)/;
         const isExcessRelic = (check: LogicalCheck) => {
@@ -830,13 +841,14 @@ export const isCheckBannedSelector = createSelector(
 
         return (checkId: string, check: LogicalCheck) =>
             // Loose crystal checks can be banned to not require picking them up
-            // in logic, but we want to allow marking them as collected, since
-            // this is semilogic?
+            // in logic, but we want to allow marking them as collected.
             (check.type !== 'loose_crystal' && bannedChecks.has(check.name)) ||
             isExcessRelic(check) ||
             isBannedCubeCheckViaChest(checkId, check) ||
             (rupeesExcluded && check.type === 'rupee') ||
             (banBeedle && check.type === 'beedle_shop') ||
+            (banGearShop && check.type === 'gear_shop') ||
+            (banPotionShop && check.type === 'potion_shop') ||
             (!tadtoneSanity && check.type === 'tadtone');
     },
 );

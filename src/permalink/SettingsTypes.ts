@@ -49,7 +49,6 @@ export interface AllTypedOptions
     extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity' | 'randomize-entrances'> {
     rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
 
-    // TODO: Use these
     // Bizzare Bazaar splits Shopsanity into three settings
     // https://github.com/ssrando/ssrando/pull/442
     shopsanity: GeneratedOptions['shopsanity'] | 'Vanilla' | undefined;

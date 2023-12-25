@@ -55,6 +55,8 @@ export interface LogicalCheck {
         | 'rupee'
         | 'tadtone'
         | 'beedle_shop'
+        | 'gear_shop'
+        | 'potion_shop'
         | 'tr_cube'
         | 'tr_dummy';
     name: string;
@@ -745,11 +747,15 @@ function getCheckType(
         return 'trial_treasure';
     } else if (checkType.includes('Loose Crystals')) {
         return 'loose_crystal';
-    } else if (checkType.includes("Beedle's Shop Purchases")) {
+    } else if (checkType.includes('Beedle') && checkType.includes('Shop Purchases')) {
         return 'beedle_shop';
+    } else if (checkType.includes('Gear Shop Purchases')) {
+        return 'gear_shop';
+    } else if (checkType.includes('Potion Shop Purchases')) {
+        return 'potion_shop';
     } else if (
         checkType.includes('Tadtones') &&
-        !checkName.includes("Water Dragon's Reward")
+        !checkName.includes('Water Dragon\'s Reward')
     ) {
         return 'tadtone';
     } else {
