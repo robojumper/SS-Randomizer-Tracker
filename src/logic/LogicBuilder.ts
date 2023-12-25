@@ -1,7 +1,14 @@
-import { makeDay, makeNight } from './Logic';
 import { BitLogic } from './bitlogic/BitLogic';
 import { BitVector } from './bitlogic/BitVector';
 import { LogicalExpression } from './bitlogic/LogicalExpression';
+
+function makeDay(loc: string) {
+    return `${loc}_DAY`;
+}
+
+function makeNight(loc: string) {
+    return `${loc}_NIGHT`;
+}
 
 /**
  * A helper class for bridging the stringly-typed requirements to bit logic.
@@ -12,60 +19,80 @@ export class LogicBuilder {
     itemList: string[];
     itemLookup: Record<string, number>;
 
-    implications: Record<number, LogicalExpression> | LogicalExpression[];
+    requirements: Record<number, LogicalExpression> | LogicalExpression[];
 
     constructor(
         bitLogic: BitLogic,
         allItems: string[],
-        implications: Record<number, LogicalExpression> | LogicalExpression[],
+        requirements: Record<number, LogicalExpression> | LogicalExpression[],
     ) {
         this.bitLogic = bitLogic;
         this.itemList = allItems;
         this.itemLookup = Object.fromEntries(
             [...allItems.entries()].map(([idx, name]) => [name, idx]),
         );
-        this.implications = implications;
+        this.requirements = requirements;
     }
 
+    /** A logical expression that always evaluates to true. */
     true(): LogicalExpression {
         return LogicalExpression.true(this.bitLogic.numBits);
     }
 
+    /** A logical expression that always evaluates to false. */
     false(): LogicalExpression {
         return LogicalExpression.false();
     }
 
+    /** A logical expression that evaluates to true iff `item` is true. */
     singleBit(item: string): LogicalExpression {
         return new LogicalExpression([
             new BitVector(this.bitLogic.numBits).setBit(this.bit(item)),
         ]);
     }
 
+    /** Sets the requirement for `target` to `rhs`.*/
     set(target: string, rhs: LogicalExpression) {
         const bit = this.bit(target);
         if (bit !== undefined) {
-            this.implications[bit] = rhs;
+            if (this.requirements[bit] && !this.requirements[bit].isTriviallyFalse()) {
+                // TODO: Should the logic builder keep a set of written exprs instead of the isTriviallyFalse check?
+                console.warn('overwriting item', target);
+            }
+            this.requirements[bit] = rhs;
         } else {
             console.error('unknown item', target);
         }
     }
 
-    addAlternative(target: string, source: LogicalExpression) {
+    /** Adds the `rhs` expression as an alternative to the `target`. */
+    addAlternative(target: string, rhs: LogicalExpression) {
         const bit = this.bit(target);
-        this.implications[bit] = (this.implications[bit] ?? this.false()).or(
-            source,
+        this.requirements[bit] = (this.requirements[bit] ?? this.false()).or(
+            rhs,
         );
     }
 
+    /** Gets the bit index for the `item`. */
     bit(item: string): number {
         return this.itemLookup[item];
     }
 
+    /** Add the "logical day" suffix to an item. */
     day(item: string) {
-        return makeDay(item);
+        const d = makeDay(item);
+        if (this.bit(d) === undefined) {
+            console.error('unknown item', d);
+        }
+        return d;
     }
 
+    /** Add the "logical night" suffix to an item. */
     night(item: string) {
-        return makeNight(item);
+        const d = makeNight(item);
+        if (this.bit(d) === undefined) {
+            console.error('unknown item', d);
+        }
+        return d;
     }
 }

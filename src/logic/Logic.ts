@@ -43,6 +43,7 @@ export interface Logic {
     areas: string[];
     checksByArea: Record<string, string[]>;
     exitsByArea: Record<string, string[]>;
+    dungeonCompletionRequirements: { [dungeon: string]: string }
 }
 
 export interface LogicalCheck {
@@ -112,14 +113,6 @@ type Exit =
            */
           toConnector: string;
       };
-
-export function makeDay(loc: string) {
-    return `${loc}_DAY`;
-}
-
-export function makeNight(loc: string) {
-    return `${loc}_NIGHT`;
-}
 
 const itemIndexPat = /^(.+) #(\d+)$/;
 
@@ -211,7 +204,7 @@ export function parseLogic(raw: RawLogic): Logic {
 
     const bitLogic: BitLogic = {
         numBits: numItems,
-        implications: new Array<LogicalExpression>(numItems).fill(
+        requirements: new Array<LogicalExpression>(numItems).fill(
             LogicalExpression.false(),
         ),
     };
@@ -231,7 +224,7 @@ export function parseLogic(raw: RawLogic): Logic {
         idx++;
     }
 
-    const b = new LogicBuilder(bitLogic, rawItems, bitLogic.implications);
+    const b = new LogicBuilder(bitLogic, rawItems, bitLogic.requirements);
 
     const dummy_day_bit = itemBits['Day'];
     const dummy_night_bit = itemBits['Night'];
@@ -298,6 +291,7 @@ export function parseLogic(raw: RawLogic): Logic {
                     locName.includes('Goddess Cube at Ride') ||
                     locName.includes('Gossip Stone in Temple of Time Area'))
             ) {
+                // FIXME fix the data
                 region = 'Lanayru Desert';
             }
             if (!region) {
@@ -629,7 +623,7 @@ export function parseLogic(raw: RawLogic): Logic {
 
     // check for orphaned locations
     const mentionedBits = new Set(
-        bitLogic.implications.flatMap((expr) =>
+        bitLogic.requirements.flatMap((expr) =>
             expr.conjunctions.flatMap((vec) => [...vec.iter()]),
         ),
     );
@@ -696,11 +690,11 @@ export function parseLogic(raw: RawLogic): Logic {
     // Some cheap optimizations - these have opaque entrances,
     // so not much opportunity here.
     do {
-        removeDuplicates(bitLogic.implications);
-        while (shallowSimplify(opaqueItems, bitLogic.implications)) {
-            removeDuplicates(bitLogic.implications);
+        removeDuplicates(bitLogic.requirements);
+        while (shallowSimplify(opaqueItems, bitLogic.requirements)) {
+            removeDuplicates(bitLogic.requirements);
         }
-    } while (unifyRequirements(opaqueItems, bitLogic.implications));
+    } while (unifyRequirements(opaqueItems, bitLogic.requirements));
 
     // In theory, we could also do some more aggressive optimizations
     // with opaque entrances but we do have to be mindful of the size
@@ -721,6 +715,7 @@ export function parseLogic(raw: RawLogic): Logic {
         areas,
         checksByArea,
         exitsByArea,
+        dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph: {
             areas: allAreas,
             rootArea,

@@ -12,45 +12,45 @@ export interface BitLogic {
      * expression that, if evaluated to true, implies the given bit index.
      * Always of length numBits.
      */
-    implications: LogicalExpression[];
+    requirements: LogicalExpression[];
 }
 
 /**
- * Compute the logical result of the given implications.
+ * Compute the logical result of the given requirements.
  */
 export function interpretLogic(
-    /** The base BitLogic with its base implications. */
+    /** The base BitLogic with its base requirements. */
     logic: BitLogic,
     /**
-     * Additional implications from runtime conditions that aren't part of the base logic.
+     * Additional requirements from runtime conditions that aren't part of the base logic.
      * Must not overwrite each other, and may only overwrite a base implication from `logic`
      * if the BitLogic's expression is trivially false (an empty disjunction).
      */
-    additionalImplications: Record<number, LogicalExpression>[],
+    additionalRequirements: Record<number, LogicalExpression>[],
     /**
-     * To resume computation from an earlier result after making monotonous changes to `additionalImplications`
+     * To resume computation from an earlier result after making monotonous changes to `additionalRequirements`
      * (concretely: semilogic requirements), pass startingBits. Purely a performance optimization.
      */
     startingBits?: BitVector,
 ) {
-    const effectiveImplications = logic.implications.slice();
-    for (const [idx, expr] of logic.implications.entries()) {
-        const reqs = _.compact([expr.isTriviallyFalse() ? undefined : expr, ...additionalImplications.map((m) => m[idx])]);
+    const effectiveRequirements = logic.requirements.slice();
+    for (const [idx, expr] of logic.requirements.entries()) {
+        const reqs = _.compact([expr.isTriviallyFalse() ? undefined : expr, ...additionalRequirements.map((m) => m[idx])]);
         if (reqs.length > 1) {
             console.warn('requirements overwriting', idx);
         }
-        effectiveImplications[idx] = _.last(reqs) ?? expr;
+        effectiveRequirements[idx] = _.last(reqs) ?? expr;
     }
 
     // This is an extremely simple iterate-to-fixpoint solver that works because all our
-    // implications use a DNF representation with no inverted bits, so logic is monotonous.
+    // requirements use a DNF representation with no inverted bits, so logic is monotonous.
     const bits = startingBits?.clone() ?? new BitVector(logic.numBits);
     let changed = true;
     let iterations = 0;
     const start = performance.now();
     while (changed) {
         changed = false;
-        for (const [idx, expr] of effectiveImplications.entries()) {
+        for (const [idx, expr] of effectiveRequirements.entries()) {
             const evaluate = (e: LogicalExpression) => {
                 const val = e.eval(bits);
                 if (val) {
@@ -84,8 +84,8 @@ export function interpretLogic(
 export function anyPath(
     /** Do not reveal these bits */
     opaqueBits: BitVector,
-    /** Traverse these implications... */
-    implications: LogicalExpression[],
+    /** Traverse these requirements... */
+    requirements: LogicalExpression[],
     /** ...starting from here. */
     idx: number,
     /**
@@ -99,7 +99,7 @@ export function anyPath(
     if (visitedExpressions.has(idx)) {
         return undefined;
     }
-    const expr = implications[idx];
+    const expr = requirements[idx];
     if (expr.isTriviallyFalse()) {
         return undefined;
     }
@@ -110,12 +110,12 @@ export function anyPath(
 
     visitedExpressions.add(idx);
 
-    for (const conj of implications[idx].conjunctions) {
+    for (const conj of requirements[idx].conjunctions) {
         for (const bit of conj.iter()) {
             if (!opaqueBits.test(bit) && !revealedExpressions.has(bit)) {
                 const moreBits = anyPath(
                     opaqueBits,
-                    implications,
+                    requirements,
                     bit,
                     revealedExpressions,
                     visitedExpressions,
@@ -137,7 +137,7 @@ export function anyPath(
  */
 export function computeExpression(
     opaqueBits: BitVector,
-    implications: LogicalExpression[],
+    requirements: LogicalExpression[],
     idx: number,
     visitedExpressions: Set<number> = new Set(),
 ): LogicalExpression {
@@ -151,14 +151,14 @@ export function computeExpression(
     // It'd be useful to know when we've found the minimum requirements and
     // when exploring additional paths wouldn't help.
 
-    nextConj: for (const conj of implications[idx].conjunctions) {
+    nextConj: for (const conj of requirements[idx].conjunctions) {
         let tmpExpr = LogicalExpression.true(opaqueBits.size);
         const conjOpaqueBits = opaqueBits.and(conj);
         for (const bit of conj.iter()) {
             if (!conjOpaqueBits.test(bit)) {
                 const newTerm = computeExpression(
                     opaqueBits,
-                    implications,
+                    requirements,
                     bit,
                     visitedExpressions,
                 );
@@ -179,10 +179,10 @@ export function computeExpression(
     return result.removeDuplicates();
 }
 
-export function removeDuplicates(implications: LogicalExpression[]) {
-    for (const [idx, expr] of implications.entries()) {
+export function removeDuplicates(requirements: LogicalExpression[]) {
+    for (const [idx, expr] of requirements.entries()) {
         if (expr.conjunctions.length >= 2) {
-            implications[idx] = expr.removeDuplicates();
+            requirements[idx] = expr.removeDuplicates();
         }
     }
 }
@@ -197,7 +197,7 @@ export function removeDuplicates(implications: LogicalExpression[]) {
  */
 export function unifyRequirements(
     opaqueBits: BitVector,
-    implications: LogicalExpression[],
+    requirements: LogicalExpression[],
 ) {
     let simplified = false;
     for (let a = 0; a < opaqueBits.size; a++) {
@@ -208,8 +208,8 @@ export function unifyRequirements(
             if (opaqueBits.test(b)) {
                 continue;
             }
-            const implA = implications[a];
-            const implB = implications[b];
+            const implA = requirements[a];
+            const implB = requirements[b];
 
             const bImpliesAIndex = implA.conjunctions.findIndex(
                 (cA) => cA.numSetBits === 1 && cA.test(b),
@@ -231,9 +231,9 @@ export function unifyRequirements(
             const implACon = implA.conjunctions.slice();
             const bReqVec = implACon.splice(bImpliesAIndex, 1);
             for (const cn of implACon) {
-                implications[b] = implications[b].or(cn);
+                requirements[b] = requirements[b].or(cn);
             }
-            implications[a] = new LogicalExpression(bReqVec);
+            requirements[a] = new LogicalExpression(bReqVec);
         }
     }
 
@@ -250,7 +250,7 @@ export function unifyRequirements(
  */
 export function shallowSimplify(
     opaqueBits: BitVector,
-    implications: LogicalExpression[],
+    requirements: LogicalExpression[],
 ) {
     const simplificationBits = new BitVector(opaqueBits.size);
 
@@ -259,13 +259,13 @@ export function shallowSimplify(
     for (let item = 0; item < opaqueBits.size; item++) {
         if (
             !opaqueBits.test(item) &&
-            implications[item].conjunctions.length <= 1
+            requirements[item].conjunctions.length <= 1
         ) {
             simplificationBits.setBit(item);
         }
     }
 
-    for (const [idx, expr] of implications.entries()) {
+    for (const [idx, expr] of requirements.entries()) {
         if (expr.conjunctions.length >= 30) {
             continue;
         }
@@ -279,7 +279,7 @@ export function shallowSimplify(
                     if (!simplificationBits.test(reqItem)) {
                         newItems.setBit(reqItem);
                     } else {
-                        const revealed = implications[reqItem];
+                        const revealed = requirements[reqItem];
 
                         /*
                         if (revealed.isTriviallyTrue()) {
@@ -302,7 +302,7 @@ export function shallowSimplify(
             }
         }
 
-        implications[idx] = newExpr;
+        requirements[idx] = newExpr;
     }
     return simplified;
 }

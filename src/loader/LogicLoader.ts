@@ -42,6 +42,7 @@ export function formatRemote(ref: RemoteReference) {
 }
 
 const prBranchPattern = /^https:\/\/github.com\/(.*)\/ssrando\/tree\/(.*)$/;
+const branchPattern = /^(.*)\/(.*)$/;
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
 export function parseRemote(remote: string): RemoteReference | undefined {
@@ -49,7 +50,7 @@ export function parseRemote(remote: string): RemoteReference | undefined {
         return { type: 'releaseVersion', versionTag: remote };
     }
 
-    const prBranchMatch = remote.match(prBranchPattern);
+    const prBranchMatch = remote.match(prBranchPattern) ?? remote.match(branchPattern);
     if (prBranchMatch) {
         return { type: 'forkBranch', author: prBranchMatch[1], branch: prBranchMatch[2] };
     }

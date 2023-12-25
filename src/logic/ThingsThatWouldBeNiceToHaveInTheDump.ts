@@ -1,19 +1,13 @@
-import { AllTypedOptions, OptionType, OptionValue, TypedOptions } from "../permalink/SettingsTypes";
-import { RegularDungeon } from "./Locations";
-
-export const dungeonCompletionRequirements: Record<RegularDungeon, string> = {
-    Skyview: '\\Skyview\\Spring\\Strike Crest',
-    'Earth Temple': '\\Earth Temple\\Spring\\Strike Crest',
-    'Lanayru Mining Facility':
-        '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Exit Hall of Ancient Robots',
-    'Ancient Cistern': "\\Ancient Cistern\\Flame Room\\Farore's Flame",
-    Sandship: "\\Sandship\\Boss Room\\Nayru's Flame",
-    'Fire Sanctuary': "\\Fire Sanctuary\\Flame Room\\Din's Flame",
-};
+import {
+    AllTypedOptions,
+    OptionType,
+    OptionValue,
+    TypedOptions,
+} from '../permalink/SettingsTypes';
 
 export const nonRandomizedExits = [
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Gate of Time Exit',
-    '\\Faron\\Sealed Grounds\\Hylia\'s Temple\\Gate of Time Exit'
+    "\\Faron\\Sealed Grounds\\Hylia's Temple\\Gate of Time Exit",
 ];
 
 export const bannedExitsAndEntrances = [
@@ -23,14 +17,22 @@ export const bannedExitsAndEntrances = [
     '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Exit to Temple of Time',
 ];
 
-type OptionMapping = [string, keyof TypedOptions, OptionValue | ((val: OptionValue) => boolean)];
-const m = <K extends keyof TypedOptions>(item: string, settingsKey: K, value: TypedOptions[K] | ((value: TypedOptions[K]) => boolean)): OptionMapping => [item, settingsKey, value as OptionType];
+type OptionMapping = [
+    string,
+    keyof TypedOptions,
+    OptionValue | ((val: OptionValue) => boolean),
+];
+const m = <K extends keyof TypedOptions>(
+    item: string,
+    settingsKey: K,
+    value: TypedOptions[K] | ((value: TypedOptions[K]) => boolean),
+): OptionMapping => [item, settingsKey, value as OptionType];
 
 export const runtimeOptions: OptionMapping[] = [
     m('Open Thunderhead option', 'open-thunderhead', 'Open'),
     m('Open ET option', 'open-et', true),
-    m('Open LMF option', 'open-lmf', "Open"),
-    m('LMF Nodes On option', 'open-lmf', "Main Node"),
+    m('Open LMF option', 'open-lmf', 'Open'),
+    m('LMF Nodes On option', 'open-lmf', 'Main Node'),
     m('Open Lake Floria option', 'open-lake-floria', 'Open'),
     m('Talk to Yerbal option', 'open-lake-floria', 'Talk to Yerbal'),
     m('Vanilla Lake Floria option', 'open-lake-floria', 'Vanilla'),
@@ -83,7 +85,8 @@ const inLogicOptions_ = [
 export type LogicOptions = (typeof inLogicOptions_)[number];
 export const inLogicOptions: string[] = inLogicOptions_;
 
-export const impaSongCheck = '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
+export const impaSongCheck =
+    '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
 export const completeTriforceReq = '\\Complete Triforce';
 
 export const swordsToAdd: Record<string, number> = {

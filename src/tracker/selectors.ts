@@ -7,7 +7,6 @@ import { Items, TrackerState } from './slice';
 import {
     bannedExitsAndEntrances,
     completeTriforceReq,
-    dungeonCompletionRequirements,
     gotOpeningReq,
     gotRaisingReq,
     hordeDoorReq,
@@ -21,7 +20,6 @@ import {
     Check,
     DungeonName,
     ExitMapping,
-    RegularDungeon,
     dungeonNames,
     isDungeon,
 } from '../logic/Locations';
@@ -409,7 +407,7 @@ export const exitsSelector = createSelector(
  * tooltip computations. Any recalculations here will cause the tooltips cache to throw away its
  * cached tooltips and recalculate requirements (after logic has loaded, this is only settings and mapped exits).
  */
-export const settingsImplicationsSelector = createSelector(
+export const settingsRequirementsSelector = createSelector(
     [logicSelector, optionsSelector, settingsSelector, exitsSelector],
     mapSettings,
 );
@@ -420,8 +418,8 @@ function mapSettings(
     settings: TypedOptions,
     exits: ExitMapping[],
 ) {
-    const implications: { [bitIndex: number]: LogicalExpression } = {};
-    const b = new LogicBuilder(logic.bitLogic, logic.allItems, implications);
+    const requirements: { [bitIndex: number]: LogicalExpression } = {};
+    const b = new LogicBuilder(logic.bitLogic, logic.allItems, requirements);
 
     for (const option of runtimeOptions) {
         const [item, command, expect] = option;
@@ -511,17 +509,17 @@ function mapSettings(
         }
     }
 
-    return implications;
+    return requirements;
 }
 
-export const inventoryImplicationsSelector = createSelector(
+export const inventoryRequirementsSelector = createSelector(
     [logicSelector, itemCountsSelector],
     mapInventory,
 );
 
 function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
-    const implications: { [bitIndex: number]: LogicalExpression } = {};
-    const b = new LogicBuilder(logic.bitLogic, logic.allItems, implications);
+    const requirements: { [bitIndex: number]: LogicalExpression } = {};
+    const b = new LogicBuilder(logic.bitLogic, logic.allItems, requirements);
 
     for (const [item, count] of Object.entries(itemCounts)) {
         if (count === undefined || item === 'Sailcloth') {
@@ -546,7 +544,7 @@ function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
         }
     }
 
-    return implications;
+    return requirements;
 }
 
 export const requiredDungeonsSelector = createSelector(
@@ -563,7 +561,7 @@ export const requiredDungeonsSelector = createSelector(
     },
 );
 
-export const checkImplicationsSelector = createSelector(
+export const checkRequirementsSelector = createSelector(
     [logicSelector, requiredDungeonsSelector, checkedChecksSelector],
     mapChecks,
 );
@@ -573,11 +571,11 @@ function mapChecks(
     requiredDungeons: string[],
     checkedChecks: string[],
 ) {
-    const implications: { [bitIndex: number]: LogicalExpression } = {};
-    const b = new LogicBuilder(logic.bitLogic, logic.allItems, implications);
+    const requirements: { [bitIndex: number]: LogicalExpression } = {};
+    const b = new LogicBuilder(logic.bitLogic, logic.allItems, requirements);
 
     const validRequiredDungeons = requiredDungeons.filter(
-        (d) => d in dungeonCompletionRequirements,
+        (d) => d in logic.dungeonCompletionRequirements,
     );
 
     // If this is a goddess cube check, mark the requirement as checked
@@ -596,7 +594,7 @@ function mapChecks(
         validRequiredDungeons.length > 0 &&
         validRequiredDungeons.every((d) =>
             checkedChecks.includes(
-                dungeonCompletionRequirements[d as RegularDungeon],
+                logic.dungeonCompletionRequirements[d],
             ),
         );
 
@@ -605,37 +603,37 @@ function mapChecks(
         requiredDungeonsCompleted ? b.true() : b.false(),
     );
 
-    return implications;
+    return requirements;
 }
 
 export const inLogicBitsSelector = createSelector(
     [
         logicSelector,
-        settingsImplicationsSelector,
-        inventoryImplicationsSelector,
-        checkImplicationsSelector,
+        settingsRequirementsSelector,
+        inventoryRequirementsSelector,
+        checkRequirementsSelector,
     ],
-    (logic, settingsImplications, inventoryImplications, checkImplications) =>
+    (logic, settingsRequirements, inventoryRequirements, checkRequirements) =>
         interpretLogic(logic.bitLogic, [
-            settingsImplications,
-            inventoryImplications,
-            checkImplications,
+            settingsRequirements,
+            inventoryRequirements,
+            checkRequirements,
         ]),
 );
 
 export const inSemiLogicBitsSelector = createSelector(
     [
         logicSelector,
-        settingsImplicationsSelector,
-        inventoryImplicationsSelector,
+        settingsRequirementsSelector,
+        inventoryRequirementsSelector,
         inLogicBitsSelector,
         checkedChecksSelector,
         requiredDungeonsSelector,
     ],
     (
         logic,
-        settingsImplications,
-        inventoryImplications,
+        settingsRequirements,
+        inventoryRequirements,
         inLogicBits,
         checkedChecks,
         requiredDungeons,
@@ -649,12 +647,12 @@ export const inSemiLogicBitsSelector = createSelector(
                     checkedChecks.includes(checkId)),
         ).length;
 
-        const gratitudeImplications = mapInventory(logic, {
+        const gratitudeRequirements = mapInventory(logic, {
             'Gratitude Crystal': numLooseGratitudeCrystals,
         });
         const assumedInventory = {
-            ...inventoryImplications,
-            ...gratitudeImplications,
+            ...inventoryRequirements,
+            ...gratitudeRequirements,
         };
 
         const assumedCheckedChecks = [...checkedChecks];
@@ -667,7 +665,7 @@ export const inSemiLogicBitsSelector = createSelector(
             }
         }
 
-        const assumedCheckImplications = mapChecks(
+        const assumedCheckRequirements = mapChecks(
             logic,
             requiredDungeons,
             assumedCheckedChecks,
@@ -675,7 +673,7 @@ export const inSemiLogicBitsSelector = createSelector(
 
         return interpretLogic(
             logic.bitLogic,
-            [settingsImplications, assumedInventory, assumedCheckImplications],
+            [settingsRequirements, assumedInventory, assumedCheckRequirements],
             // Monotonicity of these requirements allows reusing inLogicBits
             inLogicBits,
         );
@@ -684,10 +682,10 @@ export const inSemiLogicBitsSelector = createSelector(
 
 export const dungeonCompletedSelector = currySelector(
     createSelector(
-        [(_state: RootState, name: DungeonName) => name, checkedChecksSelector],
-        (name, checkedChecks) =>
+        [(_state: RootState, name: DungeonName) => name, logicSelector, checkedChecksSelector],
+        (name, logic, checkedChecks) =>
             name !== 'Sky Keep' &&
-            checkedChecks.includes(dungeonCompletionRequirements[name]),
+            checkedChecks.includes(logic.dungeonCompletionRequirements[name]),
     ),
 );
 

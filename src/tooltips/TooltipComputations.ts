@@ -15,7 +15,7 @@ import { mapToCanAccessCubeRequirement } from '../logic/TrackerModifications';
 import _ from 'lodash';
 
 /**
- * This module contains various strategies to turn the requirements and implications into a more compact and readable
+ * This module contains various strategies to turn the requirements into a more compact and readable
  * form, with the goal of creating readable and understandable requirements for tooltips.
  */
 
@@ -54,13 +54,13 @@ export class TooltipComputer {
     results: Record<string, BooleanExpression>;
 
     opaqueBits: BitVector;
-    implications: LogicalExpression[];
+    requirements: LogicalExpression[];
     revealed: Set<number>;
 
     cancel: () => void;
     wakeupWorker: () => void;
 
-    constructor(logic: Logic, implications: Record<number, LogicalExpression>) {
+    constructor(logic: Logic, requirements: Record<number, LogicalExpression>) {
         this.logic = logic;
         this.subscriptions = {};
         this.revealed = new Set();
@@ -68,8 +68,8 @@ export class TooltipComputer {
         this.results = {};
         this.opaqueBits = getTooltipOpaqueBits(logic);
 
-        this.implications = this.logic.bitLogic.implications.map((val, idx) => {
-            const stateImp = implications[idx];
+        this.requirements = this.logic.bitLogic.requirements.map((val, idx) => {
+            const stateImp = requirements[idx];
             if (stateImp) {
                 return val.or(stateImp);
             } else {
@@ -112,7 +112,7 @@ export class TooltipComputer {
     }
 
     getNextTask() {
-        if (!this.implications) {
+        if (!this.requirements) {
             return undefined;
         }
 
@@ -140,14 +140,14 @@ async function computationTask(
 ) {
     do {
         await delay(0);
-        removeDuplicates(store.implications);
+        removeDuplicates(store.requirements);
         await delay(0);
-        while (shallowSimplify(store.opaqueBits, store.implications)) {
+        while (shallowSimplify(store.opaqueBits, store.requirements)) {
             await delay(0);
-            removeDuplicates(store.implications);
+            removeDuplicates(store.requirements);
             await delay(0);
         }
-    } while (unifyRequirements(store.opaqueBits, store.implications));
+    } while (unifyRequirements(store.opaqueBits, store.requirements));
 
     while (!cancelToken.canceled) {
         const task = store.getNextTask();
@@ -183,7 +183,7 @@ async function computationTask(
         while (numRevealedInPrecomputation < 5) {
             const potentialPath = anyPath(
                 store.opaqueBits,
-                store.implications,
+                store.requirements,
                 bit,
                 store.revealed,
             );
@@ -200,9 +200,9 @@ async function computationTask(
                         // different checks can reuse these results.
                         // Note that even though the result of `anyPath` is obviously path-dependent and depends on the check in question,
                         // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
-                        store.implications[precomputeBit] = computeExpression(
+                        store.requirements[precomputeBit] = computeExpression(
                             store.opaqueBits,
-                            store.implications,
+                            store.requirements,
                             precomputeBit,
                         );
                         store.revealed.add(precomputeBit);
@@ -217,11 +217,11 @@ async function computationTask(
 
         const opaqueOnlyExpr = computeExpression(
             store.opaqueBits,
-            store.implications,
+            store.requirements,
             bit,
         );
         await delay(0);
-        store.implications[bit] = opaqueOnlyExpr;
+        store.requirements[bit] = opaqueOnlyExpr;
         store.acceptTaskResult(
             task.checkId,
             dnfToRequirementExpr(store.logic, opaqueOnlyExpr.conjunctions),

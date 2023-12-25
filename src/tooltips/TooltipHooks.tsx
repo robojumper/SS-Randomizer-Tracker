@@ -15,7 +15,7 @@ import { useSelector } from 'react-redux';
 import {
     inLogicBitsSelector,
     inSemiLogicBitsSelector,
-    settingsImplicationsSelector,
+    settingsRequirementsSelector,
 } from '../tracker/selectors';
 import { logicSelector } from '../logic/selectors';
 import {
@@ -32,17 +32,17 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
     const logic = useSelector(logicSelector);
-    const settingsImplications = useSelector(settingsImplicationsSelector);
+    const settingsRequirements = useSelector(settingsRequirementsSelector);
 
     useEffect(() => {
-        setAnalyzer(new TooltipComputer(logic, settingsImplications));
+        setAnalyzer(new TooltipComputer(logic, settingsRequirements));
         return () => {
             setAnalyzer((oldAnalyzer) => {
                 oldAnalyzer?.destroy();
                 return null;
             });
         };
-    }, [settingsImplications, logic]);
+    }, [settingsRequirements, logic]);
 
     return (
         <TooltipsContext.Provider value={analyzer}>

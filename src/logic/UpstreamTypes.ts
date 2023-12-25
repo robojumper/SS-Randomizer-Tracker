@@ -59,4 +59,7 @@ export interface RawLogic {
             [dungeon: string]: ExitLink
         }
     }
+    dungeon_completion_requirements: {
+        [dungeon: string]: string,
+    }
 }
