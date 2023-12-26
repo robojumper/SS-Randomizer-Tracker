@@ -230,6 +230,8 @@ export function parseLogic(raw: RawLogic): Logic {
 
     const dummy_day_bit = itemBits['Day'];
     const dummy_night_bit = itemBits['Night'];
+    opaqueItems.clearBit(dummy_day_bit);
+    opaqueItems.clearBit(dummy_night_bit);
 
     const allAreas: AreaGraph['areas'] = {};
 
@@ -537,11 +539,8 @@ export function parseLogic(raw: RawLogic): Logic {
                     locName = canAccessReq;
                 }
 
-                const locVec = itemBits[locName];
-                if (!locVec) {
-                    throw new Error('bad requirement ' + locName);
-                }
                 let timed_req: LogicalExpression;
+                opaqueItems.clearBit(b.bit(locName));
 
                 const expr = parseExpr(locationRequirementExpression);
                 if (rawArea.abstract) {
@@ -588,7 +587,9 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
-    // validate
+    // These validations aren't really needed for the tracker, but they were useful
+    // when initially parsing the dump and they did catch some rando data bugs.
+    // Ideally this could be uplifted into the tracker?
     for (const area of Object.values(allAreas)) {
         for (const entrance of area.entrances) {
             if (!raw.entrances[entrance]) {

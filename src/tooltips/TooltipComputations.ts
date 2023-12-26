@@ -5,8 +5,8 @@ import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 import { getTooltipOpaqueBits } from '../logic/Inventory';
 import BooleanExpression, { Item } from '../logic/booleanlogic/BooleanExpression';
 import {
-    anyPath,
-    computeExpression,
+    findNewSubgoals,
+    computeGroundExpression,
     removeDuplicates,
     shallowSimplify,
     unifyRequirements,
@@ -181,7 +181,7 @@ async function computationTask(
         // we always perform a minimum amount of work per item.
         let numRevealedInPrecomputation = 0;
         while (numRevealedInPrecomputation < 5) {
-            const potentialPath = anyPath(
+            const potentialPath = findNewSubgoals(
                 store.opaqueBits,
                 store.requirements,
                 bit,
@@ -200,7 +200,7 @@ async function computationTask(
                         // different checks can reuse these results.
                         // Note that even though the result of `anyPath` is obviously path-dependent and depends on the check in question,
                         // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
-                        store.requirements[precomputeBit] = computeExpression(
+                        store.requirements[precomputeBit] = computeGroundExpression(
                             store.opaqueBits,
                             store.requirements,
                             precomputeBit,
@@ -215,7 +215,7 @@ async function computationTask(
             }
         }
 
-        const opaqueOnlyExpr = computeExpression(
+        const opaqueOnlyExpr = computeGroundExpression(
             store.opaqueBits,
             store.requirements,
             bit,
@@ -244,7 +244,7 @@ function simplifier(logic: Logic) {
  * 
  * Instead, we are doing multi-level simplification as described in:
  * https://faculty.sist.shanghaitech.edu.cn/faculty/zhoupq/Teaching/Spr16/07-Multi-Level-Logic-Synthesis.pdf
- * https://www2.eecs.berkeley.edu/Pubs/TechRpts/1989/ERL-89-49.pdf
+ * https://www2.eecs.berkeley.edu/Pubs/TechRpts/1989/ERL-89-49.pdf (pp. 41-70)
  * We first remove all factors, and then treat the rest SOP as an algebraic expression.
  * Algebraic expressions don't know about special boolean rules (like a && !a = 0, a || !a = 1)
  * but since we don't have any don't cares and negations they will never be relevant.

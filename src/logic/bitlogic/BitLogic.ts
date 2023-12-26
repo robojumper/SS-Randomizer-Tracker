@@ -1,7 +1,12 @@
-import { LogicalExpression } from "./LogicalExpression";
+import { LogicalExpression } from './LogicalExpression';
 import { BitVector } from './BitVector';
 import _ from 'lodash';
 
+/**
+ * A BitLogic models a least fixed-point logic (LFP).
+ * Since every LogicalExpression can only mention terms positively
+ * (no negation, no quantifiers) this least fixed-point always exists.
+ */
 export interface BitLogic {
     /**
      * The number of bits in this logic.
@@ -15,10 +20,12 @@ export interface BitLogic {
     requirements: LogicalExpression[];
 }
 
-/**
- * Compute the logical result of the given requirements.
+/* 
+ * Returns the least fixed-point of the given requirements,
+ * which can be interpreted as the logical result of the given requirements.
+ * This is BitVector from which no new facts can be derived.
  */
-export function interpretLogic(
+export function computeLeastFixedPoint(
     /** The base BitLogic with its base requirements. */
     logic: BitLogic,
     /**
@@ -28,22 +35,26 @@ export function interpretLogic(
      */
     additionalRequirements: Record<number, LogicalExpression>[],
     /**
-     * To resume computation from an earlier result after making monotonous changes to `additionalRequirements`
+     * To resume computation from an earlier result after adding facts to `additionalRequirements`
      * (concretely: semilogic requirements), pass startingBits. Purely a performance optimization.
      */
     startingBits?: BitVector,
 ) {
     const effectiveRequirements = logic.requirements.slice();
     for (const [idx, expr] of logic.requirements.entries()) {
-        const reqs = _.compact([expr.isTriviallyFalse() ? undefined : expr, ...additionalRequirements.map((m) => m[idx])]);
+        const reqs = _.compact([
+            expr.isTriviallyFalse() ? undefined : expr,
+            ...additionalRequirements.map((m) => m[idx]),
+        ]);
         if (reqs.length > 1) {
             console.warn('requirements overwriting', idx);
         }
         effectiveRequirements[idx] = _.last(reqs) ?? expr;
     }
 
-    // This is an extremely simple iterate-to-fixpoint solver that works because all our
-    // requirements use a DNF representation with no inverted bits, so logic is monotonous.
+    // This is an extremely simple iterate-to-fixpoint solver in O(n^2).
+    // There are better algorithms but this usually converges after
+    // 40 rounds.
     const bits = startingBits?.clone() ?? new BitVector(logic.numBits);
     let changed = true;
     let iterations = 0;
@@ -76,12 +87,12 @@ export function interpretLogic(
 }
 
 /**
- * Some requirements still have some relatively deep expressions, and the `computeExpression` algorithm may perform poorly
+ * Some requirements still have some relatively deep expressions, and the `computeGroundExpression` algorithm may perform poorly
  * if it repeately has to reveal a complex entrance. Finding *any* path to the check has a reasonably likelyhood
  * of including these bottlenecks, and precomputing bits in that partial path can solve a lot of problems and the
  * results can even be reused.
  */
-export function anyPath(
+export function findNewSubgoals(
     /** Do not reveal these bits */
     opaqueBits: BitVector,
     /** Traverse these requirements... */
@@ -113,7 +124,7 @@ export function anyPath(
     for (const conj of requirements[idx].conjunctions) {
         for (const bit of conj.iter()) {
             if (!opaqueBits.test(bit) && !revealedExpressions.has(bit)) {
-                const moreBits = anyPath(
+                const moreBits = findNewSubgoals(
                     opaqueBits,
                     requirements,
                     bit,
@@ -121,7 +132,9 @@ export function anyPath(
                     visitedExpressions,
                 );
                 if (moreBits) {
-                    return new BitVector(opaqueBits.size).setBit(bit).or(moreBits);
+                    return new BitVector(opaqueBits.size)
+                        .setBit(bit)
+                        .or(moreBits);
                 }
             }
         }
@@ -132,10 +145,12 @@ export function anyPath(
 }
 
 /**
- * Turn the expression at idx into an expression
- * that is only based on `opaqueBits`.
+ * Convert the expression at `idx` to a first-order logic expression
+ * that is only based on the ground terms `opaqueBits` - in other words,
+ * create a closed formula for the potentially (self- and nested-)recursive
+ * expression at `idx`.
  */
-export function computeExpression(
+export function computeGroundExpression(
     opaqueBits: BitVector,
     requirements: LogicalExpression[],
     idx: number,
@@ -151,12 +166,23 @@ export function computeExpression(
     // It'd be useful to know when we've found the minimum requirements and
     // when exploring additional paths wouldn't help.
 
+    // TODO even with a BOUND this may not be the best solution. In practice this
+    // works for some requirements, is fairly slow for others, and fails catastrophically
+    // for a few unless some specific subgoals are evaluated first (see `findNewSubgoals`).
+    // So if you see the tooltips task getting stuck, it's likely here and because `findNewSubgoals`
+    // didn't reveal an important expression.
+    // Some alternatives:
+    // * Not output a DNF but a multi-level form. This however needs tooltips to implement
+    //   more sophisticated simplification algorithms.
+    // * Convert the requirements to a proper directed graph structure first, where things like
+    //   degree and "bottlenecks" are known, then use better heuristics there.
+
     nextConj: for (const conj of requirements[idx].conjunctions) {
         let tmpExpr = LogicalExpression.true(opaqueBits.size);
         const conjOpaqueBits = opaqueBits.and(conj);
         for (const bit of conj.iter()) {
             if (!conjOpaqueBits.test(bit)) {
-                const newTerm = computeExpression(
+                const newTerm = computeGroundExpression(
                     opaqueBits,
                     requirements,
                     bit,
@@ -192,7 +218,7 @@ export function removeDuplicates(requirements: LogicalExpression[]) {
  * for simplifying clusters like the Sky, where there are lots of areas that are
  * all equally accessible as long as you're somewhere in the sky. This means one of
  * the unified areas will only have a single bit requirement, which can be inlined later.
- * 
+ *
  * Returns true iff any simplifications have been made.
  */
 export function unifyRequirements(

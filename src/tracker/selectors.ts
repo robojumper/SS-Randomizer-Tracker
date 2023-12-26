@@ -41,7 +41,7 @@ import {
 import _ from 'lodash';
 import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 import { TimeOfDay } from '../logic/UpstreamTypes';
-import { interpretLogic } from '../logic/bitlogic/BitLogic';
+import { computeLeastFixedPoint } from '../logic/bitlogic/BitLogic';
 import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
 
@@ -614,7 +614,7 @@ export const inLogicBitsSelector = createSelector(
         checkRequirementsSelector,
     ],
     (logic, settingsRequirements, inventoryRequirements, checkRequirements) =>
-        interpretLogic(logic.bitLogic, [
+        computeLeastFixedPoint(logic.bitLogic, [
             settingsRequirements,
             inventoryRequirements,
             checkRequirements,
@@ -671,7 +671,7 @@ export const inSemiLogicBitsSelector = createSelector(
             assumedCheckedChecks,
         );
 
-        return interpretLogic(
+        return computeLeastFixedPoint(
             logic.bitLogic,
             [settingsRequirements, assumedInventory, assumedCheckRequirements],
             // Monotonicity of these requirements allows reusing inLogicBits
