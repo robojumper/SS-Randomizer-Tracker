@@ -7,7 +7,7 @@ import images from '../itemTracker/Images';
 import placeholderImg from '../assets/slot test.png';
 import '../locationTracker/Location.css';
 import Tippy from '@tippyjs/react';
-import { useTooltipExpr } from '../tooltips/TooltipHooks';
+import { useEntrancePath, useTooltipExpr } from '../tooltips/TooltipHooks';
 import RequirementsTooltip from './RequirementsTooltip';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkHintSelector, checkSelector } from '../tracker/selectors';
@@ -51,9 +51,15 @@ export default function Location({
     }, [id, show]);
 
     const expr = useTooltipExpr(id);
+    const path = useEntrancePath(id);
 
     return (
-        <Tippy content={<RequirementsTooltip requirements={expr} />}>
+        <Tippy content={
+            <>
+                <RequirementsTooltip requirements={expr} />
+                {path}
+            </>
+        }>
             <div
                 className="location-container"
                 onClick={onClick}

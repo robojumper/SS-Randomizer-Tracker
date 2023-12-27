@@ -67,7 +67,7 @@ export class TooltipComputer {
         this.wakeupWorker = noop;
         this.results = {};
         this.opaqueBits = getTooltipOpaqueBits(logic);
-
+        
         this.requirements = this.logic.bitLogic.requirements.map((val, idx) => {
             const stateImp = requirements[idx];
             if (stateImp) {
@@ -139,6 +139,8 @@ async function computationTask(
     store: TooltipComputer,
 ) {
     do {
+        // First, perform some cheap optimizations that will help every
+        // query afterwards.
         await delay(0);
         removeDuplicates(store.requirements);
         await delay(0);
@@ -174,7 +176,7 @@ async function computationTask(
 
         const bit = store.logic.itemBits[checkId];
 
-        // We precompute some requirements because it improves performance.
+        // We precompute some subgoals because it improves performance.
         // However, we can sometimes end up precomputing trivial requirements
         // like \Distance Activator for X Rupee items while expensive requirements
         // like \Can Medium Rupee Farm end up being not revealed yet. So
@@ -211,6 +213,7 @@ async function computationTask(
                     }
                 }
             } else {
+                // There are no unrevealed subgoals, so we can go straight to computing the goal.
                 break;
             }
         }

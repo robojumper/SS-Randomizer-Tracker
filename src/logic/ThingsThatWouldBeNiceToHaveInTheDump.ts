@@ -8,6 +8,10 @@ import {
 export const nonRandomizedExits = [
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Gate of Time Exit',
     "\\Faron\\Sealed Grounds\\Hylia's Temple\\Gate of Time Exit",
+    '\\Skyloft\\Upper Skyloft\\Goddess Statue\\Exit',
+    '\\Skyloft\\Upper Skyloft\\Goddess Statue Exit',
+    '\\Eldin\\Volcano\\East\\Exit to Bokoblin Base',
+    '\\Eldin\\Bokoblin Base\\Prison\\Exit',
 ];
 
 export const bannedExitsAndEntrances = [
@@ -15,6 +19,10 @@ export const bannedExitsAndEntrances = [
     '\\Lanayru\\Temple of Time\\Inside\\Entrance from Lanayru Mining Facility',
     '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Entrance from Temple of Time',
     '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Exit to Temple of Time',
+];
+
+export const inDungeonStatueExits = [
+    '\\Fire Sanctuary\\Main\\Front of Boss Door\\Statue Exit'
 ];
 
 type OptionMapping = [

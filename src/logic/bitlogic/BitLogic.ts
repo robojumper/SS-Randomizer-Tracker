@@ -80,8 +80,13 @@ export function computeLeastFixedPoint(
         }
         iterations++;
     }
-    console.log(performance.now() - start);
-    console.log('iterations', iterations);
+    console.log(
+        'fixpoint iteration took',
+        performance.now() - start,
+        'ms for',
+        iterations,
+        'iterations',
+    );
 
     return bits;
 }

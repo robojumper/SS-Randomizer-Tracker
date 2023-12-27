@@ -2,12 +2,15 @@ import { BitLogic } from './bitlogic/BitLogic';
 import { BitVector } from './bitlogic/BitVector';
 import { LogicalExpression } from './bitlogic/LogicalExpression';
 
+const daySuffix = '_DAY';
+const nightSuffix = '_NIGHT';
+
 function makeDay(loc: string) {
-    return `${loc}_DAY`;
+    return `${loc}${daySuffix}`;
 }
 
 function makeNight(loc: string) {
-    return `${loc}_NIGHT`;
+    return `${loc}${nightSuffix}`;
 }
 
 /**
@@ -94,5 +97,15 @@ export class LogicBuilder {
             console.error('unknown item', d);
         }
         return d;
+    }
+
+    stripDayNight(item: string) {
+        if (item.endsWith(daySuffix)) {
+            return item.slice(0, -daySuffix.length);
+        } else if (item.endsWith(nightSuffix)) {
+            return item.slice(0, -nightSuffix.length);
+        } else {
+            return item;
+        }
     }
 }

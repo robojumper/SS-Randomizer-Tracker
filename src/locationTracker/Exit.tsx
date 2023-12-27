@@ -1,7 +1,7 @@
 import { Col, Row } from 'react-bootstrap';
 import '../locationTracker/Location.css';
 import Tippy from '@tippyjs/react';
-import { useTooltipExpr } from '../tooltips/TooltipHooks';
+import { useEntrancePath, useTooltipExpr } from '../tooltips/TooltipHooks';
 import RequirementsTooltip from './RequirementsTooltip';
 import { useSelector } from 'react-redux';
 import { checkSelector, exitsSelector } from '../tracker/selectors';
@@ -28,6 +28,7 @@ export default function Exit({
     };
 
     const expr = useTooltipExpr(id);
+    const path = useEntrancePath(id);
 
     return (
         <>
@@ -38,7 +39,12 @@ export default function Exit({
                 tabIndex={0}
             >
                 <Row className="g-0">
-                    <Tippy content={<RequirementsTooltip requirements={expr} />}>
+                    <Tippy content={
+                        <>
+                            <RequirementsTooltip requirements={expr} />
+                            {path}
+                        </>
+                    }>
                         <Col
                             style={style}
                         >

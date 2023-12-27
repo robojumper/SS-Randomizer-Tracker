@@ -11,6 +11,7 @@ import {
     gotRaisingReq,
     hordeDoorReq,
     impaSongCheck,
+    inDungeonStatueExits,
     nonRandomizedExits,
     runtimeOptions,
     swordsToAdd,
@@ -216,8 +217,12 @@ export const exitRulesSelector = createSelector(
                 continue;
             }
 
-            if (exitId === '\\Start' && startingEntranceSetting !== 'Vanilla') {
-                result[exitId] = { type: 'randomStartingEntrance' };
+            if (exitId === '\\Start') {
+                if (startingEntranceSetting !== 'Vanilla') {
+                    result[exitId] = { type: 'randomStartingEntrance' };
+                } else {
+                    result[exitId] = { type: 'vanilla' };
+                }
                 continue;
             }
 
@@ -243,11 +248,11 @@ export const exitRulesSelector = createSelector(
                     logic.areaGraph.exits[exitId].short_name.includes(
                         'Statue Dive',
                     ) ||
-                    (vanillaEntranceRegion &&
-                        dungeonNames_.includes(vanillaEntranceRegion)) ||
+                    (!inDungeonStatueExits.includes(exitId) && (vanillaEntranceRegion &&
+                        dungeonNames_.includes(vanillaEntranceRegion) ||
                     dungeonNames.some((name) =>
-                        logic.exitsByArea[name].includes(exitId),
-                    )
+                        logic.exitsByHintRegion[name].includes(exitId),
+                    )))
                 ) {
                     result[exitId] = { type: 'vanilla' };
                 } else {
@@ -874,7 +879,7 @@ export const areasSelector = createSelector(
     ): Area[] =>
         _.compact(
             logic.areas.map((area): Area | undefined => {
-                const checks = logic.checksByArea[area];
+                const checks = logic.checksByHintRegion[area];
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),
                 );
@@ -902,7 +907,7 @@ export const areasSelector = createSelector(
                     inLogicBits.test(logic.itemBits[check]),
                 );
 
-                const exits = logic.exitsByArea[area].filter((exit) => exitRules[exit]?.type === 'random');
+                const exits = logic.exitsByHintRegion[area].filter((exit) => exitRules[exit]?.type === 'random');
 
                 return {
                     checks: regularChecks,
@@ -963,7 +968,10 @@ export const remainingEntrancesSelector = createSelector(
                 }
             }
         }
-        usedEntrances.add(logic.areaGraph.vanillaConnections['\\Start']);
+
+        if (randomizeEntrances !== 'All') {
+            usedEntrances.add(logic.areaGraph.vanillaConnections['\\Start']);
+        }
         return Object.entries(logic.areaGraph.entrances)
             .filter(
                 (e) =>

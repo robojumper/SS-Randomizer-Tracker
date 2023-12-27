@@ -41,8 +41,8 @@ export interface Logic {
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
     areas: string[];
-    checksByArea: Record<string, string[]>;
-    exitsByArea: Record<string, string[]>;
+    checksByHintRegion: Record<string, string[]>;
+    exitsByHintRegion: Record<string, string[]>;
     dungeonCompletionRequirements: { [dungeon: string]: string }
 }
 
@@ -71,6 +71,11 @@ export interface AreaGraph {
     entrances: Record<string, RawEntrance>;
     entranceHintAreas: Record<string, string>;
     exits: Record<string, RawExit>;
+    /**
+     * For every location/exit, a list of entrances that can reach it
+     * (by virtue of being in the same area, possibly with requirements).
+     */
+    entrancesPerLocation: Record<string, string[]>;
 
     /** Sandship Dock Exit -> Exit to Sandship */
     autoExits: {
@@ -158,6 +163,8 @@ export function preprocessItems(raw: string[]): {
 }
 
 export function parseLogic(raw: RawLogic): Logic {
+    const start = performance.now();
+
     const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
     const { newItems, dominators, reverseDominators } = preprocessItems(
         raw.items,
@@ -213,9 +220,12 @@ export function parseLogic(raw: RawLogic): Logic {
 
     const itemBits: Logic['itemBits'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
-    const checksByArea: Logic['checksByArea'] = {};
-    const exitsByArea: Logic['exitsByArea'] = {};
+    const checksByHintRegion: Logic['checksByHintRegion'] = {};
+    const exitsByHintRegion: Logic['exitsByHintRegion'] = {};
     const entranceHintAreas: AreaGraph['entranceHintAreas'] = {};
+    const entrancesPerLocation: AreaGraph['entrancesPerLocation'] = {};
+    const checksByArea: Logic['checksByHintRegion'] = {};
+    const exitsByArea: Logic['exitsByHintRegion'] = {};
 
     const entrancesByShortName: {
         [shortName: string]: { def: RawEntrance; id: string, region: string };
@@ -400,8 +410,6 @@ export function parseLogic(raw: RawLogic): Logic {
                         }
                         b.set(fullExitName, expr);
                     } else {
-                        const region = getHintRegion(fullExitName);
-
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
                             b.addAlternative(
                                 fullExitName,
@@ -437,7 +445,13 @@ export function parseLogic(raw: RawLogic): Logic {
                             throw new Error('bad ToD requirement');
                         }
 
-                        (exitsByArea[region] ??= []).push(fullExitName);
+                        const region = getHintRegion(fullExitName);
+                        entrancesPerLocation[fullExitName] =
+                            rawArea.entrances?.map(
+                                (entrance) => `${rawArea.name}\\${entrance}`,
+                            ) ?? [];
+                        (exitsByArea[area.name] ??= []).push(fullExitName);
+                        (exitsByHintRegion[region] ??= []).push(fullExitName);
                         area.exits.push({
                             type: 'exitToEntrance',
                             toConnector: fullExitName,
@@ -527,7 +541,12 @@ export function parseLogic(raw: RawLogic): Logic {
                         if (check.type === 'tr_cube') {
                             check.name = `${region} - ${check.name}`;
                         }
-                        (checksByArea[region] ??= []).push(locName);
+                        entrancesPerLocation[locName] =
+                        rawArea.entrances?.map(
+                            (entrance) => `${rawArea.name}\\${entrance}`,
+                        ) ?? [];
+                        (checksByArea[area.name] ??= []).push(locName);
+                        (checksByHintRegion[region] ??= []).push(locName);
                     } else {
                         nonCheckLocations.add(locName);
                     }
@@ -676,18 +695,18 @@ export function parseLogic(raw: RawLogic): Logic {
     const dungeonOrder: readonly string[] = dungeonNames;
 
     const rawCheckOrder = Object.keys(raw.checks);
-    for (const area of Object.keys(checksByArea)) {
+    for (const area of Object.keys(checksByHintRegion)) {
         // TODO compareBy, sort in place
-        checksByArea[area] = _.sortBy(checksByArea[area], (check) => {
+        checksByHintRegion[area] = _.sortBy(checksByHintRegion[area], (check) => {
             const idx = rawCheckOrder.indexOf(check);
             return idx !== -1 ? idx : Number.MAX_SAFE_INTEGER;
         });
     }
 
     const areas = _.sortBy(
-        Object.keys(checksByArea),
+        Object.keys(checksByHintRegion),
         (area) => dungeonOrder.indexOf(area),
-        (area) => rawCheckOrder.indexOf(checksByArea[area][0]),
+        (area) => rawCheckOrder.indexOf(checksByHintRegion[area][0]),
     );
 
     // Some cheap optimizations - these have opaque entrances,
@@ -708,6 +727,70 @@ export function parseLogic(raw: RawLogic): Logic {
     // entrances, every entrance has to be considered uniquely reachable with no way
     // to bound our exploration or to simplify these expressions as we go.
 
+
+    // Figure out which entrances can reach which exits and checks, this will be the data for
+    // the check pathfinder that tells users how to get where with Entrance Rando on
+
+    // to area -> from area
+    const logicalEdges: Record<string, string[]> = {};
+    for (const [areaName, area] of Object.entries(allAreas)) {
+        for (const exit of area.exits) {
+            if (exit.type === 'logicalExit') {
+                (logicalEdges[exit.toArea] ??= []).push(areaName);
+            }
+        }
+    }
+
+    const seenAreas = new Set<string>();
+    let numAreas = 0;
+    for (const areaName of Object.keys(allAreas)) {
+        if (seenAreas.has(areaName)) {
+            continue;
+        }
+        numAreas += 1;
+        const worklist = [areaName];
+
+        while (worklist.length) {
+            const consideredArea = worklist.pop()!;
+            for (const parentArea of logicalEdges[consideredArea] ?? []) {
+                if (!seenAreas.has(parentArea)) {
+                    seenAreas.add(parentArea);
+                    worklist.push(parentArea);
+                }
+            }
+        }
+    }
+
+    console.log('numAreas', numAreas);
+
+
+
+    for (const areaName of Object.keys(allAreas)) {
+        const visitedAreas = new Set(areaName);
+        const worklist = [areaName];
+        const reachingExits: string[] = [];
+
+        while (worklist.length) {
+            const consideredArea = worklist.pop()!;
+            reachingExits.push(...allAreas[consideredArea].entrances.filter((e) => raw.entrances[e]));
+            for (const parentArea of logicalEdges[consideredArea] ?? []) {
+                if (!visitedAreas.has(parentArea)) {
+                    visitedAreas.add(parentArea);
+                    worklist.push(parentArea);
+                }
+            }
+        }
+
+        const checks = checksByArea[areaName] ?? [];
+        const exits = exitsByArea[areaName] ?? [];
+        for (const location of checks.concat(exits)) {
+            entrancesPerLocation[location] = reachingExits;
+        }
+    
+    }
+
+    console.log('logic building took', performance.now() - start, 'ms'); 
+
     return {
         bitLogic,
         allItems: rawItems,
@@ -716,8 +799,8 @@ export function parseLogic(raw: RawLogic): Logic {
         itemBits,
         checks,
         areas,
-        checksByArea,
-        exitsByArea,
+        checksByHintRegion,
+        exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph: {
             areas: allAreas,
@@ -725,6 +808,7 @@ export function parseLogic(raw: RawLogic): Logic {
             areasByEntrance,
             areasByExit,
             entranceHintAreas,
+            entrancesPerLocation,
             entrances: raw.entrances,
             exits: raw.exits,
             vanillaConnections,
