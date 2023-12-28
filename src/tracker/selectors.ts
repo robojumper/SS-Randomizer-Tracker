@@ -233,20 +233,6 @@ export const exitRulesSelector = createSelector(
                 continue;
             }
 
-            if (everythingRandomized) {
-                const exitDef = logic.areaGraph.exits[exitId];
-                if (
-                    exitDef.stage === undefined ||
-                    exitDef.vanilla === undefined ||
-                    exitId.includes('Pillar')
-                ) {
-                    result[exitId] = { type: 'vanilla' };
-                } else {
-                    result[exitId] = { type: 'random' };
-                }
-                continue;
-            }
-
             const poolData = (() => {
                 for (const [pool_, locations] of Object.entries(
                     logic.areaGraph.entrancePools,
@@ -276,8 +262,24 @@ export const exitRulesSelector = createSelector(
                     } else {
                         result[exitId] = { type: 'linked', pool, location };
                     }
-                    continue;
+                } else {
+                    result[exitId] = { type: 'vanilla' };
                 }
+                continue;
+            }
+
+            if (everythingRandomized) {
+                const exitDef = logic.areaGraph.exits[exitId];
+                if (
+                    exitDef.stage === undefined ||
+                    exitDef.vanilla === undefined ||
+                    exitId.includes('Pillar')
+                ) {
+                    result[exitId] = { type: 'vanilla' };
+                } else {
+                    result[exitId] = { type: 'random' };
+                }
+                continue;
             }
 
             result[exitId] = { type: 'vanilla' };
@@ -930,19 +932,31 @@ export const totalCountersSelector = createSelector(
 export const remainingEntrancesSelector = createSelector(
     [logicSelector, exitRulesSelector, exitsSelector, settingSelector('randomize-entrances')],
     (logic, exitRules, exits, randomizeEntrances) => {
-        // Some entrances can be double mapped with ER?
-        const usedEntrances =
-            randomizeEntrances !== 'All'
-                ? new Set(
-                    _.compact(
-                        exits.map((exit) =>
-                            exit.exit.id !== '\\Start'
-                                ? exit.entrance?.id
-                                : undefined,
+        if (randomizeEntrances === 'All') {
+            return Object.entries(logic.areaGraph.entrances)
+                .filter(
+                    (e) =>
+                        !bannedExitsAndEntrances.includes(e[0]) &&
+                        logic.areaGraph.entrances[e[0]].stage !== undefined && 
+                        !nonRandomizedExits.includes(
+                            logic.areaGraph.vanillaConnections[e[0]],
                         ),
-                    ),
                 )
-                : new Set();
+                .map(([id, def]) => ({
+                    id,
+                    name: def.short_name,
+                }));
+        }
+
+        const usedEntrances = new Set(
+            _.compact(
+                exits.map((exit) =>
+                    exit.exit.id !== '\\Start'
+                        ? exit.entrance?.id
+                        : undefined,
+                ),
+            ),
+        );
         for (const [exitId, rule] of Object.entries(exitRules)) {
             if (rule.type === 'linked') {
                 const pool = logic.areaGraph.entrancePools[rule.pool];
@@ -955,9 +969,7 @@ export const remainingEntrancesSelector = createSelector(
             }
         }
 
-        if (randomizeEntrances !== 'All') {
-            usedEntrances.add(logic.areaGraph.vanillaConnections['\\Start']);
-        }
+        usedEntrances.add(logic.areaGraph.vanillaConnections['\\Start']);
         return Object.entries(logic.areaGraph.entrances)
             .filter(
                 (e) =>
