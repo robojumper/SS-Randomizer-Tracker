@@ -103,6 +103,7 @@ export interface Area {
     name: string;
     subAreas: Record<string, Area>;
     allowedTimeOfDay: TimeOfDay;
+    canSleep: boolean;
     /** The exits of this area */
     exits: Exit[];
     /** The possible ways to get into this area, an entry in Logic.entrances */
@@ -266,6 +267,7 @@ export function parseLogic(raw: RawLogic): Logic {
             abstract: rawArea.abstract,
             name: rawArea.name,
             allowedTimeOfDay: rawArea.allowed_time_of_day,
+            canSleep: rawArea.can_sleep,
             exits: [],
             entrances: [],
             subAreas: {},

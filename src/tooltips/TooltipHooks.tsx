@@ -14,10 +14,11 @@ import { noop } from 'lodash';
 import { useSelector } from 'react-redux';
 import {
     exitsSelector,
-    inLogicBitsSelector,
+    optimisticLogicBitsSelector,
     inSemiLogicBitsSelector,
     settingSelector,
     settingsRequirementsSelector,
+    inLogicBitsSelector,
 } from '../tracker/selectors';
 import { logicSelector } from '../logic/selectors';
 import {
@@ -93,11 +94,18 @@ export function useEntrancePath(checkId: string): string[] | undefined {
     const logic = useSelector(logicSelector);
     const exits = useSelector(exitsSelector);
     const inLogicBits = useSelector(inLogicBitsSelector);
+    const optimisticLogicBits = useSelector(optimisticLogicBitsSelector);
     const entranceRando =
         useSelector(settingSelector('randomize-entrances')) === 'All';
 
     return useMemo(() => {
         if (!entranceRando) {
+            return undefined;
+        }
+
+        // If all the items in the world can't help us get there, then we probably
+        // need to discover more entrances first, so don't show a misleading exit path
+        if (!optimisticLogicBits.test(logic.itemBits[checkId])) {
             return undefined;
         }
 
@@ -160,7 +168,7 @@ export function useEntrancePath(checkId: string): string[] | undefined {
                                 logic.checks[loc]?.name);
                         }
                     } while (v_);
-                    return pathSegments;
+                    return pathSegments.length > 1 ? pathSegments : undefined;
                 } else {
                     // v is either a check or an exit - explore all entrances
                     if (edges[v]) {
@@ -184,5 +192,5 @@ export function useEntrancePath(checkId: string): string[] | undefined {
         } catch {
             return ['Error computing exit path!'];
         }
-    }, [entranceRando, logic, exits, checkId, inLogicBits]);
+    }, [entranceRando, logic, exits, checkId, inLogicBits, optimisticLogicBits]);
 }

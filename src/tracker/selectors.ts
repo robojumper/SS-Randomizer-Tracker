@@ -3,7 +3,7 @@ import { logicSelector, optionsSelector } from '../logic/selectors';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { RootState } from '../store/store';
 import { currySelector } from '../utils/redux';
-import { Items, TrackerState } from './slice';
+import { Items, TrackerState, itemMaxes } from './slice';
 import {
     bannedExitsAndEntrances,
     completeTriforceReq,
@@ -44,6 +44,7 @@ import { TimeOfDay } from '../logic/UpstreamTypes';
 import { computeLeastFixedPoint } from '../logic/bitlogic/BitLogic';
 import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
+import { produce } from 'immer';
 
 /**
  * Selects the hint for a given area.
@@ -610,6 +611,33 @@ export const inLogicBitsSelector = createSelector(
         computeLeastFixedPoint(logic.bitLogic, [
             settingsRequirements,
             inventoryRequirements,
+            checkRequirements,
+        ]),
+);
+
+const optimisticInventoryItemRequirementsSelector = createSelector(
+    [logicSelector],
+    (logic) => mapInventory(logic, produce(itemMaxes, (draft: Record<string, number>) => {
+        delete draft.Sailcloth;
+    })),
+);
+
+/**
+ * A selector that computes logical state as if you had gotten every item.
+ * Useful for checking if something is out of logic because of missing
+ * items or generally unreachable because of missing entrances.
+ */
+export const optimisticLogicBitsSelector = createSelector(
+    [
+        logicSelector,
+        settingsRequirementsSelector,
+        optimisticInventoryItemRequirementsSelector,
+        checkRequirementsSelector,
+    ],
+    (logic, settingsRequirements, optimisticInventoryRequirements, checkRequirements) =>
+        computeLeastFixedPoint(logic.bitLogic, [
+            settingsRequirements,
+            optimisticInventoryRequirements,
             checkRequirements,
         ]),
 );

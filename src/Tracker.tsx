@@ -139,8 +139,8 @@ function NewTracker() {
                 background: colorScheme.background,
             }}
         >
-            <Container fluid>
-                <Row>
+            <Container fluid style={{ height: '100%' }}>
+                <Row style={{ height: '100%' }}>
                     <Col>{itemTracker}</Col>
                     <Col>
                         <NewLocationTracker
@@ -149,7 +149,7 @@ function NewTracker() {
                             containerHeight={height * 0.95}
                         />
                     </Col>
-                    <Col>
+                    <Col style={{ display: 'flex', flexFlow: 'column nowrap', height: '100%' }}>
                         <Row className="g-0">
                             <BasicCounters />
                         </Row>
@@ -160,14 +160,12 @@ function NewTracker() {
                             style={{
                                 paddingRight: '10%',
                                 paddingTop: '2.5%',
-                                height: (height * 0.95) / 2,
+                                height: '100%',
                                 overflow: 'auto',
                             }}
                             className="g-0"
                         >
-                            <Col
-                                className="g-0"
-                            >
+                            <Col className="g-0">
                                 <ExtraLocationTracker
                                     activeArea={activeArea}
                                     setActiveArea={setActiveArea}
@@ -191,7 +189,13 @@ function NewTracker() {
                         <ImportExport />
                     </Col>
                     <Col xs>
-                        <div style={{display: 'flex', flexFlow: 'row nowrap', justifyContent: 'space-between'}}>
+                        <div
+                            style={{
+                                display: 'flex',
+                                flexFlow: 'row nowrap',
+                                justifyContent: 'space-between',
+                            }}
+                        >
                             <Button
                                 variant="primary"
                                 onClick={() => setShowCustomizationDialog(true)}
@@ -221,7 +225,13 @@ function NewTracker() {
                         </div>
                     </Col>
                     <Col xs="auto">
-                        <span onClick={() => promptRemote(dispatch, rawRemote)}>{remote}</span>
+                        <span
+                            onClick={() => {
+                                promptRemote(dispatch, rawRemote);
+                            }}
+                        >
+                            {remote}
+                        </span>
                     </Col>
                 </Row>
             </Container>
