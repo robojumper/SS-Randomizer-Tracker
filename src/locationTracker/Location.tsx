@@ -12,6 +12,7 @@ import RequirementsTooltip from './RequirementsTooltip';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkHintSelector, checkSelector } from '../tracker/selectors';
 import { clickCheck } from '../tracker/slice';
+import PathTooltip from './PathTooltip';
 
 export interface LocationContextMenuProps {
     checkId: string;
@@ -57,7 +58,7 @@ export default function Location({
         <Tippy content={
             <>
                 <RequirementsTooltip requirements={expr} />
-                {path}
+                {path && <><hr /><PathTooltip segments={path} /></>}
             </>
         }>
             <div

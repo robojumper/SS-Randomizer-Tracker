@@ -89,7 +89,7 @@ export function useTooltipExpr(
     );
 }
 
-export function useEntrancePath(checkId: string): string | undefined {
+export function useEntrancePath(checkId: string): string[] | undefined {
     const logic = useSelector(logicSelector);
     const exits = useSelector(exitsSelector);
     const inLogicBits = useSelector(inLogicBitsSelector);
@@ -150,23 +150,17 @@ export function useEntrancePath(checkId: string): string | undefined {
                 const v = workList.pop()!;
                 if (v === '') {
                     let v_ = v;
-                    let pathStr = '';
+                    const pathSegments = ['Start'];
                     do {
                         v_ = path[v_]?.[0];
                         const loc = path[v_]?.[1];
                         if (loc) {
-                            pathStr +=
+                            pathSegments.push(
                                 logic.areaGraph.exits[loc]?.short_name ??
-                                logic.checks[loc]?.name;
-                        }
-                        if (loc && v_) {
-                            pathStr += ' → ';
+                                logic.checks[loc]?.name);
                         }
                     } while (v_);
-                    return `Start → ${pathStr} ${
-                        logic.areaGraph.exits[checkId]?.short_name ??
-                        logic.checks[checkId]?.name
-                    }`;
+                    return pathSegments;
                 } else {
                     // v is either a check or an exit - explore all entrances
                     if (edges[v]) {
@@ -186,9 +180,9 @@ export function useEntrancePath(checkId: string): string | undefined {
                     }
                 }
             }
-            return 'No path found';
+            return ['No path found'];
         } catch {
-            return 'Error computing exit path!';
+            return ['Error computing exit path!'];
         }
     }, [entranceRando, logic, exits, checkId, inLogicBits]);
 }

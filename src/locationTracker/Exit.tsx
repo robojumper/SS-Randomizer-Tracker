@@ -8,6 +8,7 @@ import { checkSelector, exitsSelector } from '../tracker/selectors';
 import { RootState } from '../store/store';
 import EntranceSelectionDialog from './EntranceSelectionDialog';
 import { useState } from 'react';
+import PathTooltip from './PathTooltip';
 
 export default function Exit({
     id,
@@ -42,7 +43,7 @@ export default function Exit({
                     <Tippy content={
                         <>
                             <RequirementsTooltip requirements={expr} />
-                            {path}
+                            {path && <><hr /><PathTooltip segments={path} /></>}
                         </>
                     }>
                         <Col
