@@ -25,6 +25,7 @@ import {
     booleanExprToTooltipExpr,
 } from './TooltipExpression';
 import _ from 'lodash';
+import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 
 const TooltipsContext = createContext<TooltipComputer | null>(null);
 
@@ -92,62 +93,102 @@ export function useEntrancePath(checkId: string): string | undefined {
     const logic = useSelector(logicSelector);
     const exits = useSelector(exitsSelector);
     const inLogicBits = useSelector(inLogicBitsSelector);
-    const entranceRando = useSelector(settingSelector('randomize-entrances')) === 'All';
+    const entranceRando =
+        useSelector(settingSelector('randomize-entrances')) === 'All';
 
     return useMemo(() => {
         if (!entranceRando) {
             return undefined;
         }
 
-        const entrancesPerLocation = logic.areaGraph.entrancesPerLocation;
-        const exitsByEntrance = _.groupBy(
-            exits.filter((e) => e.entrance),
-            (exit) => exit.entrance!.id,
-        );
+        try {
+            // TODO Move to a selector
+            // Take the logical exits and add the map exit/entrances mappings
+            const edges: Record<
+                string,
+                {
+                    from: string;
+                    requirements: LogicalExpression;
+                    location?: string;
+                }[]
+            > = _.mapValues(logic.areaGraph.logicalExitsToArea, (arr) => [
+                ...arr,
+            ]);
 
-        // A very simple BFS. Maybe we can have a heuristic for how long
-        // it takes to get from one entrance to an exit and use Dijkstra's?
-        const path: Record<string, string> = {};
-        const workList: string[] = [checkId];
-        const seen = new Set([checkId]);
-        while (workList.length) {
-            const v = workList.pop()!;
-            console.log(v);
-            if (!entrancesPerLocation[v]) {
-                let v_ = v;
-                let pathStr = '';
-                do {
-                    pathStr +=
-                        logic.areaGraph.exits[v_]?.short_name ??
-                        logic.checks[v_]?.name;
-                    v_ = path[v_];
-                    if (v_) {
-                        pathStr += ' → ';
-                    }
-                } while (v_);
-                return pathStr;
-            } else {
-                // v is either a check or an exit - explore all entrances
-                if (entrancesPerLocation[v]) {
-                    for (const entrance of entrancesPerLocation[v]) {
-                        if (exitsByEntrance[entrance]) {
-                            for (const exit of exitsByEntrance[entrance]) {
+            for (const exit of exits) {
+                if (!exit.entrance) {
+                    continue;
+                }
+                const requirements =
+                    logic.areaGraph.mapExitRequirements[exit.exit.id];
+                (edges[
+                    logic.areaGraph.areasByEntrance[exit.entrance.id].name
+                ] ??= []).push({
+                    from: logic.areaGraph.areasByExit[exit.exit.id].name,
+                    requirements:
+                        requirements ??
+                        LogicalExpression.true(logic.bitLogic.numBits),
+                    location: exit.exit.id,
+                });
+            }
+
+            // TODO Move to a selector end
+
+            const checkInLogic = inLogicBits.test(logic.itemBits[checkId]);
+
+            // A very simple BFS. Maybe we can have a heuristic for how long
+            // it takes to get from one entrance to an exit and use Dijkstra's?
+            const path: Record<
+                string,
+                [parentArea: string, location: string | undefined]
+            > = {};
+            const goalArea = logic.areaGraph.areaByLocation[checkId];
+            // A list of areas to explore
+            const workList: string[] = [goalArea];
+            const seen = new Set([goalArea]);
+            while (workList.length) {
+                const v = workList.pop()!;
+                if (v === '') {
+                    let v_ = v;
+                    let pathStr = '';
+                    do {
+                        v_ = path[v_]?.[0];
+                        const loc = path[v_]?.[1];
+                        if (loc) {
+                            pathStr +=
+                                logic.areaGraph.exits[loc]?.short_name ??
+                                logic.checks[loc]?.name;
+                        }
+                        if (loc && v_) {
+                            pathStr += ' → ';
+                        }
+                    } while (v_);
+                    return `Start → ${pathStr} ${
+                        logic.areaGraph.exits[checkId]?.short_name ??
+                        logic.checks[checkId]?.name
+                    }`;
+                } else {
+                    // v is either a check or an exit - explore all entrances
+                    if (edges[v]) {
+                        for (const edge of edges[v]) {
+                            // If our check is in logic, find a path that is in logic, otherwise find any path.
+                            if (!seen.has(edge.from)) {
+                                seen.add(edge.from);
                                 if (
-                                    !seen.has(exit.exit.id) &&
-                                    inLogicBits.test(
-                                        logic.itemBits[exit.exit.id],
-                                    )
+                                    !checkInLogic ||
+                                    edge.requirements.eval(inLogicBits)
                                 ) {
-                                    seen.add(exit.exit.id);
-                                    path[exit.exit.id] = v;
-                                    workList.unshift(exit.exit.id);
+                                    path[edge.from] = [v, edge.location];
+                                    workList.unshift(edge.from);
                                 }
                             }
                         }
                     }
                 }
             }
+            return 'No path found';
+        } catch {
+            return 'Error computing exit path!';
         }
-        return 'No path found';
     }, [entranceRando, logic, exits, checkId, inLogicBits]);
 }

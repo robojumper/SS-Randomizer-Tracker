@@ -20,16 +20,18 @@ export interface RawArea {
 
 export interface RawEntrance {
     type: 'entrance';
-    'can-start-at'?: boolean;
+    'can-start-at': boolean | undefined;
     allowed_time_of_day: TimeOfDay;
-    subtype?: string;
+    subtype: string | undefined;
+    stage: string | undefined;
     short_name: string;
 }
 
 export interface RawExit {
     type: 'exit';
     allowed_time_of_day: TimeOfDay;
-    vanilla: string;
+    vanilla: string | undefined;
+    stage: string | undefined;
     short_name: string;
 }
 

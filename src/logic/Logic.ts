@@ -71,11 +71,13 @@ export interface AreaGraph {
     entrances: Record<string, RawEntrance>;
     entranceHintAreas: Record<string, string>;
     exits: Record<string, RawExit>;
-    /**
-     * For every location/exit, a list of entrances that can reach it
-     * (by virtue of being in the same area, possibly with requirements).
-     */
-    entrancesPerLocation: Record<string, string[]>;
+
+    /** map from check/exit -> area */
+    areaByLocation: Record<string, string>;
+    /** The requirement to reach a map exit from its area. */
+    mapExitRequirements: Record<string, LogicalExpression>;
+    /** A list of logical exits that can reach the given key area. */
+    logicalExitsToArea: Record<string, { from: string, requirements: LogicalExpression }[]>;
 
     /** Sandship Dock Exit -> Exit to Sandship */
     autoExits: {
@@ -112,13 +114,15 @@ type Exit =
           type: 'logicalExit';
           /** a fully resolved name of another area. */
           toArea: string;
+          /** how to get from here to `toArea` */
+          requirements: LogicalExpression;
       }
     | {
           type: 'exitToEntrance';
-          /**
-           * Which exit this leads to, an entry in Logic.exits
-           */
-          toConnector: string;
+          /** Which exit this leads to, an entry in Logic.exits */
+          exitId: string;
+          /** how to reach the exit from this area */
+          requirements: LogicalExpression;
       };
 
 const itemIndexPat = /^(.+) #(\d+)$/;
@@ -223,9 +227,7 @@ export function parseLogic(raw: RawLogic): Logic {
     const checksByHintRegion: Logic['checksByHintRegion'] = {};
     const exitsByHintRegion: Logic['exitsByHintRegion'] = {};
     const entranceHintAreas: AreaGraph['entranceHintAreas'] = {};
-    const entrancesPerLocation: AreaGraph['entrancesPerLocation'] = {};
-    const checksByArea: Logic['checksByHintRegion'] = {};
-    const exitsByArea: Logic['exitsByHintRegion'] = {};
+    const areaByLocation: AreaGraph['areaByLocation'] = {};
 
     const entrancesByShortName: {
         [shortName: string]: { def: RawEntrance; id: string, region: string };
@@ -325,41 +327,53 @@ export function parseLogic(raw: RawLogic): Logic {
                 if (allAreas[fullExitName]) {
                     // logical exit
                     const destArea = allAreas[fullExitName];
+                    // For the area graph
+                    let exitExpr = b.false();
+
                     if (destArea.allowedTimeOfDay === TimeOfDay.Both) {
                         opaqueItems.clearBit(b.bit(b.day(destArea.name)));
                         opaqueItems.clearBit(b.bit(b.night(destArea.name)));
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                            const reachExitAtDay = expr
+                                .drop_unless(dummy_day_bit, dummy_night_bit)
+                                .and(b.singleBit(b.day(rawArea.name)));
                             b.addAlternative(
                                 b.day(destArea.name),
-                                expr
-                                    .drop_unless(dummy_day_bit, dummy_night_bit)
-                                    .and(b.singleBit(b.day(rawArea.name))),
+                                reachExitAtDay,
                             );
+
+                            const reachExitAtNight = expr
+                                .drop_unless(dummy_night_bit, dummy_day_bit)
+                                .and(b.singleBit(b.night(rawArea.name)));
                             b.addAlternative(
                                 b.night(destArea.name),
-                                expr
-                                    .drop_unless(dummy_night_bit, dummy_day_bit)
-                                    .and(b.singleBit(b.night(rawArea.name))),
+                                reachExitAtNight,
                             );
+                            exitExpr = reachExitAtDay.or(reachExitAtNight);
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.DayOnly
                         ) {
+                            const reachExitAtDay = expr
+                                .drop_unless(dummy_day_bit, dummy_night_bit)
+                                .and(b.singleBit(rawArea.name));
                             b.addAlternative(
                                 b.day(destArea.name),
-                                expr
-                                    .drop_unless(dummy_day_bit, dummy_night_bit)
-                                    .and(b.singleBit(rawArea.name)),
+                                reachExitAtDay,
                             );
+                            exitExpr = reachExitAtDay;
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.NightOnly
                         ) {
+                            const reachExitAtNight = expr
+                                .drop_unless(dummy_night_bit, dummy_day_bit)
+                                .and(b.singleBit(rawArea.name));
+
                             b.addAlternative(
                                 b.night(destArea.name),
-                                expr
-                                    .drop_unless(dummy_night_bit, dummy_day_bit)
-                                    .and(b.singleBit(rawArea.name)),
+                                reachExitAtNight,
                             );
+                            exitExpr = reachExitAtNight;
                         } else {
                             throw new Error('bad ToD requirement');
                         }
@@ -385,19 +399,28 @@ export function parseLogic(raw: RawLogic): Logic {
                         }
 
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            b.addAlternative(destArea.name, timedReq.and(timedArea()));
+                            const reachExitAtAnyTime = timedReq.and(timedArea());
+                            b.addAlternative(destArea.name, reachExitAtAnyTime);
+                            exitExpr = reachExitAtAnyTime;
                         } else if (
                             area.allowedTimeOfDay === destArea.allowedTimeOfDay
                         ) {
-                            b.addAlternative(destArea.name, timedReq.and(b.singleBit(area.name)));
+                            const reachExitAtAllowedTime = timedReq.and(b.singleBit(area.name));
+                            b.addAlternative(destArea.name, reachExitAtAllowedTime);
+                            exitExpr = reachExitAtAllowedTime;
                         }
                         opaqueItems.clearBit(b.bit(destArea.name));
                     }
 
-                    area.exits.push({
-                        type: 'logicalExit',
-                        toArea: fullExitName,
-                    });
+                    if (!expr.isTriviallyFalse()) {
+                        area.exits.push({
+                            type: 'logicalExit',
+                            toArea: fullExitName,
+                            requirements: exitExpr,
+                        });
+                    } else {
+                        console.warn(area.name, '->', exit, 'logical exit is unreachable with expr', exitRequirementExpression);
+                    }
                 } else if (raw.exits[fullExitName]) {
                     // map exit
                     areasByExit[fullExitName] = area;
@@ -410,52 +433,64 @@ export function parseLogic(raw: RawLogic): Logic {
                         }
                         b.set(fullExitName, expr);
                     } else {
+                        // For the area graph
+                        let exitExpr = b.false();
+
                         if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                            const reachExitAtDay = expr
+                                .drop_unless(dummy_day_bit, dummy_night_bit)
+                                .and(b.singleBit(b.day(rawArea.name)));
                             b.addAlternative(
                                 fullExitName,
-                                expr
-                                    .drop_unless(dummy_day_bit, dummy_night_bit)
-                                    .and(b.singleBit(b.day(rawArea.name))),
+                                reachExitAtDay,
                             );
+
+                            const reachExitAtNight = expr
+                                .drop_unless(dummy_night_bit, dummy_day_bit)
+                                .and(b.singleBit(b.night(rawArea.name)));
                             b.addAlternative(
                                 fullExitName,
-                                expr
-                                    .drop_unless(dummy_night_bit, dummy_day_bit)
-                                    .and(b.singleBit(b.night(rawArea.name))),
+                                reachExitAtNight,
                             );
+                            exitExpr = reachExitAtDay.or(reachExitAtNight);
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.DayOnly
                         ) {
+                            const reachExitAtDay = expr
+                                .drop_unless(dummy_day_bit, dummy_night_bit)
+                                .and(b.singleBit(rawArea.name));
                             b.addAlternative(
                                 fullExitName,
-                                expr
-                                    .drop_unless(dummy_day_bit, dummy_night_bit)
-                                    .and(b.singleBit(rawArea.name)),
+                                reachExitAtDay,
                             );
+                            exitExpr = reachExitAtDay;
                         } else if (
                             area.allowedTimeOfDay === TimeOfDay.NightOnly
                         ) {
+                            const reachExitAtNight = expr
+                                .drop_unless(dummy_night_bit, dummy_day_bit)
+                                .and(b.singleBit(rawArea.name));
                             b.addAlternative(
                                 fullExitName,
-                                expr
-                                    .drop_unless(dummy_night_bit, dummy_day_bit)
-                                    .and(b.singleBit(rawArea.name)),
+                                reachExitAtNight,
                             );
+                            exitExpr = reachExitAtNight;
                         } else {
                             throw new Error('bad ToD requirement');
                         }
 
                         const region = getHintRegion(fullExitName);
-                        entrancesPerLocation[fullExitName] =
-                            rawArea.entrances?.map(
-                                (entrance) => `${rawArea.name}\\${entrance}`,
-                            ) ?? [];
-                        (exitsByArea[area.name] ??= []).push(fullExitName);
+                        areaByLocation[fullExitName] = area.name;
                         (exitsByHintRegion[region] ??= []).push(fullExitName);
-                        area.exits.push({
-                            type: 'exitToEntrance',
-                            toConnector: fullExitName,
-                        });
+                        if (!exitExpr.isTriviallyFalse()) {
+                            area.exits.push({
+                                type: 'exitToEntrance',
+                                exitId: fullExitName,
+                                requirements: exitExpr,
+                            });
+                        } else {
+                            console.warn(area.name, '->', exit, 'map exit is unreachable with expr', exitRequirementExpression);
+                        }
                     }
                 } else {
                     throw new Error(
@@ -541,11 +576,7 @@ export function parseLogic(raw: RawLogic): Logic {
                         if (check.type === 'tr_cube') {
                             check.name = `${region} - ${check.name}`;
                         }
-                        entrancesPerLocation[locName] =
-                        rawArea.entrances?.map(
-                            (entrance) => `${rawArea.name}\\${entrance}`,
-                        ) ?? [];
-                        (checksByArea[area.name] ??= []).push(locName);
+                        areaByLocation[locName] = area.name;
                         (checksByHintRegion[region] ??= []).push(locName);
                     } else {
                         nonCheckLocations.add(locName);
@@ -631,10 +662,10 @@ export function parseLogic(raw: RawLogic): Logic {
                     break;
                 }
                 case 'exitToEntrance': {
-                    const connector = raw.exits[exit.toConnector];
+                    const connector = raw.exits[exit.exitId];
                     if (!connector) {
                         throw new Error(
-                            `exit to connector ${exit.toConnector} does not exist`,
+                            `exit to connector ${exit.exitId} does not exist`,
                         );
                     }
                     break;
@@ -731,64 +762,17 @@ export function parseLogic(raw: RawLogic): Logic {
     // Figure out which entrances can reach which exits and checks, this will be the data for
     // the check pathfinder that tells users how to get where with Entrance Rando on
 
-    // to area -> from area
-    const logicalEdges: Record<string, string[]> = {};
+    const logicalExitsToArea: AreaGraph['logicalExitsToArea'] = {};
+    const mapExitRequirements: AreaGraph['mapExitRequirements'] = {};
     for (const [areaName, area] of Object.entries(allAreas)) {
         for (const exit of area.exits) {
             if (exit.type === 'logicalExit') {
-                (logicalEdges[exit.toArea] ??= []).push(areaName);
+                (logicalExitsToArea[exit.toArea] ??= []).push({ from: areaName, requirements: exit.requirements });
+            } else {
+                mapExitRequirements[exit.exitId] = exit.requirements;
             }
         }
     }
-
-    const seenAreas = new Set<string>();
-    let numAreas = 0;
-    for (const areaName of Object.keys(allAreas)) {
-        if (seenAreas.has(areaName)) {
-            continue;
-        }
-        numAreas += 1;
-        const worklist = [areaName];
-
-        while (worklist.length) {
-            const consideredArea = worklist.pop()!;
-            for (const parentArea of logicalEdges[consideredArea] ?? []) {
-                if (!seenAreas.has(parentArea)) {
-                    seenAreas.add(parentArea);
-                    worklist.push(parentArea);
-                }
-            }
-        }
-    }
-
-    console.log('numAreas', numAreas);
-
-
-
-    for (const areaName of Object.keys(allAreas)) {
-        const visitedAreas = new Set(areaName);
-        const worklist = [areaName];
-        const reachingExits: string[] = [];
-
-        while (worklist.length) {
-            const consideredArea = worklist.pop()!;
-            reachingExits.push(...allAreas[consideredArea].entrances.filter((e) => raw.entrances[e]));
-            for (const parentArea of logicalEdges[consideredArea] ?? []) {
-                if (!visitedAreas.has(parentArea)) {
-                    visitedAreas.add(parentArea);
-                    worklist.push(parentArea);
-                }
-            }
-        }
-
-        const checks = checksByArea[areaName] ?? [];
-        const exits = exitsByArea[areaName] ?? [];
-        for (const location of checks.concat(exits)) {
-            entrancesPerLocation[location] = reachingExits;
-        }
-    
-    }
-
     console.log('logic building took', performance.now() - start, 'ms'); 
 
     return {
@@ -808,7 +792,9 @@ export function parseLogic(raw: RawLogic): Logic {
             areasByEntrance,
             areasByExit,
             entranceHintAreas,
-            entrancesPerLocation,
+            logicalExitsToArea,
+            mapExitRequirements,
+            areaByLocation,
             entrances: raw.entrances,
             exits: raw.exits,
             vanillaConnections,

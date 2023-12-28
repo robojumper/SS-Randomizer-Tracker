@@ -11,7 +11,6 @@ import {
     gotRaisingReq,
     hordeDoorReq,
     impaSongCheck,
-    inDungeonStatueExits,
     nonRandomizedExits,
     runtimeOptions,
     swordsToAdd,
@@ -234,25 +233,12 @@ export const exitRulesSelector = createSelector(
                 continue;
             }
 
-            const dungeonNames_: readonly string[] = dungeonNames;
             if (everythingRandomized) {
-                const vanillaEntranceRegion =
-                    logic.areaGraph.entranceHintAreas[
-                        logic.areaGraph.vanillaConnections[exitId]
-                    ];
-                // These don't appear to ever be randomized?
+                const exitDef = logic.areaGraph.exits[exitId];
                 if (
-                    logic.areaGraph.exits[exitId].short_name.includes(
-                        'First Time Dive',
-                    ) ||
-                    logic.areaGraph.exits[exitId].short_name.includes(
-                        'Statue Dive',
-                    ) ||
-                    (!inDungeonStatueExits.includes(exitId) && (vanillaEntranceRegion &&
-                        dungeonNames_.includes(vanillaEntranceRegion) ||
-                    dungeonNames.some((name) =>
-                        logic.exitsByHintRegion[name].includes(exitId),
-                    )))
+                    exitDef.stage === undefined ||
+                    exitDef.vanilla === undefined ||
+                    exitId.includes('Pillar')
                 ) {
                     result[exitId] = { type: 'vanilla' };
                 } else {
@@ -977,6 +963,7 @@ export const remainingEntrancesSelector = createSelector(
                 (e) =>
                     !usedEntrances.has(e[0]) &&
                     !bannedExitsAndEntrances.includes(e[0]) &&
+                    logic.areaGraph.entrances[e[0]].stage !== undefined && 
                     !nonRandomizedExits.includes(
                         logic.areaGraph.vanillaConnections[e[0]],
                     ),
