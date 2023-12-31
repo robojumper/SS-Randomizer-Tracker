@@ -900,10 +900,6 @@ export const areasSelector = createSelector(
                     (check) => !isCheckBanned(check, logic.checks[check]),
                 );
 
-                if (!progressChecks.length) {
-                    return undefined;
-                }
-
                 const [extraChecks, regularChecks_] = _.partition(
                     progressChecks,
                     (check) =>
