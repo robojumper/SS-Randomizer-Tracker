@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { logicSelector, optionsSelector } from '../logic/selectors';
+import { areaGraphSelector, logicSelector, optionsSelector } from '../logic/selectors';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { RootState } from '../store/store';
 import { currySelector } from '../utils/redux';
@@ -45,6 +45,7 @@ import { computeLeastFixedPoint } from '../logic/bitlogic/BitLogic';
 import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
 import { produce } from 'immer';
+import { exploreAreaGraph } from '../logic/Pathfinding';
 
 /**
  * Selects the hint for a given area.
@@ -472,8 +473,8 @@ function mapSettings(
             dayReq = exitExpr;
             nightReq = exitExpr;
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.Both) {
-            dayReq = exitExpr.and(b.singleBit(b.day(exitArea.name)));
-            nightReq = exitExpr.and(b.singleBit(b.night(exitArea.name)));
+            dayReq = exitExpr.and(b.singleBit(b.day(exitArea.id)));
+            nightReq = exitExpr.and(b.singleBit(b.night(exitArea.id)));
         } else if (exitArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
             dayReq = exitExpr;
             nightReq = b.false();
@@ -633,13 +634,24 @@ export const optimisticLogicBitsSelector = createSelector(
         settingsRequirementsSelector,
         optimisticInventoryItemRequirementsSelector,
         checkRequirementsSelector,
+        inLogicBitsSelector,
     ],
-    (logic, settingsRequirements, optimisticInventoryRequirements, checkRequirements) =>
-        computeLeastFixedPoint(logic.bitLogic, [
-            settingsRequirements,
-            optimisticInventoryRequirements,
-            checkRequirements,
-        ]),
+    (
+        logic,
+        settingsRequirements,
+        optimisticInventoryRequirements,
+        checkRequirements,
+        inLogicBits,
+    ) =>
+        computeLeastFixedPoint(
+            logic.bitLogic,
+            [
+                settingsRequirements,
+                optimisticInventoryRequirements,
+                checkRequirements,
+            ],
+            inLogicBits,
+        ),
 );
 
 export const inSemiLogicBitsSelector = createSelector(
@@ -1009,4 +1021,14 @@ export const remainingEntrancesSelector = createSelector(
                 name: def.short_name,
             }));
     },
+);
+
+export const inLogicPathfindingSelector = createSelector(
+    [areaGraphSelector, exitsSelector, inLogicBitsSelector],
+    exploreAreaGraph,
+);
+
+export const optimisticPathfindingSelector = createSelector(
+    [areaGraphSelector, exitsSelector, optimisticLogicBitsSelector],
+    exploreAreaGraph,
 );

@@ -21,7 +21,12 @@ export const optionsSelector = createSelector([rawLogicSelector, rawOptionsSelec
     parsedOptions[excludedLocsIndex] = { ...(rawOptions[excludedLocsIndex] as MultiChoiceOption), choices };
 
     return parsedOptions;
-})
+});
+
+export const areaGraphSelector = createSelector(
+    [logicSelector],
+    (logic) => logic.areaGraph,
+);
 
 export const shownLogicUpstreamSelector = createSelector(
     [(state: RootState) => state.logic.remote!],

@@ -62,6 +62,16 @@ export interface LogicalCheck {
     name: string;
 }
 
+export type ExtendedTimeOfDay = TimeOfDay | 'abstract';
+
+/**
+ * The AreaGraph is a parsed dump with some preprocessing for TimeOfDay logic.
+ * This graph will be mapped to a self-contained BitLogic for logical state.
+ * The BitLogic results can the be used to interpret edges in this graph.
+ * 
+ * This area graph maintains the structure of the area requirements, which could help
+ * implementing a more structured grounding algorithm for tooltip requirements in the future.
+ */
 export interface AreaGraph {
     rootArea: Area;
     areas: Record<string, Area>;
@@ -71,13 +81,6 @@ export interface AreaGraph {
     entrances: Record<string, RawEntrance>;
     entranceHintAreas: Record<string, string>;
     exits: Record<string, RawExit>;
-
-    /** map from check/exit -> area */
-    areaByLocation: Record<string, string>;
-    /** The requirement to reach a map exit from its area. */
-    mapExitRequirements: Record<string, LogicalExpression>;
-    /** A list of logical exits that can reach the given key area. */
-    logicalExitsToArea: Record<string, { from: string, requirements: LogicalExpression }[]>;
 
     /** Sandship Dock Exit -> Exit to Sandship */
     autoExits: {
@@ -98,33 +101,89 @@ export interface EntranceLinkage {
     entrances: [outsideEntrance: string, insideEntrance: string];
 }
 
-export interface Area {
+export type DayNightRequirements = { day: LogicalExpression, night: LogicalExpression };
+
+interface CommonArea {
     abstract: boolean;
-    name: string;
+    id: string;
     subAreas: Record<string, Area>;
-    allowedTimeOfDay: TimeOfDay;
+    allowedTimeOfDay: ExtendedTimeOfDay;
     canSleep: boolean;
-    /** The exits of this area */
-    exits: Exit[];
     /** The possible ways to get into this area, an entry in Logic.entrances */
     entrances: string[];
 }
 
-type Exit =
-    | {
-          type: 'logicalExit';
-          /** a fully resolved name of another area. */
-          toArea: string;
-          /** how to get from here to `toArea` */
-          requirements: LogicalExpression;
-      }
-    | {
-          type: 'exitToEntrance';
-          /** Which exit this leads to, an entry in Logic.exits */
-          exitId: string;
-          /** how to reach the exit from this area */
-          requirements: LogicalExpression;
-      };
+/**
+ * An area where both day and night are logically allowed. Exits and checks
+ * have separate requirements for the day and the night state.
+ * The actual area name doesn't exist in logic, instead we have _DAY and _NIGHT versions.
+ */
+export interface DualTodArea extends CommonArea {
+    allowedTimeOfDay: TimeOfDay.Both;
+    locations: Location<DayNightRequirements, TimeOfDay.Both>[];
+    abstract: false;
+}
+
+/**
+ * An area where either only day or only night are logically allowed.
+ * Exits and checks have a single expression that is calculated
+ * assuming you are in this area with the allowed ToD. Getting there
+ * with the opposite ToD is an immediate out-of-logic.
+ */
+export interface SingleTodArea extends CommonArea {
+    allowedTimeOfDay: TimeOfDay.DayOnly | TimeOfDay.NightOnly;
+    locations: Location<LogicalExpression, TimeOfDay.DayOnly | TimeOfDay.NightOnly>[];
+    canSleep: false;
+    abstract: false;
+}
+
+/**
+ * An area where either only day or only night are logically allowed.
+ * Exits and checks have a single expression that is calculated
+ * assuming you are in this area with the allowed ToD. Getting there
+ * with the opposite ToD is an immediate out-of-logic.
+ */
+export interface AbstractArea extends CommonArea {
+    allowedTimeOfDay: 'abstract';
+    locations: Location<LogicalExpression, 'abstract'>[];
+    canSleep: false;
+    abstract: true;
+}
+
+export type Area = DualTodArea | SingleTodArea | AbstractArea;
+
+/** A single logical location. Can be an actual check, an arbitrary "location", a map exit, or a logical exit. */
+interface AbstractLocation<R, T extends ExtendedTimeOfDay> {
+    /** The fully resolved check/exit/location id. */
+    id: string;
+    /** The actual requirements expression(s) to get this location... */
+    requirements: R,
+    /** ...from its owning area with this Time of Day. */
+    areaTimeOfDay: T;
+}
+
+interface MapExit<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+    type: 'mapExit';
+}
+
+interface LogicalExit<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+    type: 'logicalExit';
+    /** The destination area. */
+    toArea: string;
+}
+
+interface VirtualLocation<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+    type: 'virtualLocation';
+}
+
+interface CheckRenameMe<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+    type: 'check';
+    /** Whether this instance of the location was the primary (unprefixed) mention. */
+    isPrimaryLocation: boolean;
+}
+
+type Location<R, T extends ExtendedTimeOfDay> = MapExit<R, T> | LogicalExit<R, T> | VirtualLocation<R, T> | CheckRenameMe<R, T>;
+
 
 const itemIndexPat = /^(.+) #(\d+)$/;
 
@@ -228,7 +287,7 @@ export function parseLogic(raw: RawLogic): Logic {
     const checksByHintRegion: Logic['checksByHintRegion'] = {};
     const exitsByHintRegion: Logic['exitsByHintRegion'] = {};
     const entranceHintAreas: AreaGraph['entranceHintAreas'] = {};
-    const areaByLocation: AreaGraph['areaByLocation'] = {};
+    // const areaByLocation: AreaGraph['areaByLocation'] = {};
 
     const entrancesByShortName: {
         [shortName: string]: { def: RawEntrance; id: string, region: string };
@@ -239,12 +298,10 @@ export function parseLogic(raw: RawLogic): Logic {
         idx++;
     }
 
-    const b = new LogicBuilder(bitLogic, rawItems, bitLogic.requirements);
-
-    const dummy_day_bit = itemBits['Day'];
-    const dummy_night_bit = itemBits['Night'];
-    opaqueItems.clearBit(dummy_day_bit);
-    opaqueItems.clearBit(dummy_night_bit);
+    const dummyDayBit = itemBits['Day'];
+    const dummyNightBit = itemBits['Night'];
+    opaqueItems.clearBit(dummyDayBit);
+    opaqueItems.clearBit(dummyNightBit);
 
     const allAreas: AreaGraph['areas'] = {};
 
@@ -253,7 +310,7 @@ export function parseLogic(raw: RawLogic): Logic {
             booleanExprToLogicalExpr(
                 bitLogic.numBits,
                 parseExpression(expr),
-                (item: string) => b.bit(item),
+                (item: string) => itemBits[item],
             ),
         );
     };
@@ -263,16 +320,45 @@ export function parseLogic(raw: RawLogic): Logic {
     const nonCheckLocations = new Set<string>();
 
     function createAreaIndex(rawArea: RawArea) {
-        const area: Area = {
-            abstract: rawArea.abstract,
-            name: rawArea.name,
-            allowedTimeOfDay: rawArea.allowed_time_of_day,
-            canSleep: rawArea.can_sleep,
-            exits: [],
-            entrances: [],
-            subAreas: {},
-        };
-        allAreas[area.name] = area;
+        let area: Area;
+        if (rawArea.abstract) {
+            if (rawArea.can_sleep) {
+                throw new Error(`cannot sleep in ${rawArea.name}`);
+            }
+            area = {
+                abstract: rawArea.abstract,
+                id: rawArea.name,
+                allowedTimeOfDay: 'abstract',
+                canSleep: rawArea.can_sleep,
+                locations: [],
+                entrances: [],
+                subAreas: {},
+            } satisfies AbstractArea;
+        } else if (rawArea.allowed_time_of_day === TimeOfDay.Both) {
+            area = {
+                abstract: rawArea.abstract,
+                id: rawArea.name,
+                allowedTimeOfDay: rawArea.allowed_time_of_day,
+                canSleep: rawArea.can_sleep,
+                locations: [],
+                entrances: [],
+                subAreas: {},
+            } satisfies DualTodArea;
+        } else {
+            if (rawArea.can_sleep) {
+                throw new Error(`cannot sleep in ${rawArea.name}`);
+            }
+            area = {
+                abstract: rawArea.abstract,
+                id: rawArea.name,
+                allowedTimeOfDay: rawArea.allowed_time_of_day,
+                canSleep: rawArea.can_sleep,
+                locations: [],
+                entrances: [],
+                subAreas: {},
+            } satisfies SingleTodArea;
+        }
+        allAreas[area.id] = area;
         if (!_.isEmpty(rawArea.sub_areas)) {
             for (const rawSubArea of Object.values(rawArea.sub_areas)) {
                 const subArea = createAreaIndex(rawSubArea);
@@ -283,6 +369,29 @@ export function parseLogic(raw: RawLogic): Logic {
         return area;
     }
 
+    function toSingleTodExpr(
+        tod: TimeOfDay.DayOnly | TimeOfDay.NightOnly | 'abstract',
+        expr: LogicalExpression,
+    ): LogicalExpression {
+        if (tod === 'abstract') {
+            return expr;
+        } else if (tod === TimeOfDay.DayOnly) {
+            return expr.drop_unless(dummyDayBit, dummyNightBit);
+        } else {
+            return expr.drop_unless(dummyNightBit, dummyDayBit);
+        }
+    }
+
+    function toDualTodExpr(
+        _tod: TimeOfDay.Both,
+        expr: LogicalExpression,
+    ): DayNightRequirements {
+        return {
+            day: expr.drop_unless(dummyDayBit, dummyNightBit),
+            night: expr.drop_unless(dummyNightBit, dummyDayBit),
+        };
+    }
+
     function populateArea(rawArea: RawArea): Area {
         const area = allAreas[rawArea.name];
         if (!_.isEmpty(rawArea.sub_areas)) {
@@ -291,29 +400,20 @@ export function parseLogic(raw: RawLogic): Logic {
             }
         }
 
-        if (rawArea.can_sleep) {
-            if (rawArea.allowed_time_of_day !== TimeOfDay.Both) {
-                throw new Error(`cannot sleep in ${rawArea.name}`);
-            }
-
-            b.addAlternative(b.day(rawArea.name), b.singleBit(b.night(rawArea.name)));
-            b.addAlternative(b.night(rawArea.name), b.singleBit(b.day(rawArea.name)));
-        }
-
-        const getHintRegion = (locName: string) => {
+        const getHintRegion = (locationId: string) => {
             let region: string | null | undefined =
                 rawArea.hint_region;
             if (
                 !region &&
-                (locName.includes('Temple of Time') ||
-                    locName.includes('Goddess Cube at Ride') ||
-                    locName.includes('Gossip Stone in Temple of Time Area'))
+                (locationId.includes('Temple of Time') ||
+                    locationId.includes('Goddess Cube at Ride') ||
+                    locationId.includes('Gossip Stone in Temple of Time Area'))
             ) {
                 // FIXME fix the data
                 region = 'Lanayru Desert';
             }
             if (!region) {
-                throw new Error(`check ${locName} has no region?`);
+                throw new Error(`check ${locationId} has no region?`);
             }
             return region;
         }
@@ -329,170 +429,65 @@ export function parseLogic(raw: RawLogic): Logic {
                 if (allAreas[fullExitName]) {
                     // logical exit
                     const destArea = allAreas[fullExitName];
-                    // For the area graph
-                    let exitExpr = b.false();
-
-                    if (destArea.allowedTimeOfDay === TimeOfDay.Both) {
-                        opaqueItems.clearBit(b.bit(b.day(destArea.name)));
-                        opaqueItems.clearBit(b.bit(b.night(destArea.name)));
-
-                        if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            const reachExitAtDay = expr
-                                .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(b.singleBit(b.day(rawArea.name)));
-                            b.addAlternative(
-                                b.day(destArea.name),
-                                reachExitAtDay,
-                            );
-
-                            const reachExitAtNight = expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(b.night(rawArea.name)));
-                            b.addAlternative(
-                                b.night(destArea.name),
-                                reachExitAtNight,
-                            );
-                            exitExpr = reachExitAtDay.or(reachExitAtNight);
-                        } else if (
-                            area.allowedTimeOfDay === TimeOfDay.DayOnly
-                        ) {
-                            const reachExitAtDay = expr
-                                .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(b.singleBit(rawArea.name));
-                            b.addAlternative(
-                                b.day(destArea.name),
-                                reachExitAtDay,
-                            );
-                            exitExpr = reachExitAtDay;
-                        } else if (
-                            area.allowedTimeOfDay === TimeOfDay.NightOnly
-                        ) {
-                            const reachExitAtNight = expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(rawArea.name));
-
-                            b.addAlternative(
-                                b.night(destArea.name),
-                                reachExitAtNight,
-                            );
-                            exitExpr = reachExitAtNight;
-                        } else {
-                            throw new Error('bad ToD requirement');
-                        }
-                    } else {
-                        let timedReq: LogicalExpression;
-                        let timedArea: () => LogicalExpression;
-                        if (destArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
-                            timedReq = expr.drop_unless(
-                                dummy_day_bit,
-                                dummy_night_bit,
-                            );
-                            timedArea = () => b.singleBit(b.day(area.name));
-                        } else if (
-                            destArea.allowedTimeOfDay === TimeOfDay.NightOnly
-                        ) {
-                            timedReq = expr.drop_unless(
-                                dummy_night_bit,
-                                dummy_day_bit,
-                            );
-                            timedArea = () => b.singleBit(b.night(area.name));
-                        } else {
-                            throw new Error('bad ToD requirement');
-                        }
-
-                        if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            const reachExitAtAnyTime = timedReq.and(timedArea());
-                            b.addAlternative(destArea.name, reachExitAtAnyTime);
-                            exitExpr = reachExitAtAnyTime;
-                        } else if (
-                            area.allowedTimeOfDay === destArea.allowedTimeOfDay
-                        ) {
-                            const reachExitAtAllowedTime = timedReq.and(b.singleBit(area.name));
-                            b.addAlternative(destArea.name, reachExitAtAllowedTime);
-                            exitExpr = reachExitAtAllowedTime;
-                        }
-                        opaqueItems.clearBit(b.bit(destArea.name));
+                    if (area.abstract) {
+                        throw new Error('abstract area cannot have map exits');
                     }
-
-                    if (!expr.isTriviallyFalse()) {
-                        area.exits.push({
+                    if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                        area.locations.push({
                             type: 'logicalExit',
-                            toArea: fullExitName,
-                            requirements: exitExpr,
+                            id: fullExitName,
+                            toArea: destArea.id,
+                            requirements: toDualTodExpr(area.allowedTimeOfDay, expr),
+                            areaTimeOfDay: area.allowedTimeOfDay,
                         });
                     } else {
-                        console.warn(area.name, '->', exit, 'logical exit is unreachable with expr', exitRequirementExpression);
+                        area.locations.push({
+                            type: 'logicalExit',
+                            id: fullExitName,
+                            toArea: destArea.id,
+                            requirements: toSingleTodExpr(area.allowedTimeOfDay, expr),
+                            areaTimeOfDay: area.allowedTimeOfDay,
+                        });
                     }
                 } else if (raw.exits[fullExitName]) {
                     // map exit
                     areasByExit[fullExitName] = area;
-                    opaqueItems.clearBit(b.bit(fullExitName));
+
+                    if (area.abstract) {
+                        if (fullExitName !== '\\Start') {
+                            throw new Error('abstract area may only lead to start exit');
+                        }
+                        area.locations.push({
+                            type: 'mapExit',
+                            id: fullExitName,
+                            requirements: expr,
+                            areaTimeOfDay: 'abstract',
+                        });
+                    } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                        area.locations.push({
+                            type: 'mapExit',
+                            id: fullExitName,
+                            requirements: toDualTodExpr(area.allowedTimeOfDay, expr),
+                            areaTimeOfDay: area.allowedTimeOfDay,
+                        });
+                    } else {
+                        area.locations.push({
+                            type: 'mapExit',
+                            id: fullExitName,
+                            requirements: toSingleTodExpr(area.allowedTimeOfDay, expr),
+                            areaTimeOfDay: area.allowedTimeOfDay,
+                        });
+                    }
+
                     if (area.abstract) {
                         if (fullExitName !== '\\Start') {
                             throw new Error(
                                 'abstract area can only exit to start',
                             );
                         }
-                        b.set(fullExitName, expr);
                     } else {
-                        // For the area graph
-                        let exitExpr = b.false();
-
-                        if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                            const reachExitAtDay = expr
-                                .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(b.singleBit(b.day(rawArea.name)));
-                            b.addAlternative(
-                                fullExitName,
-                                reachExitAtDay,
-                            );
-
-                            const reachExitAtNight = expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(b.night(rawArea.name)));
-                            b.addAlternative(
-                                fullExitName,
-                                reachExitAtNight,
-                            );
-                            exitExpr = reachExitAtDay.or(reachExitAtNight);
-                        } else if (
-                            area.allowedTimeOfDay === TimeOfDay.DayOnly
-                        ) {
-                            const reachExitAtDay = expr
-                                .drop_unless(dummy_day_bit, dummy_night_bit)
-                                .and(b.singleBit(rawArea.name));
-                            b.addAlternative(
-                                fullExitName,
-                                reachExitAtDay,
-                            );
-                            exitExpr = reachExitAtDay;
-                        } else if (
-                            area.allowedTimeOfDay === TimeOfDay.NightOnly
-                        ) {
-                            const reachExitAtNight = expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(rawArea.name));
-                            b.addAlternative(
-                                fullExitName,
-                                reachExitAtNight,
-                            );
-                            exitExpr = reachExitAtNight;
-                        } else {
-                            throw new Error('bad ToD requirement');
-                        }
-
                         const region = getHintRegion(fullExitName);
-                        areaByLocation[fullExitName] = area.name;
                         (exitsByHintRegion[region] ??= []).push(fullExitName);
-                        if (!exitExpr.isTriviallyFalse()) {
-                            area.exits.push({
-                                type: 'exitToEntrance',
-                                exitId: fullExitName,
-                                requirements: exitExpr,
-                            });
-                        } else {
-                            console.warn(area.name, '->', exit, 'map exit is unreachable with expr', exitRequirementExpression);
-                        }
                     }
                 } else {
                     throw new Error(
@@ -506,59 +501,25 @@ export function parseLogic(raw: RawLogic): Logic {
             for (const entrance of rawArea.entrances) {
                 area.entrances.push(`${rawArea.name}\\${entrance}`);
 
-                const fullEntranceName = `${rawArea.name}\\${entrance}`;
-                const entranceDef = raw.entrances[fullEntranceName];
+                const entranceId = `${rawArea.name}\\${entrance}`;
+                const entranceDef = raw.entrances[entranceId];
 
-                const region = getHintRegion(fullEntranceName);
-                entranceHintAreas[fullEntranceName] = region;
+                const region = getHintRegion(entranceId);
+                entranceHintAreas[entranceId] = region;
 
                 // Are both of these needed???
 
                 entrancesByShortName[entranceDef.short_name] = {
                     def: entranceDef,
-                    id: fullEntranceName,
+                    id: entranceId,
                     region,
                 };
 
                 entrancesByShortName[entrance] = {
                     def: entranceDef,
-                    id: fullEntranceName,
+                    id: entranceId,
                     region,
                 };
-
-                if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
-                    b.addAlternative(
-                        b.day(area.name),
-                        b.singleBit(b.day(fullEntranceName)),
-                    );
-                    b.addAlternative(
-                        b.night(area.name),
-                        b.singleBit(b.night(fullEntranceName)),
-                    );
-                    opaqueItems.clearBit(b.bit(b.day(area.name)));
-                    opaqueItems.clearBit(b.bit(b.night(area.name)));
-                } else {
-                    let areaReq: string;
-                    if (area.allowedTimeOfDay === TimeOfDay.Both) {
-                        if (
-                            entranceDef.allowed_time_of_day ===
-                            TimeOfDay.DayOnly
-                        ) {
-                            areaReq = b.day(area.name);
-                        } else if (
-                            entranceDef.allowed_time_of_day ===
-                            TimeOfDay.NightOnly
-                        ) {
-                            areaReq = b.night(area.name);
-                        } else {
-                            throw new Error('bad ToD requirement');
-                        }
-                    } else {
-                        areaReq = area.name;
-                    }
-                    b.addAlternative(areaReq, b.singleBit(fullEntranceName));
-                    opaqueItems.clearBit(b.bit(areaReq));
-                }
             }
         }
 
@@ -567,59 +528,54 @@ export function parseLogic(raw: RawLogic): Logic {
                 location,
                 locationRequirementExpression,
             ] of Object.entries(rawArea.locations)) {
-                let locName = location.startsWith('\\')
+                const locationId = location.startsWith('\\')
                     ? location
-                    : `${area.name}\\${location}`;
+                    : `${area.id}\\${location}`;
 
-                if (!location.startsWith('\\')) {
-                    const check = checks[locName];
-                    if (check) {
-                        const region = getHintRegion(locName);
+                const expr = parseExpr(locationRequirementExpression);
+
+                const check: LogicalCheck | undefined = checks[locationId];
+                const isPrimaryLocation = check && !location.startsWith('\\');
+                if (check) {
+                    if (isPrimaryLocation) {
+                        const region = getHintRegion(locationId);
                         if (check.type === 'tr_cube') {
                             check.name = `${region} - ${check.name}`;
                         }
-                        areaByLocation[locName] = area.name;
-                        (checksByHintRegion[region] ??= []).push(locName);
-                    } else {
-                        nonCheckLocations.add(locName);
+                        // areaByLocation[locName] = area.name;
+                        (checksByHintRegion[region] ??= []).push(locationId);
                     }
-                }
-
-                // Is this a goddess cube location? Then replace it with the fake "can access" requirement.
-                if (cubeCheckToCanAccessCube[locName]) {
-                    const canAccessReq = cubeCheckToCanAccessCube[locName];
-                    locName = canAccessReq;
-                }
-
-                let timed_req: LogicalExpression;
-                opaqueItems.clearBit(b.bit(locName));
-
-                const expr = parseExpr(locationRequirementExpression);
-                if (rawArea.abstract) {
-                    timed_req = expr;
-                } else if (rawArea.allowed_time_of_day === TimeOfDay.Both) {
-                    timed_req = expr
-                        .drop_unless(dummy_day_bit, dummy_night_bit)
-                        .and(b.singleBit(b.day(area.name)))
-                        .or(
-                            expr
-                                .drop_unless(dummy_night_bit, dummy_day_bit)
-                                .and(b.singleBit(b.night(area.name)))
-                        );
-                } else if (rawArea.allowed_time_of_day === TimeOfDay.DayOnly) {
-                    timed_req = expr
-                        .drop_unless(dummy_day_bit, dummy_night_bit)
-                        .and(b.singleBit(area.name));
-                } else if (
-                    rawArea.allowed_time_of_day === TimeOfDay.NightOnly
-                ) {
-                    timed_req = expr
-                        .drop_unless(dummy_night_bit, dummy_day_bit)
-                        .and(b.singleBit(area.name));
                 } else {
-                    throw new Error('bad ToD requirement');
+                    nonCheckLocations.add(locationId);
                 }
-                b.addAlternative(locName, timed_req);
+
+                if (area.abstract) {
+                    if (check) {
+                        throw new Error('abstract location cannot own a check');
+                    }
+                    area.locations.push({
+                        type: 'virtualLocation',
+                        id: locationId,
+                        requirements: expr,
+                        areaTimeOfDay: 'abstract',
+                    });
+                } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                    area.locations.push({
+                        type: check ? 'check' : 'virtualLocation',
+                        id: locationId,
+                        isPrimaryLocation,
+                        requirements: toDualTodExpr(area.allowedTimeOfDay, expr),
+                        areaTimeOfDay: area.allowedTimeOfDay,
+                    });
+                } else {
+                    area.locations.push({
+                        type: check ? 'check' : 'virtualLocation',
+                        id: locationId,
+                        isPrimaryLocation,
+                        requirements: toSingleTodExpr(area.allowedTimeOfDay, expr),
+                        areaTimeOfDay: area.allowedTimeOfDay,
+                    });
+                }
             }
         }
 
@@ -648,44 +604,31 @@ export function parseLogic(raw: RawLogic): Logic {
                 throw new Error(`entrance ${entrance} does not exist`);
             }
         }
-        for (const exit of area.exits) {
-            switch (exit.type) {
+        for (const location of area.locations) {
+            switch (location.type) {
                 case 'logicalExit': {
-                    const targetArea = allAreas[exit.toArea];
+                    const targetArea = allAreas[location.toArea];
                     if (!targetArea) {
                         throw new Error(
-                            `${area.name} -> exit to area ${exit.toArea} does not exist`,
+                            `${area.id} -> exit to area ${location.toArea} does not exist`,
                         );
                     } else if (targetArea.abstract) {
                         throw new Error(
-                            `${area.name} -> exit to area ${exit.toArea} leads to abstract area`,
+                            `${area.id} -> exit to area ${location.toArea} leads to abstract area`,
                         );
                     }
                     break;
                 }
-                case 'exitToEntrance': {
-                    const connector = raw.exits[exit.exitId];
+                case 'mapExit': {
+                    const connector = raw.exits[location.id];
                     if (!connector) {
                         throw new Error(
-                            `exit to connector ${exit.exitId} does not exist`,
+                            `exit to connector ${location.id} does not exist`,
                         );
                     }
                     break;
                 }
             }
-        }
-    }
-
-    // check for orphaned locations
-    const mentionedBits = new Set(
-        bitLogic.requirements.flatMap((expr) =>
-            expr.conjunctions.flatMap((vec) => [...vec.iter()]),
-        ),
-    );
-
-    for (const loc of nonCheckLocations) {
-        if (!mentionedBits.has(b.bit(loc))) {
-            console.warn('unused location', loc);
         }
     }
 
@@ -725,6 +668,41 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
+
+    const areaGraph: AreaGraph = {
+        areas: allAreas,
+        rootArea,
+        areasByEntrance,
+        areasByExit,
+        entranceHintAreas,
+        // logicalExitsToArea,
+        // mapExitRequirements,
+        // areaByLocation,
+        entrances: raw.entrances,
+        exits: raw.exits,
+        vanillaConnections,
+        autoExits,
+        entrancePools,
+    };
+
+    // Now map our area graph to BitLogic
+    const newBuilder = new LogicBuilder(bitLogic, rawItems, bitLogic.requirements);
+    mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems);
+    
+
+    // check for orphaned locations
+    const mentionedBits = new Set(
+        bitLogic.requirements.flatMap((expr) =>
+            expr.conjunctions.flatMap((vec) => [...vec.iter()]),
+        ),
+    );
+
+    for (const loc of nonCheckLocations) {
+        if (!mentionedBits.has(itemBits[loc])) {
+            console.warn('unused location', loc);
+        }
+    }
+
     const dungeonOrder: readonly string[] = dungeonNames;
 
     const rawCheckOrder = Object.keys(raw.checks);
@@ -760,21 +738,6 @@ export function parseLogic(raw: RawLogic): Logic {
     // entrances, every entrance has to be considered uniquely reachable with no way
     // to bound our exploration or to simplify these expressions as we go.
 
-
-    // Figure out which entrances can reach which exits and checks, this will be the data for
-    // the check pathfinder that tells users how to get where with Entrance Rando on
-
-    const logicalExitsToArea: AreaGraph['logicalExitsToArea'] = {};
-    const mapExitRequirements: AreaGraph['mapExitRequirements'] = {};
-    for (const [areaName, area] of Object.entries(allAreas)) {
-        for (const exit of area.exits) {
-            if (exit.type === 'logicalExit') {
-                (logicalExitsToArea[exit.toArea] ??= []).push({ from: areaName, requirements: exit.requirements });
-            } else {
-                mapExitRequirements[exit.exitId] = exit.requirements;
-            }
-        }
-    }
     console.log('logic building took', performance.now() - start, 'ms'); 
 
     return {
@@ -788,22 +751,151 @@ export function parseLogic(raw: RawLogic): Logic {
         checksByHintRegion,
         exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
-        areaGraph: {
-            areas: allAreas,
-            rootArea,
-            areasByEntrance,
-            areasByExit,
-            entranceHintAreas,
-            logicalExitsToArea,
-            mapExitRequirements,
-            areaByLocation,
-            entrances: raw.entrances,
-            exits: raw.exits,
-            vanillaConnections,
-            autoExits,
-            entrancePools,
-        },
+        areaGraph,
     };
+}
+
+function mapAreaToBitLogic(
+    b: LogicBuilder,
+    areaGraph: AreaGraph,
+    opaqueItems: BitVector,
+    area = areaGraph.rootArea,
+) {
+    for (const subArea of Object.values(area.subAreas)) {
+        mapAreaToBitLogic(b, areaGraph, opaqueItems, subArea);
+    }
+
+    if (area.canSleep) {
+        b.addAlternative(b.day(area.id), b.singleBit(b.night(area.id)));
+        b.addAlternative(b.night(area.id), b.singleBit(b.day(area.id)));
+    }
+
+    for (const location of area.locations) {
+        switch (location.type) {
+            case 'check':
+            case 'virtualLocation':
+            case 'mapExit':
+                {
+                    // Special case: If this is a cube check, we actually build
+                    // logic for the fake "can access cube" requirement.
+                    let locName = location.id;
+                    if (cubeCheckToCanAccessCube[locName]) {
+                        locName = cubeCheckToCanAccessCube[locName];
+                    }
+
+                    opaqueItems.clearBit(b.bit(locName));
+
+                    if (location.areaTimeOfDay === 'abstract') {
+                        b.addAlternative(locName, location.requirements);
+                    } else if (location.areaTimeOfDay === TimeOfDay.Both) {
+                        b.addAlternative(
+                            locName,
+                            location.requirements.day.and(
+                                b.singleBit(b.day(area.id)),
+                            ),
+                        );
+                        b.addAlternative(
+                            locName,
+                            location.requirements.night.and(
+                                b.singleBit(b.night(area.id)),
+                            ),
+                        );
+                    } else {
+                        b.addAlternative(
+                            locName,
+                            location.requirements.and(b.singleBit(area.id)),
+                        );
+                    }
+                }
+                break;
+            case 'logicalExit':
+                {
+                    const destArea = areaGraph.areas[location.toArea];
+                    if (destArea.abstract || location.areaTimeOfDay === 'abstract') {
+                        throw new Error('abstract areas cannot have logical exits between them');
+                    }
+                    if (destArea.allowedTimeOfDay === TimeOfDay.Both) {
+                        opaqueItems.clearBit(b.bit(b.day(destArea.id)));
+                        opaqueItems.clearBit(b.bit(b.night(destArea.id)));
+        
+                        if (location.areaTimeOfDay === TimeOfDay.Both) {
+                            b.addAlternative(
+                                b.day(destArea.id),
+                                location.requirements.day.and(
+                                    b.singleBit(b.day(area.id)),
+                                ),
+                            );
+                            b.addAlternative(
+                                b.night(destArea.id),
+                                location.requirements.night.and(
+                                    b.singleBit(b.night(area.id)),
+                                ),
+                            );
+                        } else if (location.areaTimeOfDay === TimeOfDay.DayOnly) {
+                            b.addAlternative(b.day(destArea.id), location.requirements.and(
+                                b.singleBit(area.id),
+                            ));
+                        } else {
+                            b.addAlternative(b.night(destArea.id), location.requirements.and(
+                                b.singleBit(area.id),
+                            ));
+                        }
+                    } else {
+                        opaqueItems.clearBit(b.bit(destArea.id));
+        
+                        if (location.areaTimeOfDay === TimeOfDay.Both) {
+                            const [timedReq, timedArea] =
+                                destArea.allowedTimeOfDay === TimeOfDay.DayOnly
+                                    ? [location.requirements.day, b.day(area.id)]
+                                    : [location.requirements.night, b.night(area.id)];
+                            b.addAlternative(
+                                destArea.id,
+                                timedReq.and(b.singleBit(timedArea)),
+                            );
+                        } else if (location.areaTimeOfDay === destArea.allowedTimeOfDay) {
+                            b.addAlternative(
+                                destArea.id,
+                                location.requirements.and(b.singleBit(area.id)),
+                            );
+                        } else {
+                            throw new Error('impossible logical connection');
+                        }
+                    }
+                }
+                break;
+        }
+    }
+
+    for (const entrance of area.entrances) {
+        const entranceDef = areaGraph.entrances[entrance];
+        if (entranceDef.allowed_time_of_day === TimeOfDay.Both) {
+            b.addAlternative(b.day(area.id), b.singleBit(b.day(entrance)));
+            b.addAlternative(b.night(area.id), b.singleBit(b.night(entrance)));
+            opaqueItems.clearBit(b.bit(b.day(area.id)));
+            opaqueItems.clearBit(b.bit(b.night(area.id)));
+        } else {
+            let areaReq: string;
+            if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                if (
+                    entranceDef.allowed_time_of_day ===
+                    TimeOfDay.DayOnly
+                ) {
+                    areaReq = b.day(area.id);
+                } else if (
+                    entranceDef.allowed_time_of_day ===
+                    TimeOfDay.NightOnly
+                ) {
+                    areaReq = b.night(area.id);
+                } else {
+                    throw new Error('bad ToD requirement');
+                }
+            } else {
+                areaReq = area.id;
+            }
+            b.addAlternative(areaReq, b.singleBit(entrance));
+            opaqueItems.clearBit(b.bit(areaReq));
+        }
+    }
 }
 
 function getCheckType(

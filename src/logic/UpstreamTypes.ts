@@ -25,6 +25,7 @@ export interface RawEntrance {
     subtype: string | undefined;
     stage: string | undefined;
     short_name: string;
+    'tod': TimeOfDay;
 }
 
 export interface RawExit {
