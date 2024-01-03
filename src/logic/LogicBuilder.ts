@@ -98,14 +98,4 @@ export class LogicBuilder {
         }
         return d;
     }
-
-    stripDayNight(item: string) {
-        if (item.endsWith(daySuffix)) {
-            return item.slice(0, -daySuffix.length);
-        } else if (item.endsWith(nightSuffix)) {
-            return item.slice(0, -nightSuffix.length);
-        } else {
-            return item;
-        }
-    }
 }

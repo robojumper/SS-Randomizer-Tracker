@@ -163,23 +163,28 @@ export const allowedStartingEntrancesSelector = createSelector(
 
 const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
 
-type ExitMapSource =
+type ExitRule =
     | {
+          /** This exit has its vanilla connection. */
           type: 'vanilla';
       }
     | {
+          /** This exit always leads to the same entrance as `otherExit` */
           type: 'follow';
           otherExit: string;
       }
     | {
+          /** This is a linked exit, e.g. interior dungeon exit when exterior exit into dungeon has been mapped. */
           type: 'linked';
           pool: keyof AreaGraph['entrancePools'];
           location: string;
       }
     | {
+          /** This is the random starting entrance. */
           type: 'randomStartingEntrance';
       }
     | {
+          /** This entrance is random in some way. TODO: Add specific pool info. */
           type: 'random';
       };
 
@@ -199,7 +204,7 @@ export const exitRulesSelector = createSelector(
         randomDungeonEntranceSetting,
         randomTrialsSetting,
     ) => {
-        const result: Record<string, ExitMapSource> = {};
+        const result: Record<string, ExitRule> = {};
 
         const followToCanonicalEntrance = _.invert(logic.areaGraph.autoExits);
 
