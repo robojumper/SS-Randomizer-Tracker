@@ -69,7 +69,7 @@ export default function Location({
                 tabIndex={0}
                 onContextMenu={displayMenu}
             >
-                <Row className="g-0">
+                <Row>
                     <Col
                         style={style}
                         id={id}

@@ -146,7 +146,6 @@ export default function DungeonTracker({
 
     return (
         <Col
-            className="g-0"
             // style={{ padding: 0 }}
             id="dungeonTracker"
             ref={divElement}
@@ -229,14 +228,14 @@ export default function DungeonTracker({
                     </tr>
                 </tbody>
             </table>
-            <Row className="g-0" style={trialHintStyle}>
+            <Row style={trialHintStyle}>
                 {silentRealms.map((area) => (
                     <Col key={area.name}>
                         <HintMarker width={secondRowWidth / 4} />
                     </Col>
                 ))}
             </Row>
-            <Row className="g-0" style={trialStyle}>
+            <Row style={trialStyle}>
                 {silentRealms.map((a) => (
                     <Col key={a.name}>
                         <DungeonIcon
@@ -249,7 +248,7 @@ export default function DungeonTracker({
                     </Col>
                 ))}
             </Row>
-            <Row className="g-0" style={trialCheckStyle}>
+            <Row style={trialCheckStyle}>
                 {silentRealms.map((a) => (
                     <Col key={a.name}>
                         <AreaCounters

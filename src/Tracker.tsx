@@ -150,10 +150,10 @@ function NewTracker() {
                         />
                     </Col>
                     <Col style={{ display: 'flex', flexFlow: 'column nowrap', height: '100%' }}>
-                        <Row className="g-0">
+                        <Row>
                             <BasicCounters />
                         </Row>
-                        <Row className="g-0">
+                        <Row>
                             <DungeonTracker setActiveArea={setActiveArea} />
                         </Row>
                         <Row
@@ -163,9 +163,8 @@ function NewTracker() {
                                 height: '100%',
                                 overflow: 'auto',
                             }}
-                            className="g-0"
                         >
-                            <Col className="g-0">
+                            <Col>
                                 <ExtraLocationTracker
                                     activeArea={activeArea}
                                     setActiveArea={setActiveArea}

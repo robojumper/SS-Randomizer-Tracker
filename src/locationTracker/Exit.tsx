@@ -39,7 +39,7 @@ export default function Exit({
                 style={{ cursor: 'default' }}
                 tabIndex={0}
             >
-                <Row className="g-0">
+                <Row>
                     <Tippy content={
                         <>
                             <RequirementsTooltip requirements={expr} />
