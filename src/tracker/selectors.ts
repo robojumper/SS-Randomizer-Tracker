@@ -848,7 +848,7 @@ export const inSemiLogicBitsSelector = createSelector(
                 const hasNewKeys = getSemiLogicKeys(
                     logic,
                     bossKeyMode === 'Own Dungeon',
-                    smallKeyMode === 'Own Dungeon - Restricted',
+                    smallKeyMode === 'Own Dungeon - Restricted' || smallKeyMode === 'Lanayru Caves Key Only',
                     assumedInventory,
                     dungeon,
                     semiLogicBits,
