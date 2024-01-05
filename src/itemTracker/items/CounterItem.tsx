@@ -1,14 +1,14 @@
 import { CSSProperties } from 'react';
 import allImages from '../Images';
 import keyDownWrapper from '../../KeyDownWrapper';
-import { Items } from '../../logic/Inventory';
+import { InventoryItem } from '../../logic/Inventory';
 import { useDispatch, useSelector } from 'react-redux';
 import { clickItem } from '../../tracker/slice';
 import { rawItemCountSelector } from '../../tracker/selectors';
 
 type CounterItemProps = {
     images?: string[];
-    itemName: Items;
+    itemName: InventoryItem;
     imgWidth: number;
     ignoreItemClass: boolean;
     styleProps?: CSSProperties;

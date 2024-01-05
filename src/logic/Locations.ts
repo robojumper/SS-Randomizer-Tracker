@@ -64,3 +64,7 @@ export function isDungeon(id: string): id is DungeonName {
     const names: readonly string[] = dungeonNames;
     return names.includes(id);
 }
+
+export function isRegularDungeon(id: string): id is RegularDungeon {
+    return isDungeon(id) && id !== 'Sky Keep';
+}

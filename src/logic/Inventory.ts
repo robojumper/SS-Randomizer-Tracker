@@ -1,7 +1,6 @@
-import { AllTypedOptions } from '../permalink/SettingsTypes';
 import { BitVector } from './bitlogic/BitVector';
-import { Logic } from './Logic';
-import { requiredDungeonsCompletedFakeRequirement, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
+import { itemName, Logic } from './Logic';
+import { cubeCheckToCubeCollected, dungeonCompletionItems, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
 
 export const itemMaxes = {
     'Progressive Sword': 6,
@@ -25,7 +24,6 @@ export const itemMaxes = {
     'Horned Colossus Beetle': 1,
     'Baby Rattle': 1,
     'Gratitude Crystal Pack': 13,
-    'Gratitude Crystal': 15,
     'Progressive Slingshot': 2,
     'Progressive Beetle': 4,
     'Bomb Bag': 1,
@@ -58,43 +56,10 @@ export const itemMaxes = {
     'Sky Keep Small Key': 1,
 };
 
-export type Items = keyof typeof itemMaxes;
+export type InventoryItem = keyof typeof itemMaxes;
 
-export function isItem(id: string): id is Items {
+export function isItem(id: string): id is InventoryItem {
     return id in itemMaxes;
-}
-
-export type Hint =
-    | { type: 'barren' }
-    | { type: 'sots' }
-    | { type: 'path', index: number };
-
-export interface State {
-    /**
-     * Checks we've acquired.
-     * Includes regular checks and fake checks for cubes/crystals.
-     */
-    checkedChecks: string[];
-    /**
-     * Items we've marked as acquired.
-     */
-    inventory: Partial<Record<Items, number>>;
-    /**
-     * Whether we've modified our inventory since we loaded from starting items.
-     */
-    hasModifiedInventory: boolean;
-    /**
-     * Exits we've has mapped. Later merged with the vanilla connections depending on settings.
-     */
-    mappedExits: Record<string, string | undefined>;
-    /**
-     * Dungeons we've marked as required.
-     */
-    requiredDungeons: string[];
-    /**
-     * Fully decoded settings.
-     */
-    settings: AllTypedOptions;
 }
 
 export function getTooltipOpaqueBits(logic: Logic) {
@@ -122,21 +87,17 @@ export function getTooltipOpaqueBits(logic: Logic) {
             }
         } else {
             for (let i = 1; i <= count; i++) {
-                if (i === 1) {
-                    set(item);
-                } else {
-                    set(`${item} x ${i}`);
-                }
+                set(itemName(item, i));
             }
         }
     }
 
-    set(requiredDungeonsCompletedFakeRequirement);
+    for (const fakeItem of Object.values(dungeonCompletionItems)) {
+        set(fakeItem);
+    }
 
-    for (const [checkId, checkDef] of Object.entries(logic.checks)) {
-        if (checkDef.type === 'tr_cube') {
-            set(checkId);
-        }
+    for (const cubeItem of Object.values(cubeCheckToCubeCollected)) {
+        set(cubeItem);
     }
 
     for (const amt of [5, 10, 30, 40, 50, 70, 80]) {

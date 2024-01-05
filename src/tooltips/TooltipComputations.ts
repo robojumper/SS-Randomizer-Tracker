@@ -11,7 +11,6 @@ import {
     shallowSimplify,
     unifyRequirements,
 } from '../logic/bitlogic/BitLogic';
-import { mapToCanAccessCubeRequirement } from '../logic/TrackerModifications';
 import _ from 'lodash';
 
 /**
@@ -169,11 +168,7 @@ async function computationTask(
 
         console.log('analyzing', task.checkId);
 
-        let checkId = task.checkId;
-        if (store.logic.checks[checkId]?.type === 'tr_cube') {
-            checkId = mapToCanAccessCubeRequirement(checkId);
-        }
-
+        const checkId = task.checkId;
         const bit = store.logic.itemBits[checkId];
 
         // We precompute some subgoals because it improves performance.
@@ -272,33 +267,10 @@ function dnfToRequirementExpr(
             ...[...sop[0].iter()].map(
                 (x) => logic.allItems[x],
             ),
-        );
+        ).simplify(simplifier(logic));
     }
 
-    // At this point, our requirements have dominators not included - some things may require
-    // $Dungeon Key x 2 while others require $Dungeon Key x 1, and there's no connection between
-    // the two yet. This step adds Key x1 to all Key x2 requirements if Key x1 is present somewhere.
-    // This allows simplifying some requirements, e.g. (Upgraded Skyward Strike option and Goddess Sword) or True Master Sword,
-    // with the setting on will be revealed to (Progressive Sword x 2) or (Progressive Sword x 6).
-    // This step converts this to (Progressive Sword x 2) or (Progressive Sword x 2 and Progressive Sword x 6),
-    // and the next removeDuplicates call can drop the second term and simplify to (Progressive Sword x 2).
-    let conjunctions = sop.map((c) => c.clone());
-    const allPresentVariables = new Set(...conjunctions.map((c) => c.iter()));
-
-    for (const conj of conjunctions) {
-        for (const bit of conj.iter()) {
-            const lst = logic.reverseDominators[logic.allItems[bit]];
-            if (lst) {
-                for (const rev of lst) {
-                    const revBit = logic.itemBits[rev];
-                    if (allPresentVariables.has(revBit)) {
-                        conj.setBit(revBit);
-                    }
-                }
-            }
-        }
-    }
-    conjunctions = new LogicalExpression(conjunctions).removeDuplicates().conjunctions;
+    const conjunctions = new LogicalExpression(sop).removeDuplicates().conjunctions;
 
 
     // First, remove all common factors and from our SOP so that it's "cube-free".

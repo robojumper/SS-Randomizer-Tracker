@@ -9,8 +9,9 @@ import {
     RawExit,
 } from './UpstreamTypes';
 import {
-    cubeCheckToCanAccessCube,
-    requiredDungeonsCompletedFakeRequirement,
+    cubeCheckToCubeCollected,
+    cubeCollectedToCubeCheck,
+    dungeonCompletionItems,
 } from './TrackerModifications';
 import {
     BitLogic,
@@ -40,7 +41,7 @@ export interface Logic {
     itemBits: Record<string, number>,
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
-    areas: string[];
+    hintRegions: string[];
     checksByHintRegion: Record<string, string[]>;
     exitsByHintRegion: Record<string, string[]>;
     dungeonCompletionRequirements: { [dungeon: string]: string }
@@ -187,7 +188,7 @@ type Location<R, T extends ExtendedTimeOfDay> = MapExit<R, T> | LogicalExit<R, T
 
 const itemIndexPat = /^(.+) #(\d+)$/;
 
-function itemName(item: string, amount: number) {
+export function itemName(item: string, amount: number) {
     return amount > 1 ? `${item} x ${amount}` : item;
 }
 
@@ -229,14 +230,14 @@ export function preprocessItems(raw: string[]): {
 export function parseLogic(raw: RawLogic): Logic {
     const start = performance.now();
 
-    const canAccessCubeReqs = Object.values(cubeCheckToCanAccessCube);
+    const cubeCollectedReqs = Object.keys(cubeCollectedToCubeCheck);
     const { newItems, dominators, reverseDominators } = preprocessItems(
         raw.items,
     );
     const rawItems = [
         ...newItems,
-        ...canAccessCubeReqs,
-        requiredDungeonsCompletedFakeRequirement,
+        ...cubeCollectedReqs,
+        ...Object.values(dungeonCompletionItems),
     ];
 
     // Pessimistically, all items are opaque
@@ -252,9 +253,13 @@ export function parseLogic(raw: RawLogic): Logic {
         } as const;
     });
 
-    for (const cubeCheck of Object.keys(cubeCheckToCanAccessCube)) {
+    for (const [cubeItem, cubeCheck] of Object.entries(cubeCollectedToCubeCheck)) {
         checks[cubeCheck] = {
             type: 'tr_cube',
+            name: _.last(cubeCheck.split('\\'))!,
+        };
+        checks[cubeItem] = {
+            type: 'tr_dummy',
             name: _.last(cubeCheck.split('\\'))!,
         };
     }
@@ -268,10 +273,12 @@ export function parseLogic(raw: RawLogic): Logic {
         };
     }
 
-    checks[requiredDungeonsCompletedFakeRequirement] = {
-        name: 'Required Dungeons Completed',
-        type: 'tr_dummy',
-    };
+    for (const [dungeon, req] of Object.entries(dungeonCompletionItems)) {
+        checks[req] = {
+            name: `${dungeon} Completed`,
+            type: 'tr_dummy',
+        };
+    }
 
     const numItems = rawItems.length;
 
@@ -306,13 +313,38 @@ export function parseLogic(raw: RawLogic): Logic {
     const allAreas: AreaGraph['areas'] = {};
 
     const parseExpr = (expr: string) => {
-        return new LogicalExpression(
-            booleanExprToLogicalExpr(
-                bitLogic.numBits,
-                parseExpression(expr),
-                (item: string) => itemBits[item],
-            ),
+        const terms = booleanExprToLogicalExpr(
+            bitLogic.numBits,
+            parseExpression(expr),
+            (item: string) => {
+                // If an expression looks at "goddess cube in X", require the actual item instead.
+                const actualItem = cubeCheckToCubeCollected[item] ?? item;
+                return itemBits[actualItem];
+            },
         );
+        // At this point, our requirements have dominators not included - some things may require
+        // $Item x 2 while others require $Item x 1, and there's no connection between
+        // the two yet. This step adds Item x 1 to all Item x 2 requirements.
+        // This allows simplifying some requirements, e.g.:
+        //     (Upgraded Skyward Strike option and Goddess Sword) or True Master Sword
+        // for sending a skyward strike across a long distance.
+        // At some point later, this will look like:
+        //     (Upgraded Skyward Strike option and Progressive Sword and Progressive Sword x 2) or
+        //     (Progressive Sword and Progressive Sword x 2 and ... and Progressive Sword x 6).
+        // Once we know that `Upgraded Skyward Strike option` is true, subsequent simplification steps (`removeDuplicates`)
+        // can turn this into (Progressive Sword and Progressive Sword x 2) since it's easier to satisfy.
+        for (const conj of terms) {
+            const bits = [...conj.iter()];
+            for (const bit of bits) {
+                const alsoRequired = reverseDominators[itemBits[bit]];
+                if (alsoRequired?.length) {
+                    for (const otherTerm of alsoRequired) {
+                        conj.setBit(itemBits[otherTerm]);
+                    }
+                }
+            }
+        }
+        return new LogicalExpression(terms);
     };
 
     // Locations found in areas where we didn't find a corresponding check.
@@ -747,7 +779,7 @@ export function parseLogic(raw: RawLogic): Logic {
         reverseDominators,
         itemBits,
         checks,
-        areas,
+        hintRegions: areas,
         checksByHintRegion,
         exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
@@ -776,13 +808,7 @@ function mapAreaToBitLogic(
             case 'virtualLocation':
             case 'mapExit':
                 {
-                    // Special case: If this is a cube check, we actually build
-                    // logic for the fake "can access cube" requirement.
-                    let locName = location.id;
-                    if (cubeCheckToCanAccessCube[locName]) {
-                        locName = cubeCheckToCanAccessCube[locName];
-                    }
-
+                    const locName = location.id;
                     opaqueItems.clearBit(b.bit(locName));
 
                     if (location.areaTimeOfDay === 'abstract') {

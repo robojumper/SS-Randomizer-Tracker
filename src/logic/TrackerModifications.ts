@@ -1,18 +1,20 @@
 import { TypedOptions } from "../permalink/SettingsTypes";
-import { Items, State, isItem } from "./Inventory";
+import { InventoryItem, isItem } from "./Inventory";
 import goddessCubesList_ from '../data/goddessCubes2.json';
 import _ from "lodash";
 import { swordsToAdd } from "./ThingsThatWouldBeNiceToHaveInTheDump";
+import { RegularDungeon } from "./Locations";
+import { TrackerState } from "../tracker/slice";
 
-const canAccessCubeSuffix = '_TR_Cube_CanAccess';
+const collectedCubeSuffix = '_TR_Cube_Collected';
 
-export const goddessChestCheckToCubeCheck = Object.fromEntries(goddessCubesList_ as [string, string][]);
+export const goddessChestCheckToCubeCheck = Object.fromEntries(goddessCubesList_.map(([chest, cube]) => [chest, cube]));
 export const cubeCheckToGoddessChestCheck = _.invert(goddessChestCheckToCubeCheck);
-export const cubeCheckToCanAccessCube = Object.fromEntries(Object.keys(cubeCheckToGoddessChestCheck).map((check) => [check, mapToCanAccessCubeRequirement(check)]));
-export const canAccessCubeToCubeCheck = _.invert(cubeCheckToCanAccessCube);
+export const cubeCollectedToCubeCheck = Object.fromEntries(Object.keys(cubeCheckToGoddessChestCheck).map((check) => [mapToCubeCollectedRequirement(check), check]));
+export const cubeCheckToCubeCollected = _.invert(cubeCollectedToCubeCheck);
 
-export function mapToCanAccessCubeRequirement(check: string) {
-    return `${check}${canAccessCubeSuffix}`;
+export function mapToCubeCollectedRequirement(check: string) {
+    return `${check}${collectedCubeSuffix}`;
 }
 
 
@@ -32,13 +34,20 @@ export const triforceItems = [
 
 export const triforceItemReplacement = 'Triforce';
 
-export const requiredDungeonsCompletedFakeRequirement = '\\Tracker\\Required Dungeons Completed';
+export const dungeonCompletionItems: Record<string, string> = {
+    Skyview: '\\Tracker\\Skyview Completed',
+    "Earth Temple": '\\Tracker\\Earth Temple Completed',
+    "Lanayru Mining Facility": '\\Tracker\\Lanayru Mining Facility Completed',
+    "Ancient Cistern": '\\Tracker\\Ancient Cistern Completed',
+    Sandship: '\\Tracker\\Sandship Completed',
+    "Fire Sanctuary": '\\Tracker\\Fire Sanctuary Completed'
+} satisfies Record<RegularDungeon, string>;
 
 export function getInitialItems(
     settings: TypedOptions,
-): State['inventory'] {
-    const items: State['inventory'] = {};
-    const add = (item: Items, count: number = 1) => {
+): TrackerState['inventory'] {
+    const items: TrackerState['inventory'] = {};
+    const add = (item: InventoryItem, count: number = 1) => {
         items[item] ??= 0;
         items[item]! += count;
     };

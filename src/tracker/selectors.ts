@@ -1,9 +1,13 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { areaGraphSelector, logicSelector, optionsSelector } from '../logic/selectors';
+import {
+    areaGraphSelector,
+    logicSelector,
+    optionsSelector,
+} from '../logic/selectors';
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { RootState } from '../store/store';
 import { currySelector } from '../utils/redux';
-import { Items, TrackerState, itemMaxes } from './slice';
+import { TrackerState } from './slice';
 import {
     bannedExitsAndEntrances,
     completeTriforceReq,
@@ -22,17 +26,13 @@ import {
     ExitMapping,
     dungeonNames,
     isDungeon,
+    isRegularDungeon,
 } from '../logic/Locations';
+import { AreaGraph, Logic, LogicalCheck, itemName } from '../logic/Logic';
 import {
-    AreaGraph,
-    Logic,
-    LogicalCheck,
-} from '../logic/Logic';
-import {
-    canAccessCubeToCubeCheck,
-    cubeCheckToCanAccessCube,
+    cubeCheckToCubeCollected,
     cubeCheckToGoddessChestCheck,
-    requiredDungeonsCompletedFakeRequirement,
+    dungeonCompletionItems,
     sothItemReplacement,
     sothItems,
     triforceItemReplacement,
@@ -46,6 +46,9 @@ import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
 import { produce } from 'immer';
 import { exploreAreaGraph } from '../logic/Pathfinding';
+import { getSemiLogicKeys, keyData } from '../logic/KeyLogic';
+import { BitVector } from '../logic/bitlogic/BitVector';
+import { InventoryItem, itemMaxes } from '../logic/Inventory';
 
 /**
  * Selects the hint for a given area.
@@ -90,8 +93,18 @@ export const settingSelector: <K extends keyof TypedOptions>(
 export const rawItemCountsSelector = (state: RootState) =>
     state.tracker.inventory;
 
+/** A map of all actual items to their counts. Since redux only stores partial counts, this ensures all items are present. */
+export const inventorySelector = createSelector(
+    [rawItemCountsSelector],
+    (rawInventory) =>
+        _.mapValues(
+            itemMaxes,
+            (_val, item) => rawInventory[item as InventoryItem] ?? 0,
+        ),
+);
+
 export const rawItemCountSelector = currySelector(
-    (state: RootState, item: Items) => state.tracker.inventory[item] ?? 0,
+    (state: RootState, item: InventoryItem) => inventorySelector(state)[item] ?? 0,
 );
 
 export const checkedChecksSelector = (state: RootState) =>
@@ -106,6 +119,34 @@ function getNumLooseGratitudeCrystals(
     ).length;
 }
 
+export function getAdditionalItems(logic: Logic, checkedChecks: string[]) {
+    const result: Record<string, number> = {};
+    // Completed dungeons
+    for (const [dungeon, completionCheck] of Object.entries(logic.dungeonCompletionRequirements)) {
+        if (checkedChecks.includes(completionCheck)) {
+            result[dungeonCompletionItems[dungeon]] = 1;
+        }
+    }
+
+    // If this is a goddess cube check, mark the requirement as checked
+    // since this is the requirement used by the goddess chests.
+    for (const check of checkedChecks) {
+        const cubeCollectedItem = cubeCheckToCubeCollected[check];
+        if (cubeCollectedItem) {
+            result[cubeCollectedItem] = 1;
+        }
+    }
+
+    const looseCrystals = getNumLooseGratitudeCrystals(logic, checkedChecks);
+    result['Gratitude Crystal'] = looseCrystals;
+    return result;
+}
+
+export const checkItemsSelector = createSelector(
+    [logicSelector, checkedChecksSelector],
+    getAdditionalItems
+)
+
 export const totalGratitudeCrystalsSelector = createSelector(
     [
         logicSelector,
@@ -118,18 +159,6 @@ export const totalGratitudeCrystalsSelector = createSelector(
             checkedChecks,
         );
         return packCount * 5 + looseCrystalCount;
-    },
-);
-
-export const itemCountsSelector = createSelector(
-    [logicSelector, rawItemCountsSelector, checkedChecksSelector],
-    (logic, rawItemCounts, checkedChecks) => {
-        const result = _.clone(rawItemCounts);
-        result['Gratitude Crystal'] = getNumLooseGratitudeCrystals(
-            logic,
-            checkedChecks,
-        );
-        return result;
     },
 );
 
@@ -322,7 +351,7 @@ export const exitsSelector = createSelector(
                 console.error('unknown entrance', entranceId);
             }
         };
-            
+
         const makeExit = (id: string): ExitMapping['exit'] => ({
             id,
             name: logic.areaGraph.exits[id].short_name,
@@ -402,13 +431,27 @@ export const exitsSelector = createSelector(
     },
 );
 
+export const requiredDungeonsSelector = createSelector(
+    [
+        (state: RootState) => state.tracker.requiredDungeons,
+        settingSelector('required-dungeon-count'),
+    ],
+    (selectedRequiredDungeons, numRequiredDungeons) => {
+        if (numRequiredDungeons === 6) {
+            return dungeonNames.filter((n) => n !== 'Sky Keep');
+        } else {
+            return selectedRequiredDungeons.filter(isRegularDungeon);
+        }
+    },
+);
+
 /**
  * Selects the requirements that depend on state/settings, but should still be revealed during
  * tooltip computations. Any recalculations here will cause the tooltips cache to throw away its
- * cached tooltips and recalculate requirements (after logic has loaded, this is only settings and mapped exits).
+ * cached tooltips and recalculate requirements (after logic has loaded, this is only settings, mapped exits, and required dungeons).
  */
 export const settingsRequirementsSelector = createSelector(
-    [logicSelector, optionsSelector, settingsSelector, exitsSelector],
+    [logicSelector, optionsSelector, settingsSelector, exitsSelector, requiredDungeonsSelector],
     mapSettings,
 );
 
@@ -417,6 +460,7 @@ function mapSettings(
     options: OptionDefs,
     settings: TypedOptions,
     exits: ExitMapping[],
+    requiredDungeons: string[],
 ) {
     const requirements: { [bitIndex: number]: LogicalExpression } = {};
     const b = new LogicBuilder(logic.bitLogic, logic.allItems, requirements);
@@ -455,7 +499,12 @@ function mapSettings(
         ? b.singleBit(completeTriforceReq)
         : b.true();
 
-    const dungeonsExpr = b.singleBit(requiredDungeonsCompletedFakeRequirement);
+    const allRequiredDungeonsBits = requiredDungeons.reduce(
+        (acc, dungeon) =>
+            acc.setBit(logic.itemBits[dungeonCompletionItems[dungeon]]),
+        new BitVector(b.bitLogic.numBits),
+    );
+    const dungeonsExpr = requiredDungeons.length ? new LogicalExpression([allRequiredDungeonsBits]) : b.false();
 
     if (settings['got-dungeon-requirement'] === 'Required') {
         openGotExpr = openGotExpr.and(dungeonsExpr);
@@ -513,11 +562,11 @@ function mapSettings(
 }
 
 export const inventoryRequirementsSelector = createSelector(
-    [logicSelector, itemCountsSelector],
+    [logicSelector, inventorySelector],
     mapInventory,
 );
 
-function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
+export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const requirements: { [bitIndex: number]: LogicalExpression } = {};
     const b = new LogicBuilder(logic.bitLogic, logic.allItems, requirements);
 
@@ -535,76 +584,18 @@ function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
             }
         } else {
             for (let i = 1; i <= count; i++) {
-                if (i === 1) {
-                    b.set(item, b.true());
-                } else {
-                    b.set(`${item} x ${i}`, b.true());
-                }
+                b.set(itemName(item, i), b.true());
             }
         }
     }
 
     return requirements;
 }
-
-export const requiredDungeonsSelector = createSelector(
-    [
-        (state: RootState) => state.tracker.requiredDungeons,
-        settingSelector('required-dungeon-count'),
-    ],
-    (selectedRequiredDungeons, numRequiredDungeons) => {
-        if (numRequiredDungeons === 6) {
-            return dungeonNames.filter((n) => n !== 'Sky Keep');
-        } else {
-            return selectedRequiredDungeons.slice();
-        }
-    },
-);
 
 export const checkRequirementsSelector = createSelector(
-    [logicSelector, requiredDungeonsSelector, checkedChecksSelector],
-    mapChecks,
+    [logicSelector, checkItemsSelector],
+    mapInventory,
 );
-
-function mapChecks(
-    logic: Logic,
-    requiredDungeons: string[],
-    checkedChecks: string[],
-) {
-    const requirements: { [bitIndex: number]: LogicalExpression } = {};
-    const b = new LogicBuilder(logic.bitLogic, logic.allItems, requirements);
-
-    const validRequiredDungeons = requiredDungeons.filter(
-        (d) => d in logic.dungeonCompletionRequirements,
-    );
-
-    // If this is a goddess cube check, mark the requirement as checked
-    // since this is the requirement used by the goddess chests.
-    for (const check of checkedChecks) {
-        if (cubeCheckToCanAccessCube[check]) {
-            if (logic.checks[check]) {
-                b.set(check, b.true());
-            } else {
-                console.error('unknown check', check)
-            }
-        }
-    }
-
-    const requiredDungeonsCompleted =
-        validRequiredDungeons.length > 0 &&
-        validRequiredDungeons.every((d) =>
-            checkedChecks.includes(
-                logic.dungeonCompletionRequirements[d],
-            ),
-        );
-
-    b.set(
-        requiredDungeonsCompletedFakeRequirement,
-        requiredDungeonsCompleted ? b.true() : b.false(),
-    );
-
-    return requirements;
-}
 
 export const inLogicBitsSelector = createSelector(
     [
@@ -623,9 +614,13 @@ export const inLogicBitsSelector = createSelector(
 
 const optimisticInventoryItemRequirementsSelector = createSelector(
     [logicSelector],
-    (logic) => mapInventory(logic, produce(itemMaxes, (draft: Record<string, number>) => {
-        delete draft.Sailcloth;
-    })),
+    (logic) =>
+        mapInventory(
+            logic,
+            produce(itemMaxes, (draft: Record<string, number>) => {
+                delete draft.Sailcloth;
+            }),
+        ),
 );
 
 /**
@@ -659,129 +654,6 @@ export const optimisticLogicBitsSelector = createSelector(
         ),
 );
 
-export const inSemiLogicBitsSelector = createSelector(
-    [
-        logicSelector,
-        settingsRequirementsSelector,
-        inventoryRequirementsSelector,
-        inLogicBitsSelector,
-        checkedChecksSelector,
-        requiredDungeonsSelector,
-    ],
-    (
-        logic,
-        settingsRequirements,
-        inventoryRequirements,
-        inLogicBits,
-        checkedChecks,
-        requiredDungeons,
-    ) => {
-        // The assumed number of loose gratitude crystals is the number of
-        // loose crystal checks that are either checked or are in logic.
-        const numLooseGratitudeCrystals = Object.entries(logic.checks).filter(
-            ([checkId, checkDef]) =>
-                checkDef.type === 'loose_crystal' &&
-                (inLogicBits.test(logic.itemBits[checkId]) ||
-                    checkedChecks.includes(checkId)),
-        ).length;
-
-        const gratitudeRequirements = mapInventory(logic, {
-            'Gratitude Crystal': numLooseGratitudeCrystals,
-        });
-        const assumedInventory = {
-            ...inventoryRequirements,
-            ...gratitudeRequirements,
-        };
-
-        const assumedCheckedChecks = [...checkedChecks];
-
-        for (const [canAccessItem, cubeItem] of Object.entries(
-            canAccessCubeToCubeCheck,
-        )) {
-            if (inLogicBits.test(logic.itemBits[canAccessItem])) {
-                assumedCheckedChecks.push(cubeItem);
-            }
-        }
-
-        const assumedCheckRequirements = mapChecks(
-            logic,
-            requiredDungeons,
-            assumedCheckedChecks,
-        );
-
-        return computeLeastFixedPoint(
-            logic.bitLogic,
-            [settingsRequirements, assumedInventory, assumedCheckRequirements],
-            // Monotonicity of these requirements allows reusing inLogicBits
-            inLogicBits,
-        );
-    },
-);
-
-export const dungeonCompletedSelector = currySelector(
-    createSelector(
-        [(_state: RootState, name: DungeonName) => name, logicSelector, checkedChecksSelector],
-        (name, logic, checkedChecks) =>
-            name !== 'Sky Keep' &&
-            checkedChecks.includes(logic.dungeonCompletionRequirements[name]),
-    ),
-);
-
-export const checkSelector = currySelector(
-    createSelector(
-        [
-            (_state: RootState, checkId: string) => checkId,
-            logicSelector,
-            inLogicBitsSelector,
-            inSemiLogicBitsSelector,
-            checkedChecksSelector,
-            mappedExitsSelector,
-        ],
-        (
-            checkId,
-            logic,
-            inLogicBits,
-            inSemiLogicBits,
-            checkedChecks,
-            mappedExits,
-        ): Check => {
-            const logicalCheckId = cubeCheckToCanAccessCube[checkId] ?? checkId;
-
-            const checkBit = logic.itemBits[logicalCheckId];
-            const logicalState = inLogicBits.test(checkBit)
-                ? 'inLogic'
-                : inSemiLogicBits.test(checkBit)
-                    ? 'semiLogic'
-                    : 'outLogic';
-
-            if (logic.checks[checkId]) {
-                const checkName = logic.checks[checkId].name;
-                const shortCheckName = checkName.includes('-')
-                    ? checkName.substring(checkName.indexOf('-') + 1).trim()
-                    : checkName;
-                return {
-                    checked: checkedChecks.includes(checkId),
-                    checkId,
-                    checkName: shortCheckName,
-                    type: logic.checks[checkId].type,
-                    logicalState,
-                };
-            } else if (logic.areaGraph.exits[checkId]) {
-                const shortCheckName = logic.areaGraph.exits[checkId].short_name;
-                return {
-                    checked: Boolean(mappedExits[checkId]),
-                    checkId,
-                    checkName: shortCheckName,
-                    type: 'exit',
-                    logicalState,
-                };
-            } else {
-                throw new Error('unknown check ' + checkId);
-            }
-        },
-    ),
-);
-
 export const skyKeepNonprogressSelector = createSelector(
     [settingsSelector],
     (settings) =>
@@ -807,14 +679,19 @@ export const areaNonprogressSelector = createSelector(
 );
 
 export const areaHiddenSelector = createSelector(
-    [areaNonprogressSelector, settingSelector('randomize-entrances'), settingSelector('randomize-dungeon-entrances')],
+    [
+        areaNonprogressSelector,
+        settingSelector('randomize-entrances'),
+        settingSelector('randomize-dungeon-entrances'),
+    ],
     (areaNonprogress, randomEntranceSetting, randomDungeonEntranceSetting) => {
-        const dungeonEntranceSetting = randomDungeonEntranceSetting ?? randomEntranceSetting;
+        const dungeonEntranceSetting =
+            randomDungeonEntranceSetting ?? randomEntranceSetting;
         return (area: string) =>
             areaNonprogress(area) &&
             (!isDungeon(area) ||
                 (area === 'Sky Keep' &&
-                dungeonEntranceSetting !==
+                    dungeonEntranceSetting !==
                         'All Surface Dungeons + Sky Keep'));
     },
 );
@@ -891,6 +768,180 @@ export const isCheckBannedSelector = createSelector(
     },
 );
 
+export const dungeonKeyLogicSelector = createSelector(
+    [
+        logicSelector,
+        settingsRequirementsSelector,
+        checkRequirementsSelector,
+        isCheckBannedSelector,
+        optimisticLogicBitsSelector,
+    ],
+    keyData,
+);
+
+export const inSemiLogicBitsSelector = createSelector(
+    [
+        logicSelector,
+        settingsRequirementsSelector,
+        inventorySelector,
+        dungeonKeyLogicSelector,
+        inLogicBitsSelector,
+        checkedChecksSelector,
+        settingSelector('boss-key-mode'),
+        settingSelector('small-key-mode'),
+    ],
+    (
+        logic,
+        settingsRequirements,
+        itemCounts,
+        dungeonKeyLogic,
+        inLogicBits,
+        checkedChecks,
+        bossKeyMode,
+        smallKeyMode,
+    ) => {
+        let semiLogicBits = inLogicBits;
+        let changed = true;
+
+        const assumedChecks = [...checkedChecks];
+        const assumedInventory = { ...itemCounts };
+
+        do {
+            changed = false;
+            // The assumed number of loose gratitude crystals is the number of
+            // loose crystal checks that are either checked or are in logic.
+            for (const [checkId, checkDef] of Object.entries(logic.checks)) {
+                if (
+                    checkDef.type === 'loose_crystal' &&
+                    !assumedChecks.includes(checkId) &&
+                    semiLogicBits.test(logic.itemBits[checkId])
+                ) {
+                    assumedChecks.push(checkId);
+                    changed = true;
+                }
+            }
+
+            for (const cubeCheck of Object.keys(
+                cubeCheckToCubeCollected,
+            )) {
+                if (semiLogicBits.test(logic.itemBits[cubeCheck]) && !assumedChecks.includes(cubeCheck)) {
+                    assumedChecks.push(cubeCheck);
+                    changed = true;
+                }
+            }
+
+            for (const dungeonCompletionCheck of Object.values(
+                logic.dungeonCompletionRequirements,
+            )) {
+                if (
+                    semiLogicBits.test(
+                        logic.itemBits[dungeonCompletionCheck],
+                    ) &&
+                    !assumedChecks.includes(dungeonCompletionCheck)
+                ) {
+                    assumedChecks.push(dungeonCompletionCheck);
+                    changed = true;
+                }
+            }
+
+            for (const dungeon of dungeonKeyLogic) {
+                const hasNewKeys = getSemiLogicKeys(
+                    logic,
+                    bossKeyMode === 'Own Dungeon',
+                    smallKeyMode === 'Own Dungeon - Restricted',
+                    assumedInventory,
+                    dungeon,
+                    semiLogicBits,
+                    checkedChecks,
+                );
+                changed ||= hasNewKeys;
+            }
+
+            const assumedInventoryReqs = mapInventory(logic, assumedInventory);
+            const assumedCheckReqs = mapInventory(
+                logic,
+                getAdditionalItems(logic, assumedChecks),
+            );
+
+            semiLogicBits = computeLeastFixedPoint(
+                logic.bitLogic,
+                [settingsRequirements, assumedInventoryReqs, assumedCheckReqs],
+                // Monotonicity of these requirements allows reusing semiLogicBits
+                semiLogicBits,
+            );
+        } while (changed);
+
+        return semiLogicBits;
+    },
+);
+
+export const dungeonCompletedSelector = currySelector(
+    createSelector(
+        [
+            (_state: RootState, name: DungeonName) => name,
+            logicSelector,
+            checkedChecksSelector,
+        ],
+        (name, logic, checkedChecks) =>
+            name !== 'Sky Keep' &&
+            checkedChecks.includes(logic.dungeonCompletionRequirements[name]),
+    ),
+);
+
+export const checkSelector = currySelector(
+    createSelector(
+        [
+            (_state: RootState, checkId: string) => checkId,
+            logicSelector,
+            inLogicBitsSelector,
+            inSemiLogicBitsSelector,
+            checkedChecksSelector,
+            mappedExitsSelector,
+        ],
+        (
+            checkId,
+            logic,
+            inLogicBits,
+            inSemiLogicBits,
+            checkedChecks,
+            mappedExits,
+        ): Check => {
+            const checkBit = logic.itemBits[checkId];
+            const logicalState = inLogicBits.test(checkBit)
+                ? 'inLogic'
+                : inSemiLogicBits.test(checkBit)
+                    ? 'semiLogic'
+                    : 'outLogic';
+
+            if (logic.checks[checkId]) {
+                const checkName = logic.checks[checkId].name;
+                const shortCheckName = checkName.includes('-')
+                    ? checkName.substring(checkName.indexOf('-') + 1).trim()
+                    : checkName;
+                return {
+                    checked: checkedChecks.includes(checkId),
+                    checkId,
+                    checkName: shortCheckName,
+                    type: logic.checks[checkId].type,
+                    logicalState,
+                };
+            } else if (logic.areaGraph.exits[checkId]) {
+                const shortCheckName =
+                    logic.areaGraph.exits[checkId].short_name;
+                return {
+                    checked: Boolean(mappedExits[checkId]),
+                    checkId,
+                    checkName: shortCheckName,
+                    type: 'exit',
+                    logicalState,
+                };
+            } else {
+                throw new Error('unknown check ' + checkId);
+            }
+        },
+    ),
+);
+
 export const areasSelector = createSelector(
     [
         logicSelector,
@@ -911,7 +962,7 @@ export const areasSelector = createSelector(
         exitRules,
     ): Area[] =>
         _.compact(
-            logic.areas.map((area): Area | undefined => {
+            logic.hintRegions.map((area): Area | undefined => {
                 const checks = logic.checksByHintRegion[area];
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),
@@ -936,13 +987,18 @@ export const areasSelector = createSelector(
                     inLogicBits.test(logic.itemBits[check]),
                 );
 
-                const exits = logic.exitsByHintRegion[area].filter((exit) => exitRules[exit]?.type === 'random');
+                const exits = logic.exitsByHintRegion[area].filter(
+                    (exit) => exitRules[exit]?.type === 'random',
+                );
 
                 return {
                     checks: regularChecks,
                     exits,
                     numTotalChecks: regularChecks.length,
-                    extraChecks: _.groupBy(extraChecks, (check) => logic.checks[check].type),
+                    extraChecks: _.groupBy(
+                        extraChecks,
+                        (check) => logic.checks[check].type,
+                    ),
                     nonProgress,
                     hidden,
                     name: area,
@@ -971,14 +1027,19 @@ export const totalCountersSelector = createSelector(
 );
 
 export const remainingEntrancesSelector = createSelector(
-    [logicSelector, exitRulesSelector, exitsSelector, settingSelector('randomize-entrances')],
+    [
+        logicSelector,
+        exitRulesSelector,
+        exitsSelector,
+        settingSelector('randomize-entrances'),
+    ],
     (logic, exitRules, exits, randomizeEntrances) => {
         if (randomizeEntrances === 'All') {
             return Object.entries(logic.areaGraph.entrances)
                 .filter(
                     (e) =>
                         !bannedExitsAndEntrances.includes(e[0]) &&
-                        logic.areaGraph.entrances[e[0]].stage !== undefined && 
+                        logic.areaGraph.entrances[e[0]].stage !== undefined &&
                         !nonRandomizedExits.includes(
                             logic.areaGraph.vanillaConnections[e[0]],
                         ),
@@ -992,9 +1053,7 @@ export const remainingEntrancesSelector = createSelector(
         const usedEntrances = new Set(
             _.compact(
                 exits.map((exit) =>
-                    exit.exit.id !== '\\Start'
-                        ? exit.entrance?.id
-                        : undefined,
+                    exit.exit.id !== '\\Start' ? exit.entrance?.id : undefined,
                 ),
             ),
         );
@@ -1016,7 +1075,7 @@ export const remainingEntrancesSelector = createSelector(
                 (e) =>
                     !usedEntrances.has(e[0]) &&
                     !bannedExitsAndEntrances.includes(e[0]) &&
-                    logic.areaGraph.entrances[e[0]].stage !== undefined && 
+                    logic.areaGraph.entrances[e[0]].stage !== undefined &&
                     !nonRandomizedExits.includes(
                         logic.areaGraph.vanillaConnections[e[0]],
                     ),

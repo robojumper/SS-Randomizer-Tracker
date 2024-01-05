@@ -69,6 +69,8 @@ const inLogicOptions_ = [
     'open-et',
     'open-lmf',
     'fs-lava-flow',
+    'boss-key-mode',
+    'small-key-mode',
     'shopsanity',
     'beedle-shopsanity',
     'rupin-shopsanity',
