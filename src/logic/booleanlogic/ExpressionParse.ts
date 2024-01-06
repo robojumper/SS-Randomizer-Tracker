@@ -36,7 +36,6 @@ function booleanExpressionForTokens(expressionTokens: string[]): BooleanExpressi
 }
 
 export function booleanExprToLogicalExpr(
-    size: number,
     expr: Item,
     lookup: (text: string) => number,
 ): BitVector[] {
@@ -44,11 +43,11 @@ export function booleanExprToLogicalExpr(
         switch (expr.type) {
             case 'or':
                 return expr.items.flatMap((item) =>
-                    booleanExprToLogicalExpr(size, item, lookup),
+                    booleanExprToLogicalExpr(item, lookup),
                 );
             case 'and': {
-                const mapped = expr.items.map((i) => booleanExprToLogicalExpr(size, i, lookup));
-                return andToDnf(size, mapped);
+                const mapped = expr.items.map((i) => booleanExprToLogicalExpr(i, lookup));
+                return andToDnf(mapped);
             }
             default: {
                 throw new Error('unreachable');
@@ -56,12 +55,12 @@ export function booleanExprToLogicalExpr(
         }
     } else {
         if (expr === 'True') {
-            return [new BitVector(size)];
+            return [new BitVector()];
         } else if (expr === 'False') {
             return [];
         } else {
             const bit_idx = lookup(expr);
-            return [new BitVector(size).setBit(bit_idx)];
+            return [new BitVector().setBit(bit_idx)];
         }
     }
 }

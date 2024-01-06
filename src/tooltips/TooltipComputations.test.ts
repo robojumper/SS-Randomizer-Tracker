@@ -15,7 +15,7 @@ test('algebraicDivision', () => {
     domainSize += 1;
 
     const fv = f.map((term) => {
-        const vec = new BitVector(domainSize);
+        const vec = new BitVector();
         for (const chr of term) {
             vec.setBit(chr.charCodeAt(0));
         }
@@ -23,7 +23,7 @@ test('algebraicDivision', () => {
     });
 
     const dv = d.map((term) => {
-        const vec = new BitVector(domainSize);
+        const vec = new BitVector();
         for (const chr of term) {
             vec.setBit(chr.charCodeAt(0));
         }
@@ -74,14 +74,14 @@ test('findKernels', () => {
     domainSize += 1;
 
     const fv = f.map((term) => {
-        const vec = new BitVector(domainSize);
+        const vec = new BitVector();
         for (const chr of term) {
             vec.setBit(chr.charCodeAt(0));
         }
         return vec;
     });
 
-    const result = findKernels(fv, [...variables], new BitVector(domainSize));
+    const result = findKernels(fv, [...variables], new BitVector());
     expect(
         result.map(({ kernel, coKernel }) => ({
             kernel: kernel.map((t) =>
@@ -164,14 +164,14 @@ test('findKernels2', () => {
     domainSize += 1;
 
     const fv = f.map((term) => {
-        const vec = new BitVector(domainSize);
+        const vec = new BitVector();
         for (const chr of term) {
             vec.setBit(chr.charCodeAt(0));
         }
         return vec;
     });
 
-    const result = findKernels(fv, [...variables], new BitVector(domainSize));
+    const result = findKernels(fv, [...variables], new BitVector());
     expect(
         result.map(({ kernel, coKernel }) => ({
             kernel: kernel.map((t) =>

@@ -39,7 +39,7 @@ export class LogicBuilder {
 
     /** A logical expression that always evaluates to true. */
     true(): LogicalExpression {
-        return LogicalExpression.true(this.bitLogic.numBits);
+        return LogicalExpression.true();
     }
 
     /** A logical expression that always evaluates to false. */
@@ -50,7 +50,7 @@ export class LogicBuilder {
     /** A logical expression that evaluates to true iff `item` is true. */
     singleBit(item: string): LogicalExpression {
         return new LogicalExpression([
-            new BitVector(this.bitLogic.numBits).setBit(this.bit(item)),
+            new BitVector().setBit(this.bit(item)),
         ]);
     }
 

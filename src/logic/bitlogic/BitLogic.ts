@@ -23,7 +23,7 @@ export interface BitLogic {
 /* 
  * Returns the least fixed-point of the given requirements,
  * which can be interpreted as the logical result of the given requirements.
- * This is BitVector from which no new facts can be derived.
+ * This is a BitVector from which no new facts can be derived.
  */
 export function computeLeastFixedPoint(
     /** The base BitLogic with its base requirements. */
@@ -55,7 +55,7 @@ export function computeLeastFixedPoint(
     // This is an extremely simple iterate-to-fixpoint solver in O(n^2).
     // There are better algorithms but this usually converges after
     // 40 rounds.
-    const bits = startingBits?.clone() ?? new BitVector(logic.numBits);
+    const bits = startingBits?.clone() ?? new BitVector();
     let changed = true;
     let iterations = 0;
     const start = performance.now();
@@ -137,7 +137,7 @@ export function findNewSubgoals(
                     visitedExpressions,
                 );
                 if (moreBits) {
-                    return new BitVector(opaqueBits.size)
+                    return new BitVector()
                         .setBit(bit)
                         .or(moreBits);
                 }
@@ -146,7 +146,7 @@ export function findNewSubgoals(
     }
 
     visitedExpressions.delete(idx);
-    return new BitVector(opaqueBits.size);
+    return new BitVector();
 }
 
 /**
@@ -183,7 +183,7 @@ export function computeGroundExpression(
     //   degree and "bottlenecks" are known, then use better heuristics there.
 
     nextConj: for (const conj of requirements[idx].conjunctions) {
-        let tmpExpr = LogicalExpression.true(opaqueBits.size);
+        let tmpExpr = LogicalExpression.true();
         const conjOpaqueBits = opaqueBits.and(conj);
         for (const bit of conj.iter()) {
             if (!conjOpaqueBits.test(bit)) {
@@ -231,44 +231,63 @@ export function unifyRequirements(
     requirements: LogicalExpression[],
 ) {
     let simplified = false;
-    for (let a = 0; a < opaqueBits.size; a++) {
+    for (let a = 0; a < requirements.length; a++) {
         if (opaqueBits.test(a)) {
             continue;
         }
-        for (let b = a + 1; b < opaqueBits.size; b++) {
+        for (let b = a + 1; b < requirements.length; b++) {
             if (opaqueBits.test(b)) {
                 continue;
             }
-            const implA = requirements[a];
-            const implB = requirements[b];
-
-            const bImpliesAIndex = implA.conjunctions.findIndex(
-                (cA) => cA.numSetBits === 1 && cA.test(b),
-            );
-            if (bImpliesAIndex === -1) {
-                continue;
+            if (tryUnifyEquivalent(requirements, a, b)) {
+                simplified = true;
             }
-
-            const aImpliesBIndex = implB.conjunctions.findIndex(
-                (cB) => cB.numSetBits === 1 && cB.test(a),
-            );
-            if (aImpliesBIndex === -1) {
-                continue;
-            }
-
-            simplified = true;
-
-            // Copy reqs from a to b
-            const implACon = implA.conjunctions.slice();
-            const bReqVec = implACon.splice(bImpliesAIndex, 1);
-            for (const cn of implACon) {
-                requirements[b] = requirements[b].or(cn);
-            }
-            requirements[a] = new LogicalExpression(bReqVec);
         }
     }
 
     return simplified;
+}
+
+/**
+ * Check if:
+ *  z <= a
+ *  a <= b | x
+ *  b <= a | y
+ * Rewrite to:
+ *  z <= a
+ *  a <= b,
+ *  b <= x,
+ *  b <= y.
+ * This breaks a cycle between `a` and `b`, and any dependencies on `a`
+ * can be rewritten to depend on `b` in a later shallowSimplify call.
+ */
+function tryUnifyEquivalent(requirements: LogicalExpression[], a: number, b: number) {
+    const implA = requirements[a];
+    const implB = requirements[b];
+
+    const bImpliesAIndex = implA.conjunctions.findIndex(
+        (cA) => cA.numSetBits === 1 && cA.test(b),
+    );
+    if (bImpliesAIndex === -1) {
+        return false;
+    }
+
+    const aImpliesBIndex = implB.conjunctions.findIndex(
+        (cB) => cB.numSetBits === 1 && cB.test(a),
+    );
+    if (aImpliesBIndex === -1) {
+        return false;
+    }
+
+    // Copy reqs from a to b
+    const implACon = implA.conjunctions.slice();
+    const bReqVec = implACon.splice(bImpliesAIndex, 1);
+    for (const cn of implACon) {
+        requirements[b] = requirements[b].or(cn);
+    }
+    requirements[a] = new LogicalExpression(bReqVec);
+
+    return true;
 }
 
 /**
@@ -278,16 +297,28 @@ export function unifyRequirements(
  * while a DNF with exactly one conjunction can be inlined.
  *
  * Returns true iff any simplifications could be made.
+ * 
+ * 
+ * E.g:
+ *   a <= b&c | f | d
+ *   b <= <false>
+ *   d <= e
+ *   f <= g&h
+ * Rewrite to:
+ *   a <= g&h | e
+ *   b <= <false>
+ *   d <= e
+ *   f <= g&h
  */
 export function shallowSimplify(
     opaqueBits: BitVector,
     requirements: LogicalExpression[],
 ) {
-    const inliningCandidates = new BitVector(opaqueBits.size);
+    const inliningCandidates = new BitVector();
 
     let simplified = false;
 
-    for (let item = 0; item < opaqueBits.size; item++) {
+    for (let item = 0; item < requirements.length; item++) {
         if (
             !opaqueBits.test(item) &&
             requirements[item].conjunctions.length <= 1
@@ -304,7 +335,7 @@ export function shallowSimplify(
         for (const conj of expr.conjunctions) {
             if (!conj.and(inliningCandidates).isEmpty()) {
                 simplified = true;
-                let newItems = new BitVector(opaqueBits.size);
+                let newItems = new BitVector();
                 let skip = false;
                 for (const reqItem of conj.iter()) {
                     if (!inliningCandidates.test(reqItem)) {

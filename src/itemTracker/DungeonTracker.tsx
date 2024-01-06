@@ -27,7 +27,7 @@ import HintMarker from '../hints/HintMarker';
 import { useSelector } from 'react-redux';
 import { areasSelector } from '../tracker/selectors';
 import {
-    Area,
+    HintRegion,
     DungeonName as DungeonNameType,
     isDungeon,
 } from '../logic/Locations';
@@ -90,7 +90,7 @@ export default function DungeonTracker({
 
     const dungeons = areas.filter((a) =>
         isDungeon(a.name) && !a.hidden,
-    ) as Area<DungeonNameType>[];
+    ) as HintRegion<DungeonNameType>[];
     const silentRealms = areas.filter((a) => a.name.includes('Silent Realm'));
 
     useResizeObserver(divElement, () => {

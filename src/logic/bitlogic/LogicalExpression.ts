@@ -10,8 +10,8 @@ export class LogicalExpression {
         return new LogicalExpression([]);
     }
 
-    static true(size: number) {
-        return new LogicalExpression([new BitVector(size)]);
+    static true() {
+        return new LogicalExpression([new BitVector()]);
     }
 
     constructor(conjs: BitVector[]) {
@@ -36,9 +36,7 @@ export class LogicalExpression {
             );
         }
 
-        const size =
-            this.conjunctions[0]?.size ?? other.conjunctions[0]?.size;
-        if (size === undefined) {
+        if (this.isTriviallyFalse() || other.isTriviallyFalse()) {
             return LogicalExpression.false();
         }
         return new LogicalExpression(
@@ -101,12 +99,12 @@ export function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
     return newExpr;
 }
 
-export function andToDnf(size: number, arr: BitVector[][]): BitVector[] {
+export function andToDnf(arr: BitVector[][]): BitVector[] {
     const newExpr = [];
     for (const tuple of cartesianProduct(...arr)) {
         const newVec = tuple.reduce(
             (acc, val) => acc.or(val),
-            new BitVector(size),
+            new BitVector(),
         );
         newExpr.push(newVec);
     }

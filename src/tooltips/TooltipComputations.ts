@@ -298,7 +298,7 @@ function dnfToRequirementExpr(
     const kernels = findKernels(
         conjunctions,
         [...variables],
-        new BitVector(logic.bitLogic.numBits),
+        new BitVector(),
     ).filter((k) => k.coKernel.numSetBits !== 0);
     
     // Columns are all unique cubes in all kernels

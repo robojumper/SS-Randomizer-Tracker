@@ -6,7 +6,7 @@ export interface DerivedState {
     inventoryBits: BitVector;
 }
 
-export interface Area<N extends string = string> {
+export interface HintRegion<N extends string = string> {
     name: N;
     nonProgress: boolean;
     hidden: boolean;

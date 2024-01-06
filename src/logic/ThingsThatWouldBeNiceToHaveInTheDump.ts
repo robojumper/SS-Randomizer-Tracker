@@ -99,7 +99,7 @@ export const impaSongCheck =
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
 export const completeTriforceReq = '\\Complete Triforce';
 
-export const swordsToAdd: Record<string, number> = {
+export const swordsToAdd = {
     Swordless: 0,
     'Practice Sword': 1,
     'Goddess Sword': 2,

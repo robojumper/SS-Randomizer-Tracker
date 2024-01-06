@@ -63,7 +63,12 @@ export interface LogicalCheck {
     name: string;
 }
 
-export type ExtendedTimeOfDay = TimeOfDay | 'abstract';
+/**
+ * 'abstract' locations are always (don't have to be in the area) available (modulo requirements).
+ * Time-of-day-restricted locations are only available if you can logically reach the area
+ * with the correct time of day.
+ */
+export type LocationAvailability = TimeOfDay | 'abstract';
 
 /**
  * The AreaGraph is a parsed dump with some preprocessing for TimeOfDay logic.
@@ -108,7 +113,7 @@ interface CommonArea {
     abstract: boolean;
     id: string;
     subAreas: Record<string, Area>;
-    allowedTimeOfDay: ExtendedTimeOfDay;
+    availability: LocationAvailability;
     canSleep: boolean;
     /** The possible ways to get into this area, an entry in Logic.entrances */
     entrances: string[];
@@ -120,7 +125,7 @@ interface CommonArea {
  * The actual area name doesn't exist in logic, instead we have _DAY and _NIGHT versions.
  */
 export interface DualTodArea extends CommonArea {
-    allowedTimeOfDay: TimeOfDay.Both;
+    availability: TimeOfDay.Both;
     locations: Location<DayNightRequirements, TimeOfDay.Both>[];
     abstract: false;
 }
@@ -132,7 +137,7 @@ export interface DualTodArea extends CommonArea {
  * with the opposite ToD is an immediate out-of-logic.
  */
 export interface SingleTodArea extends CommonArea {
-    allowedTimeOfDay: TimeOfDay.DayOnly | TimeOfDay.NightOnly;
+    availability: TimeOfDay.DayOnly | TimeOfDay.NightOnly;
     locations: Location<LogicalExpression, TimeOfDay.DayOnly | TimeOfDay.NightOnly>[];
     canSleep: false;
     abstract: false;
@@ -145,7 +150,7 @@ export interface SingleTodArea extends CommonArea {
  * with the opposite ToD is an immediate out-of-logic.
  */
 export interface AbstractArea extends CommonArea {
-    allowedTimeOfDay: 'abstract';
+    availability: 'abstract';
     locations: Location<LogicalExpression, 'abstract'>[];
     canSleep: false;
     abstract: true;
@@ -154,36 +159,36 @@ export interface AbstractArea extends CommonArea {
 export type Area = DualTodArea | SingleTodArea | AbstractArea;
 
 /** A single logical location. Can be an actual check, an arbitrary "location", a map exit, or a logical exit. */
-interface AbstractLocation<R, T extends ExtendedTimeOfDay> {
+interface AbstractLocation<R, T extends LocationAvailability> {
     /** The fully resolved check/exit/location id. */
     id: string;
     /** The actual requirements expression(s) to get this location... */
     requirements: R,
     /** ...from its owning area with this Time of Day. */
-    areaTimeOfDay: T;
+    areaAvailability: T;
 }
 
-interface MapExit<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+interface MapExit<R, T extends LocationAvailability> extends AbstractLocation<R, T> {
     type: 'mapExit';
 }
 
-interface LogicalExit<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+interface LogicalExit<R, T extends LocationAvailability> extends AbstractLocation<R, T> {
     type: 'logicalExit';
     /** The destination area. */
     toArea: string;
 }
 
-interface VirtualLocation<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+interface VirtualLocation<R, T extends LocationAvailability> extends AbstractLocation<R, T> {
     type: 'virtualLocation';
 }
 
-interface CheckRenameMe<R, T extends ExtendedTimeOfDay> extends AbstractLocation<R, T> {
+interface CheckRenameMe<R, T extends LocationAvailability> extends AbstractLocation<R, T> {
     type: 'check';
     /** Whether this instance of the location was the primary (unprefixed) mention. */
     isPrimaryLocation: boolean;
 }
 
-type Location<R, T extends ExtendedTimeOfDay> = MapExit<R, T> | LogicalExit<R, T> | VirtualLocation<R, T> | CheckRenameMe<R, T>;
+type Location<R, T extends LocationAvailability> = MapExit<R, T> | LogicalExit<R, T> | VirtualLocation<R, T> | CheckRenameMe<R, T>;
 
 
 const itemIndexPat = /^(.+) #(\d+)$/;
@@ -196,7 +201,7 @@ export function itemName(item: string, amount: number) {
  * Turns all "<Item> #<number>" requirements into "<Item> x <number+1>"
  * requirements - this works better with the tracker.
  */
-export function preprocessItems(raw: string[]): {
+function preprocessItems(raw: string[]): {
     newItems: string[];
     dominators: Logic['dominators'];
     reverseDominators: Logic['reverseDominators'];
@@ -230,18 +235,17 @@ export function preprocessItems(raw: string[]): {
 export function parseLogic(raw: RawLogic): Logic {
     const start = performance.now();
 
-    const cubeCollectedReqs = Object.keys(cubeCollectedToCubeCheck);
     const { newItems, dominators, reverseDominators } = preprocessItems(
         raw.items,
     );
     const rawItems = [
         ...newItems,
-        ...cubeCollectedReqs,
+        ...Object.keys(cubeCollectedToCubeCheck),
         ...Object.values(dungeonCompletionItems),
     ];
 
     // Pessimistically, all items are opaque
-    const opaqueItems = new BitVector(rawItems.length);
+    const opaqueItems = new BitVector();
     for (let i = 0; i < rawItems.length; i++) {
         opaqueItems.setBit(i);
     }
@@ -294,7 +298,6 @@ export function parseLogic(raw: RawLogic): Logic {
     const checksByHintRegion: Logic['checksByHintRegion'] = {};
     const exitsByHintRegion: Logic['exitsByHintRegion'] = {};
     const entranceHintAreas: AreaGraph['entranceHintAreas'] = {};
-    // const areaByLocation: AreaGraph['areaByLocation'] = {};
 
     const entrancesByShortName: {
         [shortName: string]: { def: RawEntrance; id: string, region: string };
@@ -314,7 +317,6 @@ export function parseLogic(raw: RawLogic): Logic {
 
     const parseExpr = (expr: string) => {
         const terms = booleanExprToLogicalExpr(
-            bitLogic.numBits,
             parseExpression(expr),
             (item: string) => {
                 // If an expression looks at "goddess cube in X", require the actual item instead.
@@ -360,7 +362,7 @@ export function parseLogic(raw: RawLogic): Logic {
             area = {
                 abstract: rawArea.abstract,
                 id: rawArea.name,
-                allowedTimeOfDay: 'abstract',
+                availability: 'abstract',
                 canSleep: rawArea.can_sleep,
                 locations: [],
                 entrances: [],
@@ -370,7 +372,7 @@ export function parseLogic(raw: RawLogic): Logic {
             area = {
                 abstract: rawArea.abstract,
                 id: rawArea.name,
-                allowedTimeOfDay: rawArea.allowed_time_of_day,
+                availability: rawArea.allowed_time_of_day,
                 canSleep: rawArea.can_sleep,
                 locations: [],
                 entrances: [],
@@ -383,7 +385,7 @@ export function parseLogic(raw: RawLogic): Logic {
             area = {
                 abstract: rawArea.abstract,
                 id: rawArea.name,
-                allowedTimeOfDay: rawArea.allowed_time_of_day,
+                availability: rawArea.allowed_time_of_day,
                 canSleep: rawArea.can_sleep,
                 locations: [],
                 entrances: [],
@@ -424,6 +426,9 @@ export function parseLogic(raw: RawLogic): Logic {
         };
     }
 
+    /**
+     * Recursively populate the area graph.
+     */
     function populateArea(rawArea: RawArea): Area {
         const area = allAreas[rawArea.name];
         if (!_.isEmpty(rawArea.sub_areas)) {
@@ -464,21 +469,21 @@ export function parseLogic(raw: RawLogic): Logic {
                     if (area.abstract) {
                         throw new Error('abstract area cannot have map exits');
                     }
-                    if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                    if (area.availability === TimeOfDay.Both) {
                         area.locations.push({
                             type: 'logicalExit',
                             id: fullExitName,
                             toArea: destArea.id,
-                            requirements: toDualTodExpr(area.allowedTimeOfDay, expr),
-                            areaTimeOfDay: area.allowedTimeOfDay,
+                            requirements: toDualTodExpr(area.availability, expr),
+                            areaAvailability: area.availability,
                         });
                     } else {
                         area.locations.push({
                             type: 'logicalExit',
                             id: fullExitName,
                             toArea: destArea.id,
-                            requirements: toSingleTodExpr(area.allowedTimeOfDay, expr),
-                            areaTimeOfDay: area.allowedTimeOfDay,
+                            requirements: toSingleTodExpr(area.availability, expr),
+                            areaAvailability: area.availability,
                         });
                     }
                 } else if (raw.exits[fullExitName]) {
@@ -493,21 +498,21 @@ export function parseLogic(raw: RawLogic): Logic {
                             type: 'mapExit',
                             id: fullExitName,
                             requirements: expr,
-                            areaTimeOfDay: 'abstract',
+                            areaAvailability: 'abstract',
                         });
-                    } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                    } else if (area.availability === TimeOfDay.Both) {
                         area.locations.push({
                             type: 'mapExit',
                             id: fullExitName,
-                            requirements: toDualTodExpr(area.allowedTimeOfDay, expr),
-                            areaTimeOfDay: area.allowedTimeOfDay,
+                            requirements: toDualTodExpr(area.availability, expr),
+                            areaAvailability: area.availability,
                         });
                     } else {
                         area.locations.push({
                             type: 'mapExit',
                             id: fullExitName,
-                            requirements: toSingleTodExpr(area.allowedTimeOfDay, expr),
-                            areaTimeOfDay: area.allowedTimeOfDay,
+                            requirements: toSingleTodExpr(area.availability, expr),
+                            areaAvailability: area.availability,
                         });
                     }
 
@@ -589,23 +594,23 @@ export function parseLogic(raw: RawLogic): Logic {
                         type: 'virtualLocation',
                         id: locationId,
                         requirements: expr,
-                        areaTimeOfDay: 'abstract',
+                        areaAvailability: 'abstract',
                     });
-                } else if (area.allowedTimeOfDay === TimeOfDay.Both) {
+                } else if (area.availability === TimeOfDay.Both) {
                     area.locations.push({
                         type: check ? 'check' : 'virtualLocation',
                         id: locationId,
                         isPrimaryLocation,
-                        requirements: toDualTodExpr(area.allowedTimeOfDay, expr),
-                        areaTimeOfDay: area.allowedTimeOfDay,
+                        requirements: toDualTodExpr(area.availability, expr),
+                        areaAvailability: area.availability,
                     });
                 } else {
                     area.locations.push({
                         type: check ? 'check' : 'virtualLocation',
                         id: locationId,
                         isPrimaryLocation,
-                        requirements: toSingleTodExpr(area.allowedTimeOfDay, expr),
-                        areaTimeOfDay: area.allowedTimeOfDay,
+                        requirements: toSingleTodExpr(area.availability, expr),
+                        areaAvailability: area.availability,
                     });
                 }
             }
@@ -629,7 +634,7 @@ export function parseLogic(raw: RawLogic): Logic {
 
     // These validations aren't really needed for the tracker, but they were useful
     // when initially parsing the dump and they did catch some rando data bugs.
-    // Ideally this could be uplifted into the tracker?
+    // Ideally this could be uplifted into the rando?
     for (const area of Object.values(allAreas)) {
         for (const entrance of area.entrances) {
             if (!raw.entrances[entrance]) {
@@ -707,9 +712,6 @@ export function parseLogic(raw: RawLogic): Logic {
         areasByEntrance,
         areasByExit,
         entranceHintAreas,
-        // logicalExitsToArea,
-        // mapExitRequirements,
-        // areaByLocation,
         entrances: raw.entrances,
         exits: raw.exits,
         vanillaConnections,
@@ -722,7 +724,8 @@ export function parseLogic(raw: RawLogic): Logic {
     mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems);
     
 
-    // check for orphaned locations
+    // check for orphaned locations. This again should probably not be in here
+    // but in the rando instead...
     const mentionedBits = new Set(
         bitLogic.requirements.flatMap((expr) =>
             expr.conjunctions.flatMap((vec) => [...vec.iter()]),
@@ -811,9 +814,9 @@ function mapAreaToBitLogic(
                     const locName = location.id;
                     opaqueItems.clearBit(b.bit(locName));
 
-                    if (location.areaTimeOfDay === 'abstract') {
+                    if (location.areaAvailability === 'abstract') {
                         b.addAlternative(locName, location.requirements);
-                    } else if (location.areaTimeOfDay === TimeOfDay.Both) {
+                    } else if (location.areaAvailability === TimeOfDay.Both) {
                         b.addAlternative(
                             locName,
                             location.requirements.day.and(
@@ -837,14 +840,14 @@ function mapAreaToBitLogic(
             case 'logicalExit':
                 {
                     const destArea = areaGraph.areas[location.toArea];
-                    if (destArea.abstract || location.areaTimeOfDay === 'abstract') {
+                    if (destArea.abstract || location.areaAvailability === 'abstract') {
                         throw new Error('abstract areas cannot have logical exits between them');
                     }
-                    if (destArea.allowedTimeOfDay === TimeOfDay.Both) {
+                    if (destArea.availability === TimeOfDay.Both) {
                         opaqueItems.clearBit(b.bit(b.day(destArea.id)));
                         opaqueItems.clearBit(b.bit(b.night(destArea.id)));
         
-                        if (location.areaTimeOfDay === TimeOfDay.Both) {
+                        if (location.areaAvailability === TimeOfDay.Both) {
                             b.addAlternative(
                                 b.day(destArea.id),
                                 location.requirements.day.and(
@@ -857,7 +860,7 @@ function mapAreaToBitLogic(
                                     b.singleBit(b.night(area.id)),
                                 ),
                             );
-                        } else if (location.areaTimeOfDay === TimeOfDay.DayOnly) {
+                        } else if (location.areaAvailability === TimeOfDay.DayOnly) {
                             b.addAlternative(b.day(destArea.id), location.requirements.and(
                                 b.singleBit(area.id),
                             ));
@@ -869,16 +872,16 @@ function mapAreaToBitLogic(
                     } else {
                         opaqueItems.clearBit(b.bit(destArea.id));
         
-                        if (location.areaTimeOfDay === TimeOfDay.Both) {
+                        if (location.areaAvailability === TimeOfDay.Both) {
                             const [timedReq, timedArea] =
-                                destArea.allowedTimeOfDay === TimeOfDay.DayOnly
+                                destArea.availability === TimeOfDay.DayOnly
                                     ? [location.requirements.day, b.day(area.id)]
                                     : [location.requirements.night, b.night(area.id)];
                             b.addAlternative(
                                 destArea.id,
                                 timedReq.and(b.singleBit(timedArea)),
                             );
-                        } else if (location.areaTimeOfDay === destArea.allowedTimeOfDay) {
+                        } else if (location.areaAvailability === destArea.availability) {
                             b.addAlternative(
                                 destArea.id,
                                 location.requirements.and(b.singleBit(area.id)),
@@ -901,7 +904,7 @@ function mapAreaToBitLogic(
             opaqueItems.clearBit(b.bit(b.night(area.id)));
         } else {
             let areaReq: string;
-            if (area.allowedTimeOfDay === TimeOfDay.Both) {
+            if (area.availability === TimeOfDay.Both) {
                 if (
                     entranceDef.allowed_time_of_day ===
                     TimeOfDay.DayOnly

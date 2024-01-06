@@ -16,21 +16,21 @@ import 'react-contexify/dist/ReactContexify.css';
 import keyDownWrapper from '../KeyDownWrapper';
 import { TriggerEvent } from 'react-contexify';
 import { useContextMenu } from './context-menu';
-import { Area } from '../logic/Locations';
+import { HintRegion } from '../logic/Locations';
 import { useSelector } from 'react-redux';
 import { areaHintSelector } from '../tracker/selectors';
 
 const pathImages = [g1, scaldera, moldarach, koloktos, tentalus, g2];
 
 export interface LocationGroupContextMenuProps {
-    area: Area,
+    area: HintRegion,
 }
 
 export default function LocationGroupHeader({
     area,
     setActiveArea,
 }: {
-    area: Area,
+    area: HintRegion,
     setActiveArea: (area: string) => void,
 }) {
     const onClick = useCallback(

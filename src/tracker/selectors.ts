@@ -20,7 +20,7 @@ import {
     swordsToAdd,
 } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
-    Area,
+    HintRegion,
     Check,
     DungeonName,
     ExitMapping,
@@ -502,7 +502,7 @@ function mapSettings(
     const allRequiredDungeonsBits = requiredDungeons.reduce(
         (acc, dungeon) =>
             acc.setBit(logic.itemBits[dungeonCompletionItems[dungeon]]),
-        new BitVector(b.bitLogic.numBits),
+        new BitVector(),
     );
     const dungeonsExpr = requiredDungeons.length ? new LogicalExpression([allRequiredDungeonsBits]) : b.false();
 
@@ -526,13 +526,13 @@ function mapSettings(
         if (exitArea.abstract) {
             dayReq = exitExpr;
             nightReq = exitExpr;
-        } else if (exitArea.allowedTimeOfDay === TimeOfDay.Both) {
+        } else if (exitArea.availability === TimeOfDay.Both) {
             dayReq = exitExpr.and(b.singleBit(b.day(exitArea.id)));
             nightReq = exitExpr.and(b.singleBit(b.night(exitArea.id)));
-        } else if (exitArea.allowedTimeOfDay === TimeOfDay.DayOnly) {
+        } else if (exitArea.availability === TimeOfDay.DayOnly) {
             dayReq = exitExpr;
             nightReq = b.false();
-        } else if (exitArea.allowedTimeOfDay === TimeOfDay.NightOnly) {
+        } else if (exitArea.availability === TimeOfDay.NightOnly) {
             dayReq = b.false();
             nightReq = exitExpr;
         } else {
@@ -960,9 +960,9 @@ export const areasSelector = createSelector(
         isAreaNonprogress,
         isAreaHidden,
         exitRules,
-    ): Area[] =>
+    ): HintRegion[] =>
         _.compact(
-            logic.hintRegions.map((area): Area | undefined => {
+            logic.hintRegions.map((area): HintRegion | undefined => {
                 const checks = logic.checksByHintRegion[area];
                 const progressChecks = checks.filter(
                     (check) => !isCheckBanned(check, logic.checks[check]),

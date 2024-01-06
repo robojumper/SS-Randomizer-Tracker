@@ -1,6 +1,13 @@
 import { BitVector } from './bitlogic/BitVector';
 import { itemName, Logic } from './Logic';
-import { cubeCheckToCubeCollected, dungeonCompletionItems, sothItemReplacement, sothItems, triforceItemReplacement, triforceItems } from './TrackerModifications';
+import {
+    cubeCheckToCubeCollected,
+    dungeonCompletionItems,
+    sothItemReplacement,
+    sothItems,
+    triforceItemReplacement,
+    triforceItems,
+} from './TrackerModifications';
 
 export const itemMaxes = {
     'Progressive Sword': 6,
@@ -62,17 +69,25 @@ export function isItem(id: string): id is InventoryItem {
     return id in itemMaxes;
 }
 
+/**
+ * Returns a BitVector containing all the expressions that should be visible in the tooltips
+ * and not recursively expanded (items and various item-like requirements).
+ *
+ * TODO: It could be neat to add *enabled* tricks here too so that the requirement tooltips
+ * can show that some things are in logic because of tricks.
+ */
 export function getTooltipOpaqueBits(logic: Logic) {
-    const items = new BitVector(logic.bitLogic.numBits);
+    const items = new BitVector();
     const set = (id: string) => {
         const bit = logic.itemBits[id];
         if (bit !== undefined) {
-            items.setBit(bit)
+            items.setBit(bit);
         } else {
             console.error('unknown item', id);
         }
     };
 
+    // All actual inventory items are shown in the tooltips
     for (const [item, count] of Object.entries(itemMaxes)) {
         if (count === undefined || item === 'Sailcloth') {
             continue;
@@ -92,14 +107,17 @@ export function getTooltipOpaqueBits(logic: Logic) {
         }
     }
 
+    // Zelda's Blessing should show the various $Dungeon Completed requirements
     for (const fakeItem of Object.values(dungeonCompletionItems)) {
         set(fakeItem);
     }
 
+    // Goddess chest tooltips should show the corresponding goddess cube.
     for (const cubeItem of Object.values(cubeCheckToCubeCollected)) {
         set(cubeItem);
     }
 
+    // No point in revealing that the math behind 80 crystals is 13*5+15
     for (const amt of [5, 10, 30, 40, 50, 70, 80]) {
         set(`\\${amt} Gratitude Crystals`);
     }

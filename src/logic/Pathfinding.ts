@@ -73,7 +73,7 @@ export function exploreAreaGraph(
         }
         for (const location of area.locations) {
             const condition =
-                location.areaTimeOfDay === TimeOfDay.Both
+                location.areaAvailability === TimeOfDay.Both
                     ? currentTimeOfDay === TimeOfDay.DayOnly
                         ? location.requirements.day
                         : location.requirements.night
@@ -89,8 +89,8 @@ export function exploreAreaGraph(
                     };
                     if (
                         !visitedNodes[nodeKey(nextNode)] &&
-                        (destArea.allowedTimeOfDay === TimeOfDay.Both ||
-                            destArea.allowedTimeOfDay === currentTimeOfDay) &&
+                        (destArea.availability === TimeOfDay.Both ||
+                            destArea.availability === currentTimeOfDay) &&
                         condition.eval(logicBits)
                     ) {
                         visitedNodes[nodeKey(nextNode)] = nextNode;
@@ -118,8 +118,8 @@ export function exploreAreaGraph(
 
                         if (
                             !visitedNodes[nodeKey(nextNode)] &&
-                            (destArea.allowedTimeOfDay === TimeOfDay.Both ||
-                                destArea.allowedTimeOfDay === currentTimeOfDay)
+                            (destArea.availability === TimeOfDay.Both ||
+                                destArea.availability === currentTimeOfDay)
                         ) {
                             visitedNodes[nodeKey(nextNode)] = nextNode;
                             workList.unshift(nextNode);

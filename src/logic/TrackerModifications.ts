@@ -17,7 +17,8 @@ export function mapToCubeCollectedRequirement(check: string) {
     return `${check}${collectedCubeSuffix}`;
 }
 
-
+// The rando models some items as individual items, but the tracker just has these as stacks.
+// Maybe we could ad-hoc rewrite the logic to model these as stacks, but it doesn't seem worth it.
 export const sothItems = [
     'Faron Song of the Hero Part',
     'Eldin Song of the Hero Part',
@@ -34,6 +35,11 @@ export const triforceItems = [
 
 export const triforceItemReplacement = 'Triforce';
 
+
+// Checking a dungeon completion check gives the respective "item"
+// so that the "All Required Dungeons Complete" requirement is
+// logically fulfilled when the player completes the dungeon, not
+// when they gain the ability to do so (semilogic...)
 export const dungeonCompletionItems: Record<string, string> = {
     Skyview: '\\Tracker\\Skyview Completed',
     "Earth Temple": '\\Tracker\\Earth Temple Completed',
