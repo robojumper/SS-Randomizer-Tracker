@@ -1,9 +1,11 @@
 import { Logic } from '../logic/Logic';
-import BooleanExpression, { Op, ReducerArg } from '../logic/booleanlogic/BooleanExpression';
+import BooleanExpression, {
+    Op,
+    ReducerArg,
+} from '../logic/booleanlogic/BooleanExpression';
 import { LogicalState } from '../logic/Locations';
 import prettyItemNames_ from '../data/prettyItemNames.json';
 import _ from 'lodash';
-import { BitVector } from '../logic/bitlogic/BitVector';
 
 const prettyItemNames: Record<
     string,
@@ -25,8 +27,8 @@ export interface NonterminalRequirement {
 export type TooltipExpression = TerminalRequirement | NonterminalRequirement;
 
 export interface RootTooltipExpression {
-    op: Op.And,
-    items: TooltipExpression[],
+    op: Op.And;
+    items: TooltipExpression[];
 }
 
 const impossible: RootTooltipExpression = {
@@ -36,8 +38,8 @@ const impossible: RootTooltipExpression = {
             type: 'item',
             item: 'Impossible (discover an entrance first)',
             logicalState: 'outLogic',
-        }
-    ]
+        },
+    ],
 };
 
 const nothing: RootTooltipExpression = {
@@ -47,32 +49,35 @@ const nothing: RootTooltipExpression = {
             type: 'item',
             item: 'Nothing',
             logicalState: 'inLogic',
-        }
-    ]
+        },
+    ],
 };
 
-export function booleanExprToTooltipExpr(logic: Logic, expr: BooleanExpression, logicBits: BitVector, semiLogicBits: BitVector): RootTooltipExpression {
+export function booleanExprToTooltipExpr(
+    logic: Logic,
+    expr: BooleanExpression,
+    getRequirementLogicalState: (requirement: string) => LogicalState,
+): RootTooltipExpression {
     const reducer = (arg: ReducerArg<NonterminalRequirement>) => {
         if (arg.isReduced) {
             return {
                 ...arg.accumulator,
-                items: [...arg.accumulator.items, arg.item]
-            }
+                items: [...arg.accumulator.items, arg.item],
+            };
         } else {
-            const bit = logic.itemBits[arg.item];
             const wrappedItem: TerminalRequirement = {
                 type: 'item',
                 item: getReadableItemName(logic, arg.item),
-                logicalState: logicBits.test(bit) ? 'inLogic' : semiLogicBits.test(bit) ? 'semiLogic' : 'outLogic',
+                logicalState: getRequirementLogicalState(arg.item),
             };
             return {
                 ...arg.accumulator,
                 items: [...arg.accumulator.items, wrappedItem],
-            }
+            };
         }
     };
 
-    const ntExpr = expr.reduce<NonterminalRequirement>(({
+    const ntExpr = expr.reduce<NonterminalRequirement>({
         andInitialValue: {
             type: 'expr',
             items: [],
@@ -85,7 +90,7 @@ export function booleanExprToTooltipExpr(logic: Logic, expr: BooleanExpression, 
         },
         andReducer: reducer,
         orReducer: reducer,
-    }));
+    });
 
     if (!ntExpr.items.length) {
         return ntExpr.op === Op.And ? nothing : impossible;

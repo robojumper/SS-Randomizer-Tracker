@@ -13,11 +13,11 @@ import { TooltipComputer } from './TooltipComputations';
 import { noop } from 'lodash';
 import { useSelector } from 'react-redux';
 import {
-    inSemiLogicBitsSelector,
     settingsRequirementsSelector,
-    inLogicBitsSelector,
     inLogicPathfindingSelector,
     optimisticPathfindingSelector,
+    getRequirementLogicalStateSelector,
+    settingSelector,
 } from '../tracker/selectors';
 import { logicSelector } from '../logic/selectors';
 import {
@@ -61,8 +61,9 @@ export function useTooltipExpr(
     const id = useId();
     const store = useContext(TooltipsContext);
     const logic = useSelector(logicSelector);
-    const logicBits = useSelector(inLogicBitsSelector);
-    const semiLogicBits = useSelector(inSemiLogicBitsSelector);
+    const getRequirementLogicalState = useSelector(
+        getRequirementLogicalStateSelector,
+    );
 
     const subscribe = useCallback(
         (callback: () => void) =>
@@ -81,18 +82,22 @@ export function useTooltipExpr(
             booleanExprToTooltipExpr(
                 logic,
                 booleanExpr,
-                logicBits,
-                semiLogicBits,
+                getRequirementLogicalState,
             ),
-        [booleanExpr, logic, logicBits, semiLogicBits],
+        [booleanExpr, logic, getRequirementLogicalState],
     );
 }
 
 export function useEntrancePath(checkId: string): string[] | undefined {
     const logicPathfinding = useSelector(inLogicPathfindingSelector);
     const optimisticPathfinding = useSelector(optimisticPathfindingSelector);
+    const entranceRando = useSelector(settingSelector('randomize-entrances'));
 
     return useMemo(() => {
+        if (entranceRando !== 'All') {
+            return undefined;
+        }
+
         const path =
             logicPathfinding?.[checkId] ?? optimisticPathfinding?.[checkId];
         if (!path) {
@@ -108,5 +113,5 @@ export function useEntrancePath(checkId: string): string[] | undefined {
         } while (node !== undefined);
         segments.push('Start');
         return segments.reverse();
-    }, [checkId, logicPathfinding, optimisticPathfinding]);
+    }, [checkId, entranceRando, logicPathfinding, optimisticPathfinding]);
 }

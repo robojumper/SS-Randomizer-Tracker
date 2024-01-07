@@ -27,6 +27,7 @@ import {
     dungeonNames,
     isDungeon,
     isRegularDungeon,
+    LogicalState,
 } from '../logic/Locations';
 import { AreaGraph, Logic, LogicalCheck, itemName } from '../logic/Logic';
 import {
@@ -523,7 +524,7 @@ function mapSettings(
         let dayReq: LogicalExpression;
         let nightReq: LogicalExpression;
 
-        if (exitArea.abstract) {
+        if (exitArea.availability === 'abstract') {
             dayReq = exitExpr;
             nightReq = exitExpr;
         } else if (exitArea.availability === TimeOfDay.Both) {
@@ -633,6 +634,7 @@ export const optimisticLogicBitsSelector = createSelector(
         logicSelector,
         settingsRequirementsSelector,
         optimisticInventoryItemRequirementsSelector,
+        // TODO this should probably also treat all check requirements as available? E.g. dungeons completed, cubes gotten?
         checkRequirementsSelector,
         inLogicBitsSelector,
     ],
@@ -873,6 +875,19 @@ export const inSemiLogicBitsSelector = createSelector(
 
         return semiLogicBits;
     },
+);
+
+export const getRequirementLogicalStateSelector = createSelector(
+    [logicSelector, inLogicBitsSelector, inSemiLogicBitsSelector],
+    (logic, inLogicBits, inSemiLogicBits) =>
+        (requirement: string): LogicalState => {
+            const bit = logic.itemBits[requirement];
+            return inLogicBits.test(bit)
+                ? 'inLogic'
+                : inSemiLogicBits.test(bit)
+                    ? 'semiLogic'
+                    : 'outLogic';
+        },
 );
 
 export const dungeonCompletedSelector = currySelector(

@@ -466,10 +466,9 @@ export function parseLogic(raw: RawLogic): Logic {
                 if (allAreas[fullExitName]) {
                     // logical exit
                     const destArea = allAreas[fullExitName];
-                    if (area.abstract) {
+                    if (area.availability === 'abstract') {
                         throw new Error('abstract area cannot have map exits');
-                    }
-                    if (area.availability === TimeOfDay.Both) {
+                    } else if (area.availability === TimeOfDay.Both) {
                         area.locations.push({
                             type: 'logicalExit',
                             id: fullExitName,
@@ -490,7 +489,7 @@ export function parseLogic(raw: RawLogic): Logic {
                     // map exit
                     areasByExit[fullExitName] = area;
 
-                    if (area.abstract) {
+                    if (area.availability === 'abstract') {
                         if (fullExitName !== '\\Start') {
                             throw new Error('abstract area may only lead to start exit');
                         }
@@ -516,13 +515,7 @@ export function parseLogic(raw: RawLogic): Logic {
                         });
                     }
 
-                    if (area.abstract) {
-                        if (fullExitName !== '\\Start') {
-                            throw new Error(
-                                'abstract area can only exit to start',
-                            );
-                        }
-                    } else {
+                    if (!area.abstract) {
                         const region = getHintRegion(fullExitName);
                         (exitsByHintRegion[region] ??= []).push(fullExitName);
                     }
@@ -586,7 +579,7 @@ export function parseLogic(raw: RawLogic): Logic {
                     nonCheckLocations.add(locationId);
                 }
 
-                if (area.abstract) {
+                if (area.availability === 'abstract') {
                     if (check) {
                         throw new Error('abstract location cannot own a check');
                     }
@@ -840,7 +833,7 @@ function mapAreaToBitLogic(
             case 'logicalExit':
                 {
                     const destArea = areaGraph.areas[location.toArea];
-                    if (destArea.abstract || location.areaAvailability === 'abstract') {
+                    if (destArea.availability === 'abstract' || location.areaAvailability === 'abstract') {
                         throw new Error('abstract areas cannot have logical exits between them');
                     }
                     if (destArea.availability === TimeOfDay.Both) {
