@@ -65,6 +65,9 @@ function validateValue(option: Option, value: unknown): OptionValue | undefined 
 export function validateSettings(optionDefs: OptionDefs, userSettings: AllTypedOptions): AllTypedOptions {
     const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
     for (const optionDef of optionDefs) {
+        if (optionDef.permalink === false) {
+            continue;
+        }
         const key = optionDef.command;
         const value = userSettings[key];
         settings[key] = validateValue(optionDef, value) ?? optionDef.default;
