@@ -11,7 +11,7 @@ import leaveFaron from '../../assets/maps/leaveFaron.png';
 import leaveEldin from '../../assets/maps/leaveEldin.png';
 import leaveLanayru from '../../assets/maps/leaveLanayru.png';
 import { useSelector } from 'react-redux';
-import { areasSelector } from '../../tracker/selectors';
+import { areasSelector, exitsSelector } from '../../tracker/selectors';
 import { AreaGraph, Logic } from '../../logic/Logic';
 import { logicSelector } from '../../logic/selectors';
 
@@ -68,6 +68,7 @@ const Submap = (props: SubmapProps) => {
     const subregionHints: ReactNode[] = [];
     const { onSubmapChange, onGroupChange, title, markerX, markerY, mapWidth, activeSubmap, markers, entranceMarkers, exitParams, expandedGroup} = props;
     const areas = useSelector(areasSelector);
+    const exits = useSelector(exitsSelector);
     _.forEach(markers, (marker) => {
         const area = areas.find((area) => area.name === marker.region);
         if (area) {
@@ -79,7 +80,17 @@ const Submap = (props: SubmapProps) => {
 
     const logic = useSelector(logicSelector);
     
-    // TODO Exits
+    _.forEach(entranceMarkers, (marker) => {
+        const exit = getExit(logic, marker);
+        const exitMapping = exits.find((e) => e.exit.id === exit.exitId)!;
+        const areaName = exitMapping.entrance && logic.areaGraph.entranceHintRegions[exitMapping.entrance.id];
+        const area = areas.find((area) => area.name === areaName);
+        if (area) {
+            remainingChecks += area.numChecksRemaining;
+            accessibleChecks += area.numChecksAccessible;
+            // TODO Hints
+        }
+    })
 
     let markerColor: keyof ColorScheme = 'outLogic';
     if (accessibleChecks !== 0) {
