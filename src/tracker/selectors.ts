@@ -1096,7 +1096,6 @@ export const remainingEntrancesSelector = createSelector(
                 (e) =>
                     !usedEntrances.has(e[0]) &&
                     !bannedExitsAndEntrances.includes(e[0]) &&
-                    logic.areaGraph.entrances[e[0]].stage !== undefined &&
                     !nonRandomizedExits.includes(
                         logic.areaGraph.vanillaConnections[e[0]],
                     ),
