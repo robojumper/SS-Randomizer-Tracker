@@ -3,8 +3,8 @@ import { ShowContextMenuParams, UseContextMenuParams, useContextMenu as contexif
 type MakeOptional<Type, Key extends keyof Type> = Omit<Type, Key> & Partial<Pick<Type, Key>>;
 
 // The contexify library has a typing bug making type checking weaker than it could be
-export function useContextMenu<TProps>(params: UseContextMenuParams<TProps>): {
-    show: (params: MakeOptional<ShowContextMenuParams<TProps>, 'id'>) => void;
+export function useContextMenu<ShowProps, UseProps = undefined>(params: UseContextMenuParams<UseProps>): {
+    show: (params: MakeOptional<ShowContextMenuParams<ShowProps>, 'id'>) => void;
     hideAll: () => void;
 } {
     return contexifyUseContextMenu(params);

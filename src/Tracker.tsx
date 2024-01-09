@@ -22,13 +22,14 @@ import ExtraLocationTracker from './locationTracker/ExtraLocationTracker';
 import { NewLocationTracker } from './locationTracker/LocationTracker';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
-import { colorSchemeSelector, layoutSelector } from './customization/selectors';
+import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector } from './customization/selectors';
 import { reset } from './tracker/slice';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorPage from './ErrorPage';
 import { shownLogicUpstreamSelector } from './logic/selectors';
 import { promptRemote } from './loader/LogicLoader';
 import { RootState } from './store/store';
+import WorldMap from './locationTracker/mapTracker/WorldMap';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -74,9 +75,11 @@ function NewTracker() {
     const [showEntranceDialog, setShowEntranceDialog] = useState(false);
     const [showOptionsDialog, setShowOptionsDialog] = useState(false);
     const [activeArea, setActiveArea] = useState<string | undefined>(undefined);
+    const [activeSubmap, setActiveSubmap] = useState<string | undefined>(undefined);
 
     const colorScheme = useSelector(colorSchemeSelector);
-    const layout = useSelector(layoutSelector);
+    const itemLayout = useSelector(itemLayoutSelector);
+    const locationLayout = useSelector(locationLayoutSelector);
     const rawRemote = useSelector((state: RootState) => state.logic.remote!);
     const remote = useSelector(shownLogicUpstreamSelector);
 
@@ -87,13 +90,14 @@ function NewTracker() {
         });
     }, [colorScheme]);
 
+    // TODO: Store observers
     useEffect(() => {
         localStorage.setItem('ssrTrackerColorScheme', JSON.stringify(colorScheme));
     }, [colorScheme]);
 
     useEffect(() => {
-        localStorage.setItem('ssrTrackerLayout', layout);
-    }, [layout]);
+        localStorage.setItem('ssrTrackerLayout', itemLayout);
+    }, [itemLayout]);
 
     useEffect(() => {
         localStorage.setItem('ssrTrackerRemoteLogic', JSON.stringify(rawRemote));
@@ -102,13 +106,13 @@ function NewTracker() {
     const itemTrackerStyle: CSSProperties = {
         position: 'fixed',
         width: (12 * width) / 30, // this is supposed to be *a bit* more than 1/3. Min keeps it visible when the window is short
-        height,
-        left: 0,
+        height: height * (locationLayout === 'map' ? 0.9 : 1),
+        left: '1%',
         top: 0,
         margin: '1%',
     };
     const gridTrackerStyle: CSSProperties = {
-        position: 'fixed',
+        position: 'relative',
         width: (2 * width) / 5,
         height,
         left: 0,
@@ -117,17 +121,113 @@ function NewTracker() {
     };
 
     let itemTracker;
-    if (layout === 'inventory') {
+    if (itemLayout === 'inventory') {
         itemTracker = (
             <ItemTracker
                 styleProps={itemTrackerStyle}
+                mapMode={locationLayout === 'map'}
             />
         );
-    } else if (layout === 'grid') {
+    } else if (itemLayout === 'grid') {
         itemTracker = (
             <GridTracker
                 styleProps={gridTrackerStyle}
+                mapMode={locationLayout === 'map'}
             />
+        );
+    }
+
+
+    let mainTracker: React.ReactNode;
+    if (locationLayout === 'list') {
+        mainTracker = (
+            <>
+                <Col>
+                    {itemTracker}
+                </Col>
+                <Col>
+                    <NewLocationTracker
+                        activeArea={activeArea}
+                        setActiveArea={setActiveArea}
+                        containerHeight={height * 0.95}
+                    />
+                </Col>
+                <Col
+                    style={{
+                        display: 'flex',
+                        flexFlow: 'column nowrap',
+                        height: '100%',
+                    }}
+                >
+                    <Row>
+                        <BasicCounters />
+                    </Row>
+                    <Row>
+                        <DungeonTracker setActiveArea={setActiveArea} />
+                    </Row>
+                    <Row
+                        style={{
+                            paddingRight: '10%',
+                            paddingTop: '2.5%',
+                            height: '100%',
+                            overflow: 'auto',
+                        }}
+                    >
+                        <Col>
+                            <ExtraLocationTracker
+                                activeArea={activeArea}
+                                setActiveArea={setActiveArea}
+                            />
+                        </Col>
+                    </Row>
+                </Col>
+            </>
+        );
+    } else {
+        mainTracker = (
+            <>
+                <Col xs={4}>
+                    {itemTracker}
+                    <DungeonTracker setActiveArea={setActiveArea} compact />
+                </Col>
+                <Col xs={6}>
+                    <WorldMap
+                        imgWidth={width * 0.5}
+                        handleGroupClick={setActiveArea}
+                        handleSubmapClick={setActiveSubmap}
+                        containerHeight={height * 0.95}
+                        expandedGroup={activeArea}
+                        activeSubmap={activeSubmap}
+                    />
+                </Col>
+                <Col
+                    xs={2}
+                    style={{
+                        display: 'flex',
+                        flexFlow: 'column nowrap',
+                        height: '100%',
+                    }}
+                >
+                    <Row>
+                        <BasicCounters />
+                    </Row>
+                    <Row
+                        style={{
+                            paddingRight: '10%',
+                            paddingTop: '2.5%',
+                            height: '100%',
+                            overflow: 'auto',
+                        }}
+                    >
+                        <Col>
+                            <ExtraLocationTracker
+                                activeArea={activeArea}
+                                setActiveArea={setActiveArea}
+                            />
+                        </Col>
+                    </Row>
+                </Col>
+            </>
         );
     }
 
@@ -141,37 +241,7 @@ function NewTracker() {
         >
             <Container fluid style={{ height: '100%' }}>
                 <Row style={{ height: '100%' }}>
-                    <Col>{itemTracker}</Col>
-                    <Col>
-                        <NewLocationTracker
-                            activeArea={activeArea}
-                            setActiveArea={setActiveArea}
-                            containerHeight={height * 0.95}
-                        />
-                    </Col>
-                    <Col style={{ display: 'flex', flexFlow: 'column nowrap', height: '100%' }}>
-                        <Row>
-                            <BasicCounters />
-                        </Row>
-                        <Row>
-                            <DungeonTracker setActiveArea={setActiveArea} />
-                        </Row>
-                        <Row
-                            style={{
-                                paddingRight: '10%',
-                                paddingTop: '2.5%',
-                                height: '100%',
-                                overflow: 'auto',
-                            }}
-                        >
-                            <Col>
-                                <ExtraLocationTracker
-                                    activeArea={activeArea}
-                                    setActiveArea={setActiveArea}
-                                />
-                            </Col>
-                        </Row>
-                    </Col>
+                    {mainTracker}
                 </Row>
                 <Row
                     style={{

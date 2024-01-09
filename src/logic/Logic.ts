@@ -85,7 +85,7 @@ export interface AreaGraph {
     areasByExit: Record<string, Area>;
     vanillaConnections: { [from: string]: string };
     entrances: Record<string, RawEntrance>;
-    entranceHintAreas: Record<string, string>;
+    entranceHintRegions: Record<string, string>;
     exits: Record<string, RawExit>;
 
     /** Sandship Dock Exit -> Exit to Sandship */
@@ -297,7 +297,7 @@ export function parseLogic(raw: RawLogic): Logic {
     const areasByExit: AreaGraph['areasByExit'] = {};
     const checksByHintRegion: Logic['checksByHintRegion'] = {};
     const exitsByHintRegion: Logic['exitsByHintRegion'] = {};
-    const entranceHintAreas: AreaGraph['entranceHintAreas'] = {};
+    const entranceHintAreas: AreaGraph['entranceHintRegions'] = {};
 
     const entrancesByShortName: {
         [shortName: string]: { def: RawEntrance; id: string, region: string };
@@ -704,7 +704,7 @@ export function parseLogic(raw: RawLogic): Logic {
         rootArea,
         areasByEntrance,
         areasByExit,
-        entranceHintAreas,
+        entranceHintRegions: entranceHintAreas,
         entrances: raw.entrances,
         exits: raw.exits,
         vanillaConnections,

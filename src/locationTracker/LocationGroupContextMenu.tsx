@@ -2,19 +2,16 @@ import _ from 'lodash';
 import { useCallback } from 'react';
 import { Menu, Item, Separator, Submenu, ItemParams } from 'react-contexify';
 import { LocationGroupContextMenuProps } from './LocationGroupHeader';
-import { useDispatch } from 'react-redux';
-import { bulkEditChecks, setHint } from '../tracker/slice';
+import { bulkEditChecks, mapEntrance, setHint } from '../tracker/slice';
+import { MapExitContextMenuProps } from './mapTracker/EntranceMarker';
+import { useDispatch, useSelector } from 'react-redux';
+import { remainingEntrancesSelector, settingSelector } from '../tracker/selectors';
+import { AreaGraph } from '../logic/Logic';
+import { areaGraphSelector } from '../logic/selectors';
+import { bosses } from './Hints';
 
-const bosses = {
-    0: 'Ghirahim 1',
-    1: 'Scaldera',
-    2: 'Moldarach',
-    3: 'Koloktos',
-    4: 'Tentalus',
-    5: 'Ghirahim 2',
-};
-
-type CtxProps<T = void> = ItemParams<LocationGroupContextMenuProps, T>;
+type AreaCtxProps<T = void> = ItemParams<LocationGroupContextMenuProps, T>;
+type ExitCtxProps<T = void> = ItemParams<MapExitContextMenuProps, T>;
 
 interface BossData {
     boss: number;
@@ -24,15 +21,23 @@ function LocationGroupContextMenu() {
     const dispatch = useDispatch();
 
     const checkAll = useCallback(
-        (params: CtxProps) => dispatch(bulkEditChecks({
+        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
             checks: params.props!.area.checks,
             markChecked: true,
         })),
         [dispatch],
     );
 
+    const randomEntrances = useSelector(settingSelector('randomize-entrances'));
+    const randomDungeonEntrances = useSelector(settingSelector('randomize-dungeon-entrances'));
+    const randomSilentRealms = useSelector(settingSelector('randomize-trials'));
+
+    const dungeonEntranceSetting =
+        randomDungeonEntrances ?? randomEntrances;
+    const areDungeonEntrancesRandomized = dungeonEntranceSetting !== 'None';
+
     const uncheckAll = useCallback(
-        (params: CtxProps) => dispatch(bulkEditChecks({
+        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
             checks: params.props!.area.checks,
             markChecked: false,
         })),
@@ -40,7 +45,7 @@ function LocationGroupContextMenu() {
     );
 
     const handlePathClick = useCallback(
-        (params: CtxProps<BossData>) => dispatch(setHint({
+        (params: AreaCtxProps<BossData>) => dispatch(setHint({
             areaId: params.props!.area.name,
             hint: { type: 'path', index: params.data!.boss },
         })),
@@ -48,7 +53,7 @@ function LocationGroupContextMenu() {
     );
 
     const handleSotsClick = useCallback(
-        (params: CtxProps) => dispatch(setHint({
+        (params: AreaCtxProps) => dispatch(setHint({
             areaId: params.props!.area.name,
             hint: { type: 'sots' },
         })),
@@ -56,7 +61,7 @@ function LocationGroupContextMenu() {
     );
 
     const handleBarrenClick = useCallback(
-        (params: CtxProps) => dispatch(setHint({
+        (params: AreaCtxProps) => dispatch(setHint({
             areaId: params.props!.area.name,
             hint: { type: 'barren' },
         })),
@@ -64,7 +69,7 @@ function LocationGroupContextMenu() {
     );
 
     const handleClearCheck = useCallback(
-        (params: CtxProps) => dispatch(setHint({
+        (params: AreaCtxProps) => dispatch(setHint({
             areaId: params.props!.area.name,
             hint: undefined,
         })),
@@ -72,26 +77,160 @@ function LocationGroupContextMenu() {
     );
 
     return (
-        <Menu id="group-context">
+        <>
+            <Menu id="group-context">
+                <Item onClick={checkAll}>Check All</Item>
+                <Item onClick={uncheckAll}>Uncheck All</Item>
+                <Separator />
+                <Submenu label="Set Path">
+                    {_.map(bosses, (bossName, bossIndex) => (
+                        <Item
+                            key={bossName}
+                            onClick={handlePathClick}
+                            data={
+                                { boss: bossIndex } satisfies BossData
+                            }
+                        >
+                            {bossName}
+                        </Item>
+                    ))}
+                </Submenu>
+                <Item onClick={handleSotsClick}>Set SotS</Item>
+                <Item onClick={handleBarrenClick}>Set Barren</Item>
+                <Item onClick={handleClearCheck}>Clear Hint</Item>
+            </Menu>
+            <BoundEntranceMenu id="dungeon-context" pool="dungeons" canChooseEntrance={areDungeonEntrancesRandomized} />
+            <UnboundEntranceMenu id="unbound-dungeon-context" pool="dungeons" />
+            <BoundEntranceMenu id="trial-context" pool="silent_realms" canChooseEntrance={randomSilentRealms} />
+            <UnboundEntranceMenu id="unbound-trial-context" pool="silent_realms" />
+        </>
+    );
+}
+
+// Wow it turns out getting any sort of dynamic data into React-Contexify is a massive pain,
+// so this is kind of annoying and not as generic but /shrug
+
+// contexify breaks down if items are wrapped in nodes, so this is not a component!!!
+function createBindSubmenu(areaGraph: AreaGraph, remainingEntrances: Set<string>, pool: keyof AreaGraph['entrancePools'], chooseEntrance: (exitId: string, entranceId: string) => void, disabled: boolean) {
+    const name = pool === 'dungeons' ? 'Dungeon' : 'Silent Realm';
+    return <Submenu disabled={disabled} label={`Bind ${name} to Entrance`}>
+        {Object.entries(areaGraph.entrancePools[pool]).map(([readableName, exits]) => {
+            const entrance = exits.entrances[0];
+            return (
+                <Item
+                    key={readableName}
+                    disabled={!remainingEntrances.has(entrance)}
+                    onClick={(params: ExitCtxProps) =>
+                        chooseEntrance(
+                            params.props!.exitMapping.exit.id,
+                            entrance,
+                        )
+                    }
+                >
+                    {readableName}
+                </Item>
+            );
+        })}
+    </Submenu>
+}
+
+function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: keyof AreaGraph['entrancePools'], canChooseEntrance: boolean }) {
+    const dispatch = useDispatch();
+    const areaGraph = useSelector(areaGraphSelector);
+    const remainingEntrances = useSelector(remainingEntrancesSelector);
+
+    const checkAll = useCallback(
+        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
+            checks: params.props!.area.checks,
+            markChecked: true,
+        })),
+        [dispatch],
+    );
+
+    const uncheckAll = useCallback(
+        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
+            checks: params.props!.area.checks,
+            markChecked: false,
+        })),
+        [dispatch],
+    );
+
+    const handlePathClick = useCallback(
+        (params: ExitCtxProps<BossData>) => params.props!.area && dispatch(setHint({
+            areaId: params.props!.area.name,
+            hint: { type: 'path', index: params.data!.boss },
+        })),
+        [dispatch],
+    );
+
+    const handleSotsClick = useCallback(
+        (params: ExitCtxProps) => params.props!.area && dispatch(setHint({
+            areaId: params.props!.area.name,
+            hint: { type: 'sots' },
+        })),
+        [dispatch],
+    );
+
+    const handleBarrenClick = useCallback(
+        (params: ExitCtxProps) => params.props!.area && dispatch(setHint({
+            areaId: params.props!.area.name,
+            hint: { type: 'barren' },
+        })),
+        [dispatch],
+    );
+
+    const handleClearCheck = useCallback(
+        (params: ExitCtxProps) => params.props!.area && dispatch(setHint({
+            areaId: params.props!.area.name,
+            hint: undefined,
+        })),
+        [dispatch],
+    );
+
+    const handleMapEntrance = useCallback(
+        (exit: string, entrance: string) => dispatch(mapEntrance({
+            from: exit,
+            to: entrance,
+        })),
+        [dispatch],
+    );
+
+    return (
+        <Menu id={id}>
             <Item onClick={checkAll}>Check All</Item>
             <Item onClick={uncheckAll}>Uncheck All</Item>
             <Separator />
             <Submenu label="Set Path">
-                {_.map(bosses, (bossName, bossIndex) => (
-                    <Item
-                        key={bossName}
-                        onClick={handlePathClick}
-                        data={
-                            { boss: parseInt(bossIndex, 10) } satisfies BossData
-                        }
-                    >
-                        {bossName}
-                    </Item>
-                ))}
+                {
+                    _.map(bosses, (bossName, bossIndex) => (
+                        <Item onClick={handlePathClick} data={{ boss: bossIndex } satisfies BossData}>{bossName}</Item>
+                    ))
+                }
             </Submenu>
             <Item onClick={handleSotsClick}>Set SotS</Item>
             <Item onClick={handleBarrenClick}>Set Barren</Item>
             <Item onClick={handleClearCheck}>Clear Hint</Item>
+            {createBindSubmenu(areaGraph, new Set(remainingEntrances.map((e) => e.id)), pool, handleMapEntrance, !canChooseEntrance)}
+        </Menu>
+    );
+}
+
+function UnboundEntranceMenu({ id, pool }: { id: string, pool: keyof AreaGraph['entrancePools'] }) {
+    const dispatch = useDispatch();
+    const areaGraph = useSelector(areaGraphSelector);
+    const remainingEntrances = useSelector(remainingEntrancesSelector);
+
+    const handleMapEntrance = useCallback(
+        (exit: string, entrance: string) => dispatch(mapEntrance({
+            from: exit,
+            to: entrance,
+        })),
+        [dispatch],
+    );
+
+    return (
+        <Menu id={id}>
+            {createBindSubmenu(areaGraph, new Set(remainingEntrances.map((e) => e.id)), pool, handleMapEntrance, false)}
         </Menu>
     );
 }

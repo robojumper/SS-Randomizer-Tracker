@@ -3,15 +3,6 @@ import { Col, Row } from 'react-bootstrap';
 
 import AreaCounters from './AreaCounters';
 
-import g1 from '../assets/hints/g1.png';
-import scaldera from '../assets/hints/scaldera.png';
-import moldarach from '../assets/hints/moldarach.png';
-import koloktos from '../assets/hints/koloktos.png';
-import tentalus from '../assets/hints/tentalus.png';
-import g2 from '../assets/hints/g2.png';
-import sotsImage from '../assets/hints/sots.png';
-import barrenImage from '../assets/hints/barren.png';
-
 import 'react-contexify/dist/ReactContexify.css';
 import keyDownWrapper from '../KeyDownWrapper';
 import { TriggerEvent } from 'react-contexify';
@@ -19,8 +10,7 @@ import { useContextMenu } from './context-menu';
 import { HintRegion } from '../logic/Locations';
 import { useSelector } from 'react-redux';
 import { areaHintSelector } from '../tracker/selectors';
-
-const pathImages = [g1, scaldera, moldarach, koloktos, tentalus, g2];
+import { decodeHint } from './Hints';
 
 export interface LocationGroupContextMenuProps {
     area: HintRegion,
@@ -54,14 +44,7 @@ export default function LocationGroupHeader({
         [area, show],
     );
 
-    let image;
-    if (areaHint?.type === 'path') {
-        image = <img src={pathImages[areaHint.index]} alt="path" />;
-    } else if (areaHint?.type === 'sots') {
-        image = <img src={sotsImage} alt="sots" />;
-    } else if (areaHint?.type === 'barren') {
-        image = <img src={barrenImage} alt="barren" />;
-    }
+    const hint = areaHint && decodeHint(areaHint);
 
     return (
         <Row
@@ -78,7 +61,9 @@ export default function LocationGroupHeader({
                 </h3>
             </Col>
             <Col sm={2}>
-                <span>{image}</span>
+                <span>
+                    {hint && <img src={hint.image} alt={hint.description} />}
+                </span>
             </Col>
             <Col sm={1}>
                 <h3>

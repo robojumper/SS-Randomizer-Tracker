@@ -193,7 +193,7 @@ export const allowedStartingEntrancesSelector = createSelector(
 
 const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
 
-type ExitRule =
+export type ExitRule =
     | {
           /** This exit has its vanilla connection. */
           type: 'vanilla';
@@ -216,6 +216,7 @@ type ExitRule =
     | {
           /** This entrance is random in some way. TODO: Add specific pool info. */
           type: 'random';
+          pool: keyof AreaGraph['entrancePools'] | undefined;
       };
 
 /** Defines how exits should be resolved. */
@@ -295,7 +296,7 @@ export const exitRulesSelector = createSelector(
                     (pool === 'silent_realms' && randomTrialsSetting)
                 ) {
                     if (isOutsideExit) {
-                        result[exitId] = { type: 'random' };
+                        result[exitId] = { type: 'random', pool };
                     } else {
                         result[exitId] = { type: 'linked', pool, location };
                     }
@@ -314,7 +315,7 @@ export const exitRulesSelector = createSelector(
                 ) {
                     result[exitId] = { type: 'vanilla' };
                 } else {
-                    result[exitId] = { type: 'random' };
+                    result[exitId] = { type: 'random', pool: undefined };
                 }
                 continue;
             }
@@ -346,7 +347,7 @@ export const exitsSelector = createSelector(
                 return {
                     id: entranceId,
                     name: rawEntrance.short_name,
-                    region: logic.areaGraph.entranceHintAreas[entranceId],
+                    region: logic.areaGraph.entranceHintRegions[entranceId],
                 };
             } else {
                 console.error('unknown entrance', entranceId);
@@ -358,7 +359,7 @@ export const exitsSelector = createSelector(
             name: logic.areaGraph.exits[id].short_name,
         });
 
-        for (const [exitId] of rules.filter(
+        for (const [exitId, rule] of rules.filter(
             ([, rule]) => rule.type === 'vanilla',
         )) {
             result[exitId] = {
@@ -367,10 +368,11 @@ export const exitsSelector = createSelector(
                     logic.areaGraph.vanillaConnections[exitId],
                 ),
                 exit: makeExit(exitId),
+                rule,
             };
         }
 
-        for (const [exitId] of rules.filter(
+        for (const [exitId, rule] of rules.filter(
             ([, rule]) =>
                 rule.type === 'random' ||
                 rule.type === 'randomStartingEntrance',
@@ -379,6 +381,7 @@ export const exitsSelector = createSelector(
                 canAssign: true,
                 entrance: makeEntrance(mappedExits[exitId]),
                 exit: makeExit(exitId),
+                rule,
             };
         }
 
@@ -390,6 +393,7 @@ export const exitsSelector = createSelector(
                     canAssign: false,
                     entrance: result[rule.otherExit].entrance,
                     exit: makeExit(exitId),
+                    rule,
                 };
             }
         }
@@ -417,6 +421,7 @@ export const exitsSelector = createSelector(
                         canAssign: false,
                         entrance: undefined,
                         exit: makeExit(exitId),
+                        rule,
                     };
                 } else {
                     const reverseEntrance = pool[sourceLocation].entrances[0];
@@ -424,6 +429,7 @@ export const exitsSelector = createSelector(
                         canAssign: false,
                         entrance: makeEntrance(reverseEntrance),
                         exit: makeExit(exitId),
+                        rule,
                     };
                 }
             }

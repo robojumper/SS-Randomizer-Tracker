@@ -1,3 +1,4 @@
+import { ExitRule } from '../tracker/selectors';
 import { Logic, LogicalCheck } from './Logic';
 import { BitVector } from './bitlogic/BitVector';
 
@@ -46,6 +47,7 @@ export interface ExitMapping {
         | undefined;
     canAssign: boolean;
     // inLogic: boolean;
+    rule: ExitRule;
 }
 
 export const dungeonNames = [

@@ -1,9 +1,9 @@
 import { Modal, Button, Container, Row, Col, FormControl } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
 import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
-import { Layout, setColorScheme, setLayout } from './slice';
+import { ItemLayout, LocationLayout, setColorScheme, setItemLayout, setLocationLayout } from './slice';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector, layoutSelector } from './selectors';
+import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector } from './selectors';
 import { useCallback } from 'react';
 
 const defaultColorSchemes = {
@@ -20,7 +20,8 @@ export default function CustomizationModal({
 }) {
     const dispatch = useDispatch();
     const colorScheme = useSelector(colorSchemeSelector);
-    const layout = useSelector(layoutSelector);
+    const layout = useSelector(itemLayoutSelector);
+    const locationLayout = useSelector(locationLayoutSelector);
 
     const updateColorScheme = useCallback((scheme: ColorScheme) => dispatch(setColorScheme(scheme)), [dispatch]);
 
@@ -62,12 +63,21 @@ export default function CustomizationModal({
                     <ColorBlock colorName="Required Dungeon" schemeKey="required" currentColor={colorScheme.required} colorScheme={colorScheme} updateColorScheme={updateColorScheme} />
                     <ColorBlock colorName="Completed Checks" schemeKey="checked" currentColor={colorScheme.checked} colorScheme={colorScheme} updateColorScheme={updateColorScheme} />
                     <Row>
-                        <h4>Tracker Settings</h4>
+                        <h4>Item Tracker Settings</h4>
                     </Row>
                     <Row>
-                        <FormControl as="select" value={layout} onChange={(e) => dispatch(setLayout(e.target.value as Layout))}>
+                        <FormControl as="select" value={layout} onChange={(e) => dispatch(setItemLayout(e.target.value as ItemLayout))}>
                             <option value="inventory">In-Game Inventory</option>
                             <option value="grid">Grid Layout</option>
+                        </FormControl>
+                    </Row>
+                    <Row>
+                        <h4>Location Tracker Settings</h4>
+                    </Row>
+                    <Row>
+                        <FormControl as="select" value={locationLayout} onChange={(e) => dispatch(setLocationLayout(e.target.value as LocationLayout))}>
+                            <option value="list">List Layout</option>
+                            <option value="map">Map Layout</option>
                         </FormControl>
                     </Row>
                 </Container>

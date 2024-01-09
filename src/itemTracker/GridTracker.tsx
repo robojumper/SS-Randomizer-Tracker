@@ -11,9 +11,10 @@ import { clickItem } from '../tracker/slice';
 
 type GridTrackerProps = {
     styleProps: CSSProperties;
+    mapMode: boolean;
 };
 
-const GridTracker = ({ styleProps }: GridTrackerProps) => {
+const GridTracker = ({ styleProps, mapMode: map }: GridTrackerProps) => {
     const dispatch = useDispatch();
     const handleExtraWalletClick = () => {
         dispatch(clickItem({ item: 'Extra Wallet', take: false }));
@@ -41,8 +42,13 @@ const GridTracker = ({ styleProps }: GridTrackerProps) => {
 
     let imgWidth = (styleProps.width as number) / 10;
     const maxHeight = styleProps.height as number;
-    if (maxHeight < imgWidth * 8) {
-        imgWidth = maxHeight / 8;
+    const fraction = (map ? 10 : 8)
+    if (maxHeight < imgWidth * fraction) {
+        imgWidth = maxHeight / fraction;
+    }
+
+    const tableStyle = {
+        marginTop: (map ? (imgWidth / 1.5) + 50 : 0),
     }
     const emptyTabWidth = imgWidth * 2.5;
     const emeraldWidth = emptyTabWidth * 0.54;
@@ -53,7 +59,7 @@ const GridTracker = ({ styleProps }: GridTrackerProps) => {
     const crystalCount = useSelector(totalGratitudeCrystalsSelector);
 
     return (
-        <table>
+        <table style={tableStyle}>
             <tbody>
                 <tr>
                     <td rowSpan={2}>

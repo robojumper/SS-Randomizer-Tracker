@@ -3,10 +3,7 @@ import { AllTypedOptions } from '../permalink/SettingsTypes';
 import { getInitialItems } from '../logic/TrackerModifications';
 import { RegularDungeon } from '../logic/Locations';
 import { InventoryItem, isItem, itemMaxes } from '../logic/Inventory';
-export type Hint =
-    | { type: 'barren' }
-    | { type: 'sots' }
-    | { type: 'path'; index: number };
+import { Hint } from '../locationTracker/Hints';
 
 export interface TrackerState {
     /**

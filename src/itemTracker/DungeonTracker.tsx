@@ -81,8 +81,10 @@ const smallKeyImages = [noSmallKey, oneSmallKey, twoSmallKey, threeSmallKey];
 
 export default function DungeonTracker({
     setActiveArea,
+    compact,
 }: {
     setActiveArea: (area: string) => void;
+    compact?: boolean;
 }) {
     const [width, setWidth] = useState(0);
     const divElement = useRef<HTMLDivElement>(null);
@@ -108,11 +110,19 @@ export default function DungeonTracker({
         (dungeons.some((d) => d.name === 'Sky Keep') ? 1.05 : 1.0) * 1.15;
     const colWidth = width / (numDungeons * iconsPerDungeon * scaleFactor);
     const secondRowWidth = width / 4;
-    const keysStyle: CSSProperties = {
-        position: 'relative',
-        margin: '-2%',
-        left: '3%',
-    };
+    const keysStyle: CSSProperties = compact
+        ? {
+            position: 'fixed',
+            margin: '0%',
+            left: '0.25%',
+            top: '0%',
+            width,
+        }
+        : {
+            position: 'relative',
+            margin: '-2%',
+            left: '3%',
+        };
     const dungeonStyle: CSSProperties = {
         position: 'relative',
         top: width * -0.015,
@@ -197,67 +207,85 @@ export default function DungeonTracker({
                             </td>
                         ))}
                     </tr>
-                    <tr>
-                        {dungeons.map((d) => (
-                            <td colSpan={2} key={d.name} style={bossStyle}>
-                                <DungeonIcon
-                                    area={d.name}
-                                    image={dungeonData[d.name].bossIcon}
-                                    iconLabel={d.name}
-                                    width={colWidth * 2}
-                                    groupClicked={() => setActiveArea(d.name)}
-                                />
-                            </td>
-                        ))}
-                    </tr>
-                    <tr>
-                        {dungeons.map((d) => (
-                            <td
-                                colSpan={2}
-                                key={d.name}
-                                style={dungeonCheckStyle}
-                            >
-                                <AreaCounters
-                                    totalChecksLeftInArea={d.numChecksRemaining}
-                                    totalChecksAccessible={
-                                        d.numChecksAccessible
-                                    }
-                                />
-                            </td>
-                        ))}
-                    </tr>
+                    {!compact && (
+                        <>
+                            <tr>
+                                {dungeons.map((d) => (
+                                    <td
+                                        colSpan={2}
+                                        key={d.name}
+                                        style={bossStyle}
+                                    >
+                                        <DungeonIcon
+                                            area={d.name}
+                                            image={dungeonData[d.name].bossIcon}
+                                            iconLabel={d.name}
+                                            width={colWidth * 2}
+                                            groupClicked={() =>
+                                                setActiveArea(d.name)
+                                            }
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr>
+                                {dungeons.map((d) => (
+                                    <td
+                                        colSpan={2}
+                                        key={d.name}
+                                        style={dungeonCheckStyle}
+                                    >
+                                        <AreaCounters
+                                            totalChecksLeftInArea={
+                                                d.numChecksRemaining
+                                            }
+                                            totalChecksAccessible={
+                                                d.numChecksAccessible
+                                            }
+                                        />
+                                    </td>
+                                ))}
+                            </tr>
+                        </>
+                    )}
                 </tbody>
             </table>
-            <Row style={trialHintStyle}>
-                {silentRealms.map((area) => (
-                    <Col key={area.name}>
-                        <HintMarker width={secondRowWidth / 4} />
-                    </Col>
-                ))}
-            </Row>
-            <Row style={trialStyle}>
-                {silentRealms.map((a) => (
-                    <Col key={a.name}>
-                        <DungeonIcon
-                            image={silentRealmData[a.name]}
-                            iconLabel={a.name}
-                            area={a.name}
-                            width={secondRowWidth}
-                            groupClicked={() => setActiveArea(a.name)}
-                        />
-                    </Col>
-                ))}
-            </Row>
-            <Row style={trialCheckStyle}>
-                {silentRealms.map((a) => (
-                    <Col key={a.name}>
-                        <AreaCounters
-                            totalChecksLeftInArea={a.numChecksRemaining}
-                            totalChecksAccessible={a.numChecksAccessible}
-                        />
-                    </Col>
-                ))}
-            </Row>
+            {!compact && (
+                <>
+                    <Row style={trialHintStyle}>
+                        {silentRealms.map((area) => (
+                            <Col key={area.name}>
+                                <HintMarker width={secondRowWidth / 4} />
+                            </Col>
+                        ))}
+                    </Row>
+                    <Row style={trialStyle}>
+                        {silentRealms.map((a) => (
+                            <Col key={a.name}>
+                                <DungeonIcon
+                                    image={silentRealmData[a.name]}
+                                    iconLabel={a.name}
+                                    area={a.name}
+                                    width={secondRowWidth}
+                                    groupClicked={() => setActiveArea(a.name)}
+                                />
+                            </Col>
+                        ))}
+                    </Row>
+                    <Row style={trialCheckStyle}>
+                        {silentRealms.map((a) => (
+                            <Col key={a.name}>
+                                <AreaCounters
+                                    totalChecksLeftInArea={a.numChecksRemaining}
+                                    totalChecksAccessible={
+                                        a.numChecksAccessible
+                                    }
+                                />
+                            </Col>
+                        ))}
+                    </Row>
+                </>
+            )}
         </Col>
     );
 }
