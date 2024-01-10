@@ -7,6 +7,7 @@ import moldarach from '../assets/hints/moldarach.png';
 import koloktos from '../assets/hints/koloktos.png';
 import tentalus from '../assets/hints/tentalus.png';
 import g2 from '../assets/hints/g2.png';
+import ColorScheme from '../customization/ColorScheme';
 
 export type Hint =
     | { type: 'barren' }
@@ -34,18 +35,28 @@ export const bosses = [
 export interface DecodedHint {
     image: string;
     description: string;
+    style: keyof ColorScheme;
 }
 
 export function decodeHint(hint: Hint): DecodedHint {
     switch (hint.type) {
         case 'barren':
-            return { description: 'Barren', image: barrenImage };
+            return { description: 'Barren', image: barrenImage, style: 'checked' };
         case 'sots':
-            return { description: 'Spirit of the Sword', image: sotsImage };
+            return { description: 'Spirit of the Sword', image: sotsImage, style: 'inLogic' };
         case 'path':
             return {
                 description: `Path to ${bosses[hint.index]}`,
                 image: pathImages[hint.index],
+                style: 'inLogic',
             };
     }
+}
+
+export default function HintDescription({ hint }: { hint: DecodedHint }) {
+    return (
+        <div style={{ color: `var(--scheme-${hint.style})` }}>
+            {hint.description}
+        </div>
+    );
 }

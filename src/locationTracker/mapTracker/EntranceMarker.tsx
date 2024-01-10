@@ -10,7 +10,7 @@ import { TriggerEvent } from 'react-contexify';
 import { RootState } from '../../store/store';
 import { logicSelector } from '../../logic/selectors';
 import ColorScheme from '../../customization/ColorScheme';
-import { decodeHint } from '../Hints';
+import HintDescription, { decodeHint } from '../Hints';
 import { ExitMapping, HintRegion } from '../../logic/Locations';
 
 type EntranceMarkerProps = {
@@ -83,7 +83,6 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
     const areaHint = useSelector(areaHintSelector(destinationArea?.name ?? ''));
 
     const hint = areaHint && decodeHint(areaHint);
-    const hintColor: keyof ColorScheme = areaHint?.type === 'sots' || areaHint?.type === 'path' ? 'inLogic' : 'checked';
 
     const markerStyle: CSSProperties = {
         position: 'absolute',
@@ -106,7 +105,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
             <center>
                 <div> {title}</div>
                 <div> {region} ({accessibleChecks}/{remainingChecks}) </div>
-                <div style={{color: `var(--scheme-${hintColor})`}}> {hint?.description} </div>
+                {hint && <HintDescription hint={hint} />}
             </center>
         )
     } else {

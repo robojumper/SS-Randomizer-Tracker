@@ -8,7 +8,7 @@ import keyDownWrapper from '../../KeyDownWrapper';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/store';
 import { areaHintSelector, areasSelector } from '../../tracker/selectors';
-import { decodeHint } from '../Hints';
+import HintDescription, { decodeHint } from '../Hints';
 import { useContextMenu } from '../context-menu';
 import { LocationGroupContextMenuProps } from '../LocationGroupHeader';
 
@@ -48,7 +48,6 @@ const MapMarker = (props: MapMarkerProps) => {
 
     const areaHint = useSelector(areaHintSelector(title));
     const hint = areaHint && decodeHint(areaHint);
-    const hintColor: keyof ColorScheme = areaHint?.type === 'sots' || areaHint?.type === 'path' ? 'inLogic' : 'checked';
 
     const markerStyle: CSSProperties = {
         position: 'absolute',
@@ -67,7 +66,7 @@ const MapMarker = (props: MapMarkerProps) => {
     const tooltip = (
         <center>
             <div> {title} ({accessibleChecks}/{remainingChecks}) </div>
-            <div style={{color: `var(--scheme-${hintColor})`}}> {hint?.description} </div>
+            {hint && <HintDescription hint={hint} />}
         </center>
     )
 

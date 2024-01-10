@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, useCallback } from 'react';
+import { CSSProperties, useCallback } from 'react';
 import Tippy from '@tippyjs/react';
 import { followCursor } from 'tippy.js';
 import _ from 'lodash';
@@ -14,6 +14,8 @@ import { useSelector } from 'react-redux';
 import { areasSelector, exitsSelector } from '../../tracker/selectors';
 import { AreaGraph, Logic } from '../../logic/Logic';
 import { logicSelector } from '../../logic/selectors';
+import HintDescription, { DecodedHint, decodeHint } from '../Hints';
+import { RootState } from '../../store/store';
 
 export type RegionMarkerParams = {
     region: string,
@@ -65,16 +67,20 @@ function getExit(logic: Logic, marker: EntranceMarkerParams) {
 const Submap = (props: SubmapProps) => {
     let remainingChecks = 0
     let accessibleChecks = 0;
-    const subregionHints: ReactNode[] = [];
+    const subregionHints: { hint: DecodedHint, key: string }[] = [];
     const { onSubmapChange, onGroupChange, title, markerX, markerY, mapWidth, activeSubmap, markers, entranceMarkers, exitParams, expandedGroup} = props;
     const areas = useSelector(areasSelector);
     const exits = useSelector(exitsSelector);
+    const hints = useSelector((state: RootState) => state.tracker.hints);
     _.forEach(markers, (marker) => {
         const area = areas.find((area) => area.name === marker.region);
         if (area) {
             remainingChecks += area.numChecksRemaining;
             accessibleChecks += area.numChecksAccessible;
-            // TODO Hints
+            const hint = hints[area.name];
+            if (hint) {
+                subregionHints.push({ key: area.name, hint: decodeHint(hint) });
+            }
         }
     })
 
@@ -88,7 +94,10 @@ const Submap = (props: SubmapProps) => {
         if (area) {
             remainingChecks += area.numChecksRemaining;
             accessibleChecks += area.numChecksAccessible;
-            // TODO Hints
+            const hint = hints[area.name];
+            if (hint) {
+                subregionHints.push({ key: area.name, hint: decodeHint(hint) });
+            }
         }
     })
 
@@ -121,7 +130,7 @@ const Submap = (props: SubmapProps) => {
         <center>
             <div> {title} ({accessibleChecks}/{remainingChecks}) </div>
             <div> Click to Expand </div>
-            {subregionHints}
+            {subregionHints.map(({hint, key}) => <HintDescription key={key} hint={hint} />)}
         </center>
     )
 

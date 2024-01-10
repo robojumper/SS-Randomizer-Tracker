@@ -214,7 +214,7 @@ export type ExitRule =
           type: 'randomStartingEntrance';
       }
     | {
-          /** This entrance is random in some way. TODO: Add specific pool info. */
+          /** This entrance is random in some way. */
           type: 'random';
           pool: keyof AreaGraph['entrancePools'] | undefined;
       };
