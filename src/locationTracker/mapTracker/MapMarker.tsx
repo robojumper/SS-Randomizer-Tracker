@@ -55,6 +55,7 @@ const MapMarker = (props: MapMarkerProps) => {
         left: `${markerX}%`,
         borderRadius: (title.includes('Silent Realm') ? '200px' : '8px'),
         background: `var(--scheme-${markerColor})`,
+        color: 'black',
         width: mapWidth / 18,
         height: mapWidth / 18,
         border: '2px solid #000000',

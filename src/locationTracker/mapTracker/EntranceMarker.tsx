@@ -90,6 +90,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
         left: `${markerX}%`,
         borderRadius: (isDungeon ? '0px' : '200px'),
         background: `var(--scheme-${markerColor})`,
+        color: 'black',
         width: mapWidth / 18,
         height: mapWidth / 18,
         border: '2px solid #000000',

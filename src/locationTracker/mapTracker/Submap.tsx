@@ -67,7 +67,7 @@ function getExit(logic: Logic, marker: EntranceMarkerParams) {
 const Submap = (props: SubmapProps) => {
     let remainingChecks = 0
     let accessibleChecks = 0;
-    const subregionHints: { hint: DecodedHint, key: string }[] = [];
+    const subregionHints: { hint: DecodedHint, area: string }[] = [];
     const { onSubmapChange, onGroupChange, title, markerX, markerY, mapWidth, activeSubmap, markers, entranceMarkers, exitParams, expandedGroup} = props;
     const areas = useSelector(areasSelector);
     const exits = useSelector(exitsSelector);
@@ -79,7 +79,7 @@ const Submap = (props: SubmapProps) => {
             accessibleChecks += area.numChecksAccessible;
             const hint = hints[area.name];
             if (hint) {
-                subregionHints.push({ key: area.name, hint: decodeHint(hint) });
+                subregionHints.push({ area: area.name, hint: decodeHint(hint) });
             }
         }
     })
@@ -96,7 +96,7 @@ const Submap = (props: SubmapProps) => {
             accessibleChecks += area.numChecksAccessible;
             const hint = hints[area.name];
             if (hint) {
-                subregionHints.push({ key: area.name, hint: decodeHint(hint) });
+                subregionHints.push({ area: area.name, hint: decodeHint(hint) });
             }
         }
     })
@@ -118,6 +118,7 @@ const Submap = (props: SubmapProps) => {
         left: `${markerX}%`,
         borderRadius: '5px',
         background: `var(--scheme-${markerColor})`,
+        color: 'black',
         width: mapWidth / 18,
         height: mapWidth / 18,
         border: '2px solid #000000',
@@ -130,7 +131,7 @@ const Submap = (props: SubmapProps) => {
         <center>
             <div> {title} ({accessibleChecks}/{remainingChecks}) </div>
             <div> Click to Expand </div>
-            {subregionHints.map(({hint, key}) => <HintDescription key={key} hint={hint} />)}
+            {subregionHints.map(({hint, area}) => <HintDescription key={area} hint={hint} area={area} />)}
         </center>
     )
 
