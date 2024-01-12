@@ -104,7 +104,7 @@ export interface EntranceLinkage {
     /** Deep Woods\Exit to SV -> SV\Exit to Deep Woods  */
     exits: [outsideExit: string, insideExit: string];
     /** SV\Main Entrance -> Deep Woods\Entrance from SV  */
-    entrances: [outsideEntrance: string, insideEntrance: string];
+    entrances: [insideEntrance: string, outsideEntrance: string];
 }
 
 export type DayNightRequirements = { day: LogicalExpression, night: LogicalExpression };

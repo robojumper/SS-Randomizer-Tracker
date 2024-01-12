@@ -15,6 +15,8 @@ import {
     gotRaisingReq,
     hordeDoorReq,
     impaSongCheck,
+    lmfSecondExit,
+    nonRandomizedEntrances,
     nonRandomizedExits,
     runtimeOptions,
     swordsToAdd,
@@ -204,6 +206,9 @@ export type ExitRule =
           otherExit: string;
       }
     | {
+        /** This is LMF's second exit. It leads to its vanilla exit if and only if the LMF entrance is vanilla. */
+        type: 'lmfSecondExit';
+    } | {
           /** This is a linked exit, e.g. interior dungeon exit when exterior exit into dungeon has been mapped. */
           type: 'linked';
           pool: keyof AreaGraph['entrancePools'];
@@ -271,6 +276,13 @@ export const exitRulesSelector = createSelector(
                 continue;
             }
 
+            if (exitId === lmfSecondExit) {
+                result[exitId] = {
+                    type: 'lmfSecondExit',
+                };
+                continue;
+            }
+
             const poolData = (() => {
                 for (const [pool_, locations] of Object.entries(
                     logic.areaGraph.entrancePools,
@@ -327,9 +339,6 @@ export const exitRulesSelector = createSelector(
     },
 );
 
-// FIXME: The dungeon that appears in place of LMF has double exits, one will lead to Temple of Time.
-// This isn't accounted for here
-
 export const exitsSelector = createSelector(
     [logicSelector, exitRulesSelector, mappedExitsSelector],
     (logic, exitRules, mappedExits) => {
@@ -359,81 +368,107 @@ export const exitsSelector = createSelector(
             name: logic.areaGraph.exits[id].short_name,
         });
 
-        for (const [exitId, rule] of rules.filter(
-            ([, rule]) => rule.type === 'vanilla',
-        )) {
-            result[exitId] = {
-                canAssign: false,
-                entrance: makeEntrance(
-                    logic.areaGraph.vanillaConnections[exitId],
-                ),
-                exit: makeExit(exitId),
-                rule,
-            };
-        }
+        // Exit assignment has to happen in this order because there are dependencies
+        const assignmentOrder: ExitRule['type'][] = [
+            'vanilla',
+            'random',
+            'randomStartingEntrance',
+            // these depend on dungeon entrances
+            'follow',
+            'linked',
+            'lmfSecondExit',
+        ];
 
-        for (const [exitId, rule] of rules.filter(
-            ([, rule]) =>
-                rule.type === 'random' ||
-                rule.type === 'randomStartingEntrance',
-        )) {
-            result[exitId] = {
-                canAssign: true,
-                entrance: makeEntrance(mappedExits[exitId]),
-                exit: makeExit(exitId),
-                rule,
-            };
-        }
-
-        for (const [exitId, rule] of rules.filter(
-            ([, rule]) => rule.type === 'follow',
-        )) {
-            if (rule.type === 'follow') {
-                result[exitId] = {
-                    canAssign: false,
-                    entrance: result[rule.otherExit].entrance,
-                    exit: makeExit(exitId),
-                    rule,
-                };
-            }
-        }
-
-        for (const [exitId, rule] of rules.filter(
-            ([, rule]) => rule.type === 'linked',
-        )) {
-            if (rule.type === 'linked') {
-                // This is unfortunately somewhat complex. This might be an exit like "ET - Main Exit",
-                // and if the Deep Woods - Exit to SV leads to ET - Main Entrance, then we know this
-                // exit leads to Deep Woods - Entrance from SV.
-                const location = rule.location;
-                const pool = logic.areaGraph.entrancePools[rule.pool];
-                // This is the corresponding entrance for this exit
-                const neededEntrance = pool[location].entrances[1];
-                // Find the exit that was mapped to an entrance in this location
-                const sourceLocation = Object.entries(pool).find(
-                    ([, linkage]) =>
-                        result[linkage.exits[0]].entrance?.id ===
-                        neededEntrance,
-                )?.[0];
-
-                if (!sourceLocation) {
+        const sortedRules = _.sortBy(rules, ([, rule]) => assignmentOrder.indexOf(rule.type));
+        for (const [exitId, rule] of sortedRules) {
+            console.log(exitId, rule.type);
+            switch (rule.type) {
+                case 'vanilla':
                     result[exitId] = {
                         canAssign: false,
-                        entrance: undefined,
+                        entrance: makeEntrance(
+                            logic.areaGraph.vanillaConnections[exitId],
+                        ),
                         exit: makeExit(exitId),
                         rule,
                     };
-                } else {
-                    const reverseEntrance = pool[sourceLocation].entrances[0];
+                    break;
+                case 'random':
+                case 'randomStartingEntrance':
                     result[exitId] = {
-                        canAssign: false,
-                        entrance: makeEntrance(reverseEntrance),
+                        canAssign: true,
+                        entrance: makeEntrance(mappedExits[exitId]),
                         exit: makeExit(exitId),
                         rule,
                     };
+                    break;
+                case 'follow':
+                    result[exitId] = {
+                        canAssign: false,
+                        entrance: result[rule.otherExit].entrance,
+                        exit: makeExit(exitId),
+                        rule,
+                    };
+                    break;
+                case 'linked': {
+                    // This is unfortunately somewhat complex. This might be an exit like "ET - Main Exit",
+                    // and if the Deep Woods - Exit to SV leads to ET - Main Entrance, then we know this
+                    // exit leads to Deep Woods - Entrance from SV.
+                    const location = rule.location;
+                    const pool = logic.areaGraph.entrancePools[rule.pool];
+                    // This is the corresponding entrance for this exit
+                    const neededEntrance = pool[location].entrances[0];
+                    // Find the exit that was mapped to an entrance in this location
+                    const sourceLocation = Object.entries(pool).find(
+                        ([, linkage]) =>
+                            result[linkage.exits[0]].entrance?.id ===
+                            neededEntrance,
+                    )?.[0];
+
+                    if (!sourceLocation) {
+                        result[exitId] = {
+                            canAssign: false,
+                            entrance: undefined,
+                            exit: makeExit(exitId),
+                            rule,
+                        };
+                    } else {
+                        const reverseEntrance = pool[sourceLocation].entrances[1];
+                        result[exitId] = {
+                            canAssign: false,
+                            entrance: makeEntrance(reverseEntrance),
+                            exit: makeExit(exitId),
+                            rule,
+                        };
+                    }
+                    break;
+                }
+                case 'lmfSecondExit': {
+                    // LMF's second exit leads to ToT (vanilla) if LMF is at LMF, otherwise it's neutered
+                    const lmfPool = logic.areaGraph.entrancePools.dungeons['Lanayru Mining Facility'];
+                    if (result[lmfPool.exits[0]].entrance?.id === lmfPool.entrances[0]) {
+                        // LMF is vanilla 
+                        result[exitId] = {
+                            canAssign: false,
+                            entrance: makeEntrance(
+                                logic.areaGraph.vanillaConnections[exitId],
+                            ),
+                            exit: makeExit(exitId),
+                            rule,
+                        };
+                    } else {
+                        result[exitId] = {
+                            canAssign: false,
+                            entrance: undefined,
+                            exit: makeExit(exitId),
+                            rule,
+                        };
+                    }
+                    break;
                 }
             }
         }
+
         return _.sortBy(Object.values(result), (exit) => !exit.canAssign);
     },
 );
@@ -1061,7 +1096,7 @@ export const remainingEntrancesSelector = createSelector(
                     (e) =>
                         !bannedExitsAndEntrances.includes(e[0]) &&
                         logic.areaGraph.entrances[e[0]].stage !== undefined &&
-                        !nonRandomizedExits.includes(
+                        !nonRandomizedEntrances.includes(
                             logic.areaGraph.vanillaConnections[e[0]],
                         ),
                 )

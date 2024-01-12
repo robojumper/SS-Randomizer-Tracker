@@ -203,7 +203,7 @@ function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: 
             <Submenu label="Set Path">
                 {
                     _.map(bosses, (bossName, bossIndex) => (
-                        <Item onClick={handlePathClick} data={{ boss: bossIndex } satisfies BossData}>{bossName}</Item>
+                        <Item key={bossName} onClick={handlePathClick} data={{ boss: bossIndex } satisfies BossData}>{bossName}</Item>
                     ))
                 }
             </Submenu>
