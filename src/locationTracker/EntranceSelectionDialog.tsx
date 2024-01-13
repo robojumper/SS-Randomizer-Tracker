@@ -1,7 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux';
 import {
+    entrancePoolsSelector,
     exitsSelector,
-    remainingEntrancesSelector,
+    usedEntrancesSelector,
 } from '../tracker/selectors';
 import { useMemo } from 'react';
 import Select, { ActionMeta, SingleValue } from 'react-select';
@@ -27,17 +28,29 @@ function EntranceSelectionDialog({
 }) {
     const dispatch = useDispatch();
     const exits = useSelector(exitsSelector);
-    const remainingEntrances = useSelector(remainingEntrancesSelector);
+    const entrancePools = useSelector(entrancePoolsSelector);
+    const usedEntrances = useSelector(usedEntrancesSelector);
     const exit = exits.find((e) => e.exit.id === exitId)!;
 
-    const entranceOptions: Entrance[] = useMemo(() => {
-        const entrances = remainingEntrances.map(({ id, name }) => ({
-            value: id,
-            label: name,
-        }));
-        entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
-        return entrances;
-    }, [remainingEntrances]);
+    const entranceOptions: Entrance[] | undefined = useMemo(() => {
+        if (exit.canAssign) {
+            const pool = exit.rule.pool;
+            const entrances = entrancePools[pool].entrances
+                .filter(
+                    (entrance) =>
+                        !entrancePools[pool].usedEntrancesExcluded ||
+                        !usedEntrances[pool].includes(entrance.id),
+                )
+                .map(({ id, name }) => ({
+                    value: id,
+                    label: name,
+                }));
+
+            entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
+
+            return entrances;
+        }
+    }, [entrancePools, exit.canAssign, exit.rule, usedEntrances]);
 
     const onEntranceChange = (
         selectedOption: SingleValue<Entrance>,

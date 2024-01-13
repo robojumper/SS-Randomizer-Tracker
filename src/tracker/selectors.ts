@@ -31,7 +31,7 @@ import {
     isRegularDungeon,
     LogicalState,
 } from '../logic/Locations';
-import { AreaGraph, Logic, LogicalCheck, itemName } from '../logic/Logic';
+import { LinkedEntrancePool, Logic, LogicalCheck, itemName } from '../logic/Logic';
 import {
     cubeCheckToCubeCollected,
     cubeCheckToGoddessChestCheck,
@@ -166,6 +166,12 @@ export const totalGratitudeCrystalsSelector = createSelector(
     },
 );
 
+export interface EntrancePool {
+    entrances: { name: string, id: string }[];
+    usedEntrancesExcluded: boolean;
+}
+
+
 export const allowedStartingEntrancesSelector = createSelector(
     [logicSelector, settingSelector('random-start-entrance')],
     (logic, randomizeStart) => {
@@ -194,6 +200,60 @@ export const allowedStartingEntrancesSelector = createSelector(
     },
 );
 
+
+/**
+ * Describes which entrances are available for a given pool (dungeons, silent realms, starting, ...)
+ */
+export const entrancePoolsSelector = createSelector(
+    [areaGraphSelector, allowedStartingEntrancesSelector],
+    (areaGraph, allowedStartingEntrances) => {
+        const result: Record<string, EntrancePool> = {};
+        for (const [pool, entries] of Object.entries(areaGraph.linkedEntrancePools)) {
+            result[pool] = {
+                usedEntrancesExcluded: true,
+                entrances: Object.values(entries).map((linkage) => {
+                    const entranceId = linkage.entrances[0];
+                    return {
+                        id: entranceId,
+                        name: areaGraph.entrances[entranceId].short_name,
+                    };
+                })
+            };
+        }
+
+        result[startingEntrancePool] = { usedEntrancesExcluded: false, entrances: allowedStartingEntrances };
+
+        for (const [pool, entries] of Object.entries(areaGraph.entrancePools)) {
+            result[pool] = {
+                usedEntrancesExcluded: true,
+                entrances: Object.values(entries).map((entranceId) => {
+                    return {
+                        id: entranceId,
+                        name: areaGraph.entrances[entranceId].short_name,
+                    };
+                })
+            };
+        }
+
+        result[fullErPool] = {
+            usedEntrancesExcluded: false,
+            entrances: Object.entries(areaGraph.entrances)
+                .filter(
+                    ([entranceId]) =>
+                        !bannedExitsAndEntrances.includes(entranceId) &&
+                        areaGraph.entrances[entranceId].stage !== undefined &&
+                        !nonRandomizedEntrances.includes(entranceId),
+                )
+                .map(([id, def]) => ({
+                    id,
+                    name: def.short_name,
+                })),
+        };
+
+        return result;
+    }
+)
+
 const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
 
 export type ExitRule =
@@ -202,28 +262,29 @@ export type ExitRule =
           type: 'vanilla';
       }
     | {
-          /** This exit always leads to the same entrance as `otherExit` */
+          /** This exit always leads to the same entrance as `otherExit`. Currently used for Sandship. */
           type: 'follow';
           otherExit: string;
       }
     | {
-        /** This is LMF's second exit. It leads to its vanilla exit if and only if the LMF entrance is vanilla. */
-        type: 'lmfSecondExit';
-    } | {
-          /** This is a linked exit, e.g. interior dungeon exit when exterior exit into dungeon has been mapped. */
-          type: 'linked';
-          pool: keyof AreaGraph['entrancePools'];
-          location: string;
+          /** This is LMF's second exit. It leads to its vanilla exit iff the LMF entrance is vanilla. */
+          type: 'lmfSecondExit';
       }
     | {
-          /** This is the random starting entrance. */
-          type: 'randomStartingEntrance';
+          /** This is a linked exit, e.g. interior dungeon exit when exterior exit into dungeon has been mapped. */
+          type: 'linked';
+          pool: LinkedEntrancePool;
+          /** The identifier of this pool entry ("Skyview", "Faron Silent Realm", ...) */
+          entry: string;
       }
     | {
           /** This entrance is random in some way. */
           type: 'random';
-          pool: keyof AreaGraph['entrancePools'] | undefined;
+          pool: string;
       };
+
+const fullErPool = 'TR_FULL_ER';
+const startingEntrancePool = 'TR_STARTING_ENTRANCE';
 
 /** Defines how exits should be resolved. */
 export const exitRulesSelector = createSelector(
@@ -262,7 +323,7 @@ export const exitRulesSelector = createSelector(
 
             if (exitId === '\\Start') {
                 if (startingEntranceSetting !== 'Vanilla') {
-                    result[exitId] = { type: 'randomStartingEntrance' };
+                    result[exitId] = { type: 'random', pool: startingEntrancePool };
                 } else {
                     result[exitId] = { type: 'vanilla' };
                 }
@@ -285,25 +346,25 @@ export const exitRulesSelector = createSelector(
             }
 
             const poolData = (() => {
-                for (const [pool_, locations] of Object.entries(
-                    logic.areaGraph.entrancePools,
+                for (const [pool_, entries] of Object.entries(
+                    logic.areaGraph.linkedEntrancePools,
                 )) {
                     const pool =
-                        pool_ as keyof typeof logic.areaGraph.entrancePools;
-                    for (const [location, linkage] of Object.entries(
-                        locations,
+                        pool_ as keyof typeof logic.areaGraph.linkedEntrancePools;
+                    for (const [entry, linkage] of Object.entries(
+                        entries,
                     )) {
                         if (linkage.exits[0] === exitId) {
-                            return [pool, location, true] as const;
+                            return [pool, entry, true] as const;
                         } else if (linkage.exits[1] === exitId) {
-                            return [pool, location, false] as const;
+                            return [pool, entry, false] as const;
                         }
                     }
                 }
             })();
 
             if (poolData) {
-                const [pool, location, isOutsideExit] = poolData;
+                const [pool, entry, isOutsideExit] = poolData;
                 if (
                     (pool === 'dungeons' && dungeonEntrancesRandomized) ||
                     (pool === 'silent_realms' && randomTrialsSetting)
@@ -311,7 +372,7 @@ export const exitRulesSelector = createSelector(
                     if (isOutsideExit) {
                         result[exitId] = { type: 'random', pool };
                     } else {
-                        result[exitId] = { type: 'linked', pool, location };
+                        result[exitId] = { type: 'linked', pool, entry };
                     }
                 } else {
                     result[exitId] = { type: 'vanilla' };
@@ -328,7 +389,7 @@ export const exitRulesSelector = createSelector(
                 ) {
                     result[exitId] = { type: 'vanilla' };
                 } else {
-                    result[exitId] = { type: 'random', pool: undefined };
+                    result[exitId] = { type: 'random', pool: fullErPool };
                 }
                 continue;
             }
@@ -373,7 +434,6 @@ export const exitsSelector = createSelector(
         const assignmentOrder: ExitRule['type'][] = [
             'vanilla',
             'random',
-            'randomStartingEntrance',
             // these depend on dungeon entrances
             'follow',
             'linked',
@@ -394,7 +454,6 @@ export const exitsSelector = createSelector(
                     };
                     break;
                 case 'random':
-                case 'randomStartingEntrance':
                     result[exitId] = {
                         canAssign: true,
                         entrance: makeEntrance(mappedExits[exitId]),
@@ -414,8 +473,8 @@ export const exitsSelector = createSelector(
                     // This is unfortunately somewhat complex. This might be an exit like "ET - Main Exit",
                     // and if the Deep Woods - Exit to SV leads to ET - Main Entrance, then we know this
                     // exit leads to Deep Woods - Entrance from SV.
-                    const location = rule.location;
-                    const pool = logic.areaGraph.entrancePools[rule.pool];
+                    const location = rule.entry;
+                    const pool = logic.areaGraph.linkedEntrancePools[rule.pool];
                     // This is the corresponding entrance for this exit
                     const neededEntrance = pool[location].entrances[0];
                     // Find the exit that was mapped to an entrance in this location
@@ -445,7 +504,7 @@ export const exitsSelector = createSelector(
                 }
                 case 'lmfSecondExit': {
                     // LMF's second exit leads to ToT (vanilla) if LMF is at LMF, otherwise it's neutered
-                    const lmfPool = logic.areaGraph.entrancePools.dungeons['Lanayru Mining Facility'];
+                    const lmfPool = logic.areaGraph.linkedEntrancePools.dungeons['Lanayru Mining Facility'];
                     if (result[lmfPool.exits[0]].entrance?.id === lmfPool.entrances[0]) {
                         // LMF is vanilla 
                         result[exitId] = {
@@ -1090,65 +1149,20 @@ export const totalCountersSelector = createSelector(
     },
 );
 
-export const remainingEntrancesSelector = createSelector(
-    [
-        logicSelector,
-        exitRulesSelector,
-        exitsSelector,
-        settingSelector('randomize-entrances'),
-    ],
-    (logic, exitRules, exits, randomizeEntrances) => {
-        if (randomizeEntrances === 'All') {
-            return Object.entries(logic.areaGraph.entrances)
-                .filter(
-                    (e) =>
-                        !bannedExitsAndEntrances.includes(e[0]) &&
-                        logic.areaGraph.entrances[e[0]].stage !== undefined &&
-                        !nonRandomizedEntrances.includes(
-                            logic.areaGraph.vanillaConnections[e[0]],
-                        ),
-                )
-                .map(([id, def]) => ({
-                    id,
-                    name: def.short_name,
-                }));
-        }
+export const usedEntrancesSelector = createSelector([
+    entrancePoolsSelector,
+    exitsSelector
+], (entrancePools, exits) => {
+    const result = _.mapValues(entrancePools, (): string[] => []);
 
-        const usedEntrances = new Set(
-            _.compact(
-                exits.map((exit) =>
-                    exit.exit.id !== '\\Start' ? exit.entrance?.id : undefined,
-                ),
-            ),
-        );
-        for (const [exitId, rule] of Object.entries(exitRules)) {
-            if (rule.type === 'linked') {
-                const pool = logic.areaGraph.entrancePools[rule.pool];
-                const entry = Object.values(pool).find(
-                    (linkage) => linkage.exits[1] === exitId,
-                );
-                if (entry) {
-                    usedEntrances.add(entry.entrances[1]);
-                }
-            }
+    for (const exit of exits) {
+        if (exit.canAssign && exit.entrance) {
+            result[exit.rule.pool].push(exit.entrance.id);
         }
+    }
 
-        usedEntrances.add(logic.areaGraph.vanillaConnections['\\Start']);
-        return Object.entries(logic.areaGraph.entrances)
-            .filter(
-                (e) =>
-                    !usedEntrances.has(e[0]) &&
-                    !bannedExitsAndEntrances.includes(e[0]) &&
-                    !nonRandomizedExits.includes(
-                        logic.areaGraph.vanillaConnections[e[0]],
-                    ),
-            )
-            .map(([id, def]) => ({
-                id,
-                name: def.short_name,
-            }));
-    },
-);
+    return result;
+})
 
 export const inLogicPathfindingSelector = createSelector(
     [areaGraphSelector, exitsSelector, inLogicBitsSelector],

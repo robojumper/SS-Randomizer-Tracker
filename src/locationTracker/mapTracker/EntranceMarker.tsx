@@ -35,7 +35,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
     const exit = useSelector((state: RootState) => exitsSelector(state).find((e) => e.exit.id === exitId))!;
     const inLogicBits = useSelector(inLogicBitsSelector);
     const logic = useSelector(logicSelector);
-    const isDungeon = Object.values(logic.areaGraph.entrancePools['dungeons']).some((ex) => ex.exits[0] === exit.exit.id);
+    const isDungeon = Object.values(logic.areaGraph.linkedEntrancePools['dungeons']).some((ex) => ex.exits[0] === exit.exit.id);
 
     const region = exit.entrance?.region;
     const area = useSelector((state: RootState) => areasSelector(state).find((r) => r.name === region))

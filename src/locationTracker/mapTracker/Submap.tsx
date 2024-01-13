@@ -24,7 +24,7 @@ export type RegionMarkerParams = {
 };
 
 export type EntranceMarkerParams = {
-    exitPool: keyof AreaGraph['entrancePools']
+    exitPool: keyof AreaGraph['linkedEntrancePools']
     entryName: string;
     markerX: number,
     markerY: number,
@@ -60,7 +60,7 @@ const images = new Map<string, string>([
 ]);
 
 function getExit(logic: Logic, marker: EntranceMarkerParams) {
-    const exitId = logic.areaGraph.entrancePools[marker.exitPool][marker.entryName].exits[0];
+    const exitId = logic.areaGraph.linkedEntrancePools[marker.exitPool][marker.entryName].exits[0];
     return { exitId, exitName: logic.areaGraph.exits[exitId].short_name };
 }
 

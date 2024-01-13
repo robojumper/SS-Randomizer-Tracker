@@ -5,8 +5,8 @@ import { LocationGroupContextMenuProps } from './LocationGroupHeader';
 import { bulkEditChecks, mapEntrance, setHint } from '../tracker/slice';
 import { MapExitContextMenuProps } from './mapTracker/EntranceMarker';
 import { useDispatch, useSelector } from 'react-redux';
-import { areasSelector, remainingEntrancesSelector, settingSelector } from '../tracker/selectors';
-import { AreaGraph } from '../logic/Logic';
+import { areasSelector, settingSelector, usedEntrancesSelector } from '../tracker/selectors';
+import { AreaGraph, LinkedEntrancePool } from '../logic/Logic';
 import { areaGraphSelector } from '../logic/selectors';
 import { bosses } from './Hints';
 import { ThunkResult, useAppDispatch } from '../store/store';
@@ -121,15 +121,15 @@ function LocationGroupContextMenu() {
 // so this is kind of annoying and not as generic but /shrug
 
 // contexify breaks down if items are wrapped in nodes, so this is not a component!!!
-function createBindSubmenu(areaGraph: AreaGraph, remainingEntrances: Set<string>, pool: keyof AreaGraph['entrancePools'], chooseEntrance: (exitId: string, entranceId: string) => void, disabled: boolean) {
+function createBindSubmenu(areaGraph: AreaGraph, usedEntrances: Set<string>, pool: LinkedEntrancePool, chooseEntrance: (exitId: string, entranceId: string) => void, disabled: boolean) {
     const name = pool === 'dungeons' ? 'Dungeon' : 'Silent Realm';
     return <Submenu disabled={disabled} label={`Bind ${name} to Entrance`}>
-        {Object.entries(areaGraph.entrancePools[pool]).map(([readableName, exits]) => {
+        {Object.entries(areaGraph.linkedEntrancePools[pool]).map(([readableName, exits]) => {
             const entrance = exits.entrances[0];
             return (
                 <Item
                     key={readableName}
-                    disabled={!remainingEntrances.has(entrance)}
+                    disabled={usedEntrances.has(entrance)}
                     onClick={(params: ExitCtxProps) =>
                         chooseEntrance(
                             params.props!.exitMapping.exit.id,
@@ -144,10 +144,10 @@ function createBindSubmenu(areaGraph: AreaGraph, remainingEntrances: Set<string>
     </Submenu>
 }
 
-function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: keyof AreaGraph['entrancePools'], canChooseEntrance: boolean }) {
+function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: LinkedEntrancePool, canChooseEntrance: boolean }) {
     const dispatch = useAppDispatch();
     const areaGraph = useSelector(areaGraphSelector);
-    const remainingEntrances = useSelector(remainingEntrancesSelector);
+    const usedEntrances = useSelector(usedEntrancesSelector);
 
     const checkAll = useCallback(
         (params: AreaCtxProps | ExitCtxProps) => {
@@ -220,15 +220,15 @@ function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: 
             <Item onClick={handleSotsClick}>Set SotS</Item>
             <Item onClick={handleBarrenClick}>Set Barren</Item>
             <Item onClick={handleClearCheck}>Clear Hint</Item>
-            {createBindSubmenu(areaGraph, new Set(remainingEntrances.map((e) => e.id)), pool, handleMapEntrance, !canChooseEntrance)}
+            {createBindSubmenu(areaGraph, new Set(usedEntrances[pool]), pool, handleMapEntrance, !canChooseEntrance)}
         </Menu>
     );
 }
 
-function UnboundEntranceMenu({ id, pool }: { id: string, pool: keyof AreaGraph['entrancePools'] }) {
+function UnboundEntranceMenu({ id, pool }: { id: string, pool: LinkedEntrancePool }) {
     const dispatch = useDispatch();
     const areaGraph = useSelector(areaGraphSelector);
-    const remainingEntrances = useSelector(remainingEntrancesSelector);
+    const usedEntrances = useSelector(usedEntrancesSelector);
 
     const handleMapEntrance = useCallback(
         (exit: string, entrance: string) => dispatch(mapEntrance({
@@ -240,7 +240,7 @@ function UnboundEntranceMenu({ id, pool }: { id: string, pool: keyof AreaGraph['
 
     return (
         <Menu id={id}>
-            {createBindSubmenu(areaGraph, new Set(remainingEntrances.map((e) => e.id)), pool, handleMapEntrance, false)}
+            {createBindSubmenu(areaGraph, new Set(usedEntrances[pool]), pool, handleMapEntrance, false)}
         </Menu>
     );
 }

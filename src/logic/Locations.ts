@@ -33,7 +33,7 @@ export interface Check {
     checked: boolean;
 }
 
-export interface ExitMapping {
+interface AbstractExitMapping {
     exit: {
         id: string;
         name: string;
@@ -46,9 +46,20 @@ export interface ExitMapping {
           }
         | undefined;
     canAssign: boolean;
-    // inLogic: boolean;
     rule: ExitRule;
 }
+
+export interface ReadOnlyExitMapping extends AbstractExitMapping {
+    canAssign: false;
+    rule: ExitRule & { type: 'vanilla' | 'follow' | 'lmfSecondExit' | 'linked' };
+}
+
+export interface AssignableExitMapping extends AbstractExitMapping {
+    canAssign: true;
+    rule: ExitRule & { type: 'random' };
+}
+
+export type ExitMapping = ReadOnlyExitMapping | AssignableExitMapping;
 
 export const dungeonNames = [
     'Skyview',

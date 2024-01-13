@@ -10,9 +10,10 @@ import {
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import Select, { ActionMeta, SingleValue } from 'react-select';
 import { useDispatch, useSelector } from 'react-redux';
-import { allowedStartingEntrancesSelector, exitsSelector, remainingEntrancesSelector } from '../tracker/selectors';
+import { entrancePoolsSelector, exitsSelector, usedEntrancesSelector } from '../tracker/selectors';
 import { mapEntrance } from '../tracker/slice';
 import { selectStyles } from '../customization/ComponentStyles';
+import _ from 'lodash';
 // import EntranceGraph from './EntranceGraph';
 
 type EntranceTrackerProps = {
@@ -30,31 +31,8 @@ const RESET_OPTION = 'RESET';
 function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
     const dispatch = useDispatch();
     const exits = useSelector(exitsSelector);
-    const remainingEntrances = useSelector(remainingEntrancesSelector);
-
-    const allowedStartingEntrances = useSelector(allowedStartingEntrancesSelector);
-    
-    const entranceOptions: Entrance[] = useMemo(() => {
-        const entrances = remainingEntrances.map(({
-            id, name
-        }) => ({
-            value: id,
-            label: name
-        }));
-        entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
-        return entrances;
-    }, [remainingEntrances]);
-
-    const startingEntranceOptions: Entrance[] = useMemo(() => {
-        const entrances = allowedStartingEntrances.map(({
-            id, name
-        }) => ({
-            value: id,
-            label: name
-        }));
-        entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
-        return entrances;
-    }, [allowedStartingEntrances]);
+    const usedEntrances = useSelector(usedEntrancesSelector);
+    const entrancePools = useSelector(entrancePoolsSelector);
 
     const [exitSearch, setExitSearch] = useState('');
     const [entranceSearch, setEntranceSeach] = useState('');
@@ -64,6 +42,27 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
         setExitSearch('');
         setEntranceSeach('');
     };
+
+    const entranceOptions: Record<string, Entrance[]> = useMemo(
+        () =>
+            _.mapValues(entrancePools, (poolValue, pool) => {
+                const entrances = poolValue.entrances
+                    .filter(
+                        (entrance) =>
+                            !poolValue.usedEntrancesExcluded ||
+                            !usedEntrances[pool].includes(entrance.id),
+                    )
+                    .map(({ id, name }) => ({
+                        value: id,
+                        label: name,
+                    }));
+
+                entrances.unshift({ value: RESET_OPTION, label: 'Reset' });
+
+                return entrances;
+            }),
+        [entrancePools, usedEntrances],
+    );
 
     const onEntranceChange = 
         (
@@ -118,7 +117,7 @@ function EntranceTracker({ show, onHide }: EntranceTrackerProps) {
                         styles={selectStyles<false, Entrance>()}
                         value={exit.entrance && { label: exit.entrance.name, value: exit.entrance.id }}
                         onChange={(...args) => onEntranceChange(exit.exit.id, ...args)}
-                        options={exit.exit.id === '\\Start' ? startingEntranceOptions : entranceOptions}
+                        options={exit.canAssign ? entranceOptions[exit.rule.pool] : undefined}
                         name={exit.entrance?.name}
                         isDisabled={!exit.canAssign}
                         filterOption={(option, search) => matches(option.data.label.toLowerCase(), search.toLowerCase())}

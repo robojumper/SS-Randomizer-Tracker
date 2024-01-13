@@ -71,6 +71,18 @@ export interface LogicalCheck {
  */
 export type LocationAvailability = TimeOfDay | 'abstract';
 
+export type LinkedEntrancePool = keyof RawLogic['linked_entrances'];
+
+/**
+ * Returns whether this is a linked entrance pool or a regular entrance pool.
+ */
+export function isLinkedEntrancePool(
+    areaGraph: AreaGraph,
+    pool: string,
+): pool is LinkedEntrancePool {
+    return Boolean(pool in areaGraph.linkedEntrancePools);
+}
+
 /**
  * The AreaGraph is a parsed dump with some preprocessing for TimeOfDay logic.
  * This graph will be mapped to a self-contained BitLogic for logical state.
@@ -93,11 +105,21 @@ export interface AreaGraph {
     autoExits: {
         [canonicalExit: string]: string;
     };
-    entrancePools: {
-        [key in keyof RawLogic['linked_entrances']]: Record<
+    /**
+     * Linked entrance pools are Dungeons and Silent Realms,
+     * where interior exits follow exterior exit choice.
+     */
+    linkedEntrancePools: {
+        [key in LinkedEntrancePool]: Record<
             string,
             EntranceLinkage
         >;
+    };
+    /**
+     * Other entrance pools without linkage. E.g. starting entrance, bird statues, full ER...
+     */
+    entrancePools: {
+        [pool: string]: string[];
     };
 }
 
@@ -685,7 +707,7 @@ export function parseLogic(raw: RawLogic): Logic {
     }
 
     const autoExits: AreaGraph['autoExits'] = {};
-    const entrancePools: AreaGraph['entrancePools'] = {
+    const linkedEntrancePools: AreaGraph['linkedEntrancePools'] = {
         dungeons: {},
         silent_realms: {},
     };
@@ -702,7 +724,7 @@ export function parseLogic(raw: RawLogic): Logic {
                     ? entry.exit_from_outside
                     : entry.exit_from_outside[0];
 
-            entrancePools[pool][location] = {
+            linkedEntrancePools[pool][location] = {
                 entrances: [
                     vanillaConnections[canonicalExit],
                     vanillaConnections[entry.exit_from_inside],
@@ -723,7 +745,10 @@ export function parseLogic(raw: RawLogic): Logic {
         exits: raw.exits,
         vanillaConnections,
         autoExits,
-        entrancePools,
+        linkedEntrancePools,
+        // TODO: This will contain bird statue data retrieved from the logic dump
+        // E.g. Faron Pillar Exit -> [...Bird Statues]
+        entrancePools: {}
     };
 
     // Now map our area graph to BitLogic
