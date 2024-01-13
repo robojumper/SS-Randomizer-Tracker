@@ -61,6 +61,7 @@ export interface LogicalCheck {
         | 'tr_cube'
         | 'tr_dummy';
     name: string;
+    area: string | undefined;
 }
 
 /**
@@ -232,6 +233,8 @@ function preprocessItems(raw: string[]): {
     return { newItems, dominators, reverseDominators };
 }
 
+const checkAreaPlaceholder = 'filled-in-later';
+
 export function parseLogic(raw: RawLogic): Logic {
     const start = performance.now();
 
@@ -254,6 +257,7 @@ export function parseLogic(raw: RawLogic): Logic {
         return {
             name: check.short_name,
             type: getCheckType(check.short_name, check.type),
+            area: checkAreaPlaceholder,
         } as const;
     });
 
@@ -261,10 +265,12 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[cubeCheck] = {
             type: 'tr_cube',
             name: _.last(cubeCheck.split('\\'))!,
+            area: checkAreaPlaceholder,
         };
         checks[cubeItem] = {
             type: 'tr_dummy',
             name: _.last(cubeCheck.split('\\'))!,
+            area: undefined,
         };
     }
 
@@ -274,6 +280,7 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[gossipStoneId] = {
             type: 'gossip_stone',
             name: gossipStoneName,
+            area: checkAreaPlaceholder,
         };
     }
 
@@ -281,6 +288,7 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[req] = {
             name: `${dungeon} Completed`,
             type: 'tr_dummy',
+            area: undefined,
         };
     }
 
@@ -572,6 +580,7 @@ export function parseLogic(raw: RawLogic): Logic {
                         if (check.type === 'tr_cube') {
                             check.name = `${region} - ${check.name}`;
                         }
+                        check.area = region;
                         // areaByLocation[locName] = area.name;
                         (checksByHintRegion[region] ??= []).push(locationId);
                     }
@@ -660,6 +669,11 @@ export function parseLogic(raw: RawLogic): Logic {
                 }
             }
         }
+    }
+
+    // Ensure we discovered all checks in our logical requirements
+    if (Object.values(checks).some((c) => c.area === checkAreaPlaceholder)) {
+        throw new Error("could not discover check area");
     }
 
     const vanillaConnections: AreaGraph['vanillaConnections'] = {};

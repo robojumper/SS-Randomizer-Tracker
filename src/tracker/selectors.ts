@@ -36,6 +36,7 @@ import {
     cubeCheckToCubeCollected,
     cubeCheckToGoddessChestCheck,
     dungeonCompletionItems,
+    goddessChestCheckToCubeCheck,
     sothItemReplacement,
     sothItems,
     triforceItemReplacement,
@@ -381,7 +382,6 @@ export const exitsSelector = createSelector(
 
         const sortedRules = _.sortBy(rules, ([, rule]) => assignmentOrder.indexOf(rule.type));
         for (const [exitId, rule] of sortedRules) {
-            console.log(exitId, rule.type);
             switch (rule.type) {
                 case 'vanilla':
                     result[exitId] = {
@@ -742,6 +742,7 @@ export const areaHiddenSelector = createSelector(
 export const isCheckBannedSelector = createSelector(
     [
         logicSelector,
+        areaNonprogressSelector,
         settingSelector('excluded-locations'),
         settingSelector('rupeesanity'),
         settingSelector('shopsanity'),
@@ -754,6 +755,7 @@ export const isCheckBannedSelector = createSelector(
     ],
     (
         logic,
+        areaNonprogress,
         bannedLocations,
         rupeeSanity,
         shopSanity,
@@ -791,10 +793,15 @@ export const isCheckBannedSelector = createSelector(
         ) => {
             return (
                 check.type === 'tr_cube' &&
-                bannedChecks.has(
+                (bannedChecks.has(
                     logic.checks[cubeCheckToGoddessChestCheck[checkId]].name,
-                )
+                ))
             );
+        };
+
+        const isBannedChestViaCube = (checkId: string) => {
+            const cube = goddessChestCheckToCubeCheck[checkId];
+            return cube && areaNonprogress(logic.checks[cube].area!);
         };
 
         return (checkId: string, check: LogicalCheck) =>
@@ -802,6 +809,7 @@ export const isCheckBannedSelector = createSelector(
             // in logic, but we want to allow marking them as collected.
             (check.type !== 'loose_crystal' && bannedChecks.has(check.name)) ||
             isExcessRelic(check) ||
+            isBannedChestViaCube(checkId) ||
             isBannedCubeCheckViaChest(checkId, check) ||
             (rupeesExcluded && check.type === 'rupee') ||
             (banBeedle && check.type === 'beedle_shop') ||
