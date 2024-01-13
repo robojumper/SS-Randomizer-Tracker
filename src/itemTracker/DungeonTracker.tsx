@@ -199,6 +199,7 @@ export default function DungeonTracker({
                         {dungeons.map((d) => (
                             <td colSpan={2} key={d.name} style={dungeonStyle}>
                                 <DungeonName
+                                    setActiveArea={setActiveArea}
                                     dungeonAbbr={
                                         dungeonData[d.name].dungeonAbbr
                                     }

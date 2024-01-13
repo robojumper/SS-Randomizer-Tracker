@@ -9,10 +9,11 @@ import { clickDungeonName } from '../../../tracker/slice';
 type DungeonNameProps = {
     dungeonAbbr: string;
     dungeonName: DungeonNameType;
+    setActiveArea: (area: string) => void;
 };
 
 const DungeonName = (props: DungeonNameProps) => {
-    const { dungeonName, dungeonAbbr } = props;
+    const { dungeonName, dungeonAbbr, setActiveArea } = props;
     const required = useSelector((state: RootState) => requiredDungeonsSelector(state).includes(dungeonName))
     const completed = useSelector(dungeonCompletedSelector(dungeonName));
     const dispatch = useDispatch();
@@ -26,6 +27,10 @@ const DungeonName = (props: DungeonNameProps) => {
         : 'incomplete';
 
     const dungeonChange = () => dungeonName !== 'Sky Keep' && dispatch(clickDungeonName({ dungeonName }));
+    const onRightClick = (e: React.UIEvent) => {
+        setActiveArea(dungeonName);
+        e.preventDefault();
+    };
 
     return (
         <div
@@ -33,6 +38,7 @@ const DungeonName = (props: DungeonNameProps) => {
             onKeyDown={keyDownWrapper(dungeonChange)}
             role="button"
             tabIndex={0}
+            onContextMenu={onRightClick}
         >
             <p className={completedState} style={currentStyle}>
                 {dungeonAbbr}
