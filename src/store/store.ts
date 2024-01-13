@@ -21,4 +21,4 @@ export const store = configureStore({
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 export const useAppDispatch: () => AppDispatch = useDispatch;
-export type ThunkResult<R = void> = ThunkAction<Promise<R>, RootState, undefined, Parameters<AppDispatch>[0]>;
+export type ThunkResult<R = void> = ThunkAction<R | Promise<R>, RootState, undefined, Parameters<AppDispatch>[0]>;

@@ -11,7 +11,7 @@ import { RootState } from '../../store/store';
 import { logicSelector } from '../../logic/selectors';
 import ColorScheme from '../../customization/ColorScheme';
 import HintDescription, { decodeHint } from '../Hints';
-import { ExitMapping, HintRegion } from '../../logic/Locations';
+import { ExitMapping } from '../../logic/Locations';
 
 type EntranceMarkerProps = {
     markerX: number;
@@ -26,7 +26,7 @@ type EntranceMarkerProps = {
 export interface MapExitContextMenuProps {
     exitMapping: ExitMapping;
     /** destination area! */
-    area: HintRegion | undefined;
+    area: string | undefined;
 };
 
 const EntranceMarker = (props: EntranceMarkerProps) => {
@@ -70,17 +70,16 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
     }).show;
 
     const destinationRegionName = exit.entrance && logic.areaGraph.entranceHintRegions[exit.entrance.id];
-    const destinationArea = useSelector((state: RootState) => areasSelector(state).find((r) => r.name === destinationRegionName));
 
     const displayMenu = useCallback((e: TriggerEvent) => {
         if (hasConnection) {
-            showBound({ event: e, props: { exitMapping: exit, area: destinationArea } });
+            showBound({ event: e, props: { exitMapping: exit, area: destinationRegionName } });
         } else {
-            showUnbound({ event: e, props: { exitMapping: exit, area: destinationArea } });
+            showUnbound({ event: e, props: { exitMapping: exit, area: destinationRegionName } });
         }
-    }, [destinationArea, exit, hasConnection, showBound, showUnbound]);
+    }, [destinationRegionName, exit, hasConnection, showBound, showUnbound]);
 
-    const areaHint = useSelector(areaHintSelector(destinationArea?.name ?? ''));
+    const areaHint = useSelector(areaHintSelector(destinationRegionName ?? ''));
 
     const hint = areaHint && decodeHint(areaHint);
 

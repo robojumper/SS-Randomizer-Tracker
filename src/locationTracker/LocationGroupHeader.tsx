@@ -13,7 +13,7 @@ import { areaHintSelector } from '../tracker/selectors';
 import { decodeHint } from './Hints';
 
 export interface LocationGroupContextMenuProps {
-    area: HintRegion,
+    area: string,
 }
 
 export default function LocationGroupHeader({
@@ -38,7 +38,7 @@ export default function LocationGroupHeader({
         (e: TriggerEvent) => {
             show({
                 event: e,
-                props: { area },
+                props: { area: area.name },
             });
         },
         [area, show],

@@ -5,10 +5,11 @@ import { LocationGroupContextMenuProps } from './LocationGroupHeader';
 import { bulkEditChecks, mapEntrance, setHint } from '../tracker/slice';
 import { MapExitContextMenuProps } from './mapTracker/EntranceMarker';
 import { useDispatch, useSelector } from 'react-redux';
-import { remainingEntrancesSelector, settingSelector } from '../tracker/selectors';
+import { areasSelector, remainingEntrancesSelector, settingSelector } from '../tracker/selectors';
 import { AreaGraph } from '../logic/Logic';
 import { areaGraphSelector } from '../logic/selectors';
 import { bosses } from './Hints';
+import { ThunkResult, useAppDispatch } from '../store/store';
 
 type AreaCtxProps<T = void> = ItemParams<LocationGroupContextMenuProps, T>;
 type ExitCtxProps<T = void> = ItemParams<MapExitContextMenuProps, T>;
@@ -17,14 +18,23 @@ interface BossData {
     boss: number;
 }
 
+function checkOrUncheckAll(area: string, markChecked: boolean): ThunkResult {
+    return (dispatch, getState) => {
+        const checks = areasSelector(getState()).find((a) => a.name === area)?.checks;
+        if (checks?.length) {
+            dispatch(bulkEditChecks({ checks, markChecked }))
+        }
+    }
+}
+
 function LocationGroupContextMenu() {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
     const checkAll = useCallback(
-        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
-            checks: params.props!.area.checks,
-            markChecked: true,
-        })),
+        (params: AreaCtxProps | ExitCtxProps) => {
+            params.props!.area &&
+                dispatch(checkOrUncheckAll(params.props!.area, true));
+        },
         [dispatch],
     );
 
@@ -37,16 +47,16 @@ function LocationGroupContextMenu() {
     const areDungeonEntrancesRandomized = dungeonEntranceSetting !== 'None';
 
     const uncheckAll = useCallback(
-        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
-            checks: params.props!.area.checks,
-            markChecked: false,
-        })),
+        (params: AreaCtxProps | ExitCtxProps) => {
+            params.props!.area &&
+                dispatch(checkOrUncheckAll(params.props!.area, false));
+        },
         [dispatch],
     );
 
     const handlePathClick = useCallback(
         (params: AreaCtxProps<BossData>) => dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: { type: 'path', index: params.data!.boss },
         })),
         [dispatch],
@@ -54,7 +64,7 @@ function LocationGroupContextMenu() {
 
     const handleSotsClick = useCallback(
         (params: AreaCtxProps) => dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: { type: 'sots' },
         })),
         [dispatch],
@@ -62,7 +72,7 @@ function LocationGroupContextMenu() {
 
     const handleBarrenClick = useCallback(
         (params: AreaCtxProps) => dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: { type: 'barren' },
         })),
         [dispatch],
@@ -70,7 +80,7 @@ function LocationGroupContextMenu() {
 
     const handleClearCheck = useCallback(
         (params: AreaCtxProps) => dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: undefined,
         })),
         [dispatch],
@@ -135,29 +145,29 @@ function createBindSubmenu(areaGraph: AreaGraph, remainingEntrances: Set<string>
 }
 
 function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: keyof AreaGraph['entrancePools'], canChooseEntrance: boolean }) {
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const areaGraph = useSelector(areaGraphSelector);
     const remainingEntrances = useSelector(remainingEntrancesSelector);
 
     const checkAll = useCallback(
-        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
-            checks: params.props!.area.checks,
-            markChecked: true,
-        })),
+        (params: AreaCtxProps | ExitCtxProps) => {
+            params.props!.area &&
+                dispatch(checkOrUncheckAll(params.props!.area, true));
+        },
         [dispatch],
     );
 
     const uncheckAll = useCallback(
-        (params: AreaCtxProps | ExitCtxProps) => params.props!.area && dispatch(bulkEditChecks({
-            checks: params.props!.area.checks,
-            markChecked: false,
-        })),
+        (params: AreaCtxProps | ExitCtxProps) => {
+            params.props!.area &&
+                dispatch(checkOrUncheckAll(params.props!.area, false));
+        },
         [dispatch],
     );
 
     const handlePathClick = useCallback(
         (params: ExitCtxProps<BossData>) => params.props!.area && dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: { type: 'path', index: params.data!.boss },
         })),
         [dispatch],
@@ -165,7 +175,7 @@ function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: 
 
     const handleSotsClick = useCallback(
         (params: ExitCtxProps) => params.props!.area && dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: { type: 'sots' },
         })),
         [dispatch],
@@ -173,7 +183,7 @@ function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: 
 
     const handleBarrenClick = useCallback(
         (params: ExitCtxProps) => params.props!.area && dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: { type: 'barren' },
         })),
         [dispatch],
@@ -181,7 +191,7 @@ function BoundEntranceMenu({ id, pool, canChooseEntrance }: { id: string, pool: 
 
     const handleClearCheck = useCallback(
         (params: ExitCtxProps) => params.props!.area && dispatch(setHint({
-            areaId: params.props!.area.name,
+            areaId: params.props!.area,
             hint: undefined,
         })),
         [dispatch],

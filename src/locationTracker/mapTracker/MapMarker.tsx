@@ -43,7 +43,7 @@ const MapMarker = (props: MapMarkerProps) => {
     });
 
     const displayMenu = useCallback((e: MouseEvent) => {
-        show({ event: e, props: { area } });
+        show({ event: e, props: { area: area.name } });
     }, [area, show]);
 
     const areaHint = useSelector(areaHintSelector(title));
