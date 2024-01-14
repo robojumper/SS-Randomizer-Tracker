@@ -15,7 +15,7 @@ export default function Acknowledgement() {
             </Row>
             {
                 _.map(contributors.creators, (creator) => (
-                    <Contributor name={creator.name} links={creator.links} />
+                    <Contributor key={creator.name} name={creator.name} links={creator.links} />
                 ))
             }
             <Row />
@@ -26,7 +26,7 @@ export default function Acknowledgement() {
             </Row>
             {
                 _.map(contributors.contributors, (contributor) => (
-                    <Contributor name={contributor.name} links={contributor.links} />
+                    <Contributor key={contributor.name} name={contributor.name} links={contributor.links} />
                 ))
             }
             <br />

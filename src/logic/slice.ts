@@ -7,14 +7,12 @@ export interface LogicState {
     logic: RawLogic | undefined;
     options: OptionDefs | undefined;
     remote: RemoteReference | undefined;
-    error: unknown | undefined;
 }
 
 const initialState: LogicState = {
     logic: undefined,
     options: undefined,
     remote: undefined,
-    error: undefined,
 }
 
 const logicSlice = createSlice({
@@ -26,17 +24,10 @@ const logicSlice = createSlice({
             state.logic = logic;
             state.options = options;
             state.remote = remote;
-            state.error = undefined;
-        },
-        setLoadingError: (state, action: PayloadAction<{ error: unknown }>) => {
-            const { error } = action.payload;
-            if (!state.logic) {
-                state.error = error;
-            }
         },
     },
 });
 
-export const { loadLogic, setLoadingError } = logicSlice.actions;
+export const { loadLogic } = logicSlice.actions;
 
 export default logicSlice.reducer;

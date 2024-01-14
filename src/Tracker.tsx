@@ -10,10 +10,9 @@ import { Button } from 'react-bootstrap';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import BasicCounters from './BasicCounters';
 import ImportExport from './ImportExport';
-import OptionsMenu from './OptionsMenu';
 import EntranceTracker from './entranceTracker/EntranceTracker';
 import DungeonTracker from './itemTracker/DungeonTracker';
 import GridTracker from './itemTracker/GridTracker';
@@ -23,13 +22,12 @@ import { NewLocationTracker } from './locationTracker/LocationTracker';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
 import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector } from './customization/selectors';
-import { reset } from './tracker/slice';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorPage from './ErrorPage';
-import { shownLogicUpstreamSelector } from './logic/selectors';
-import { promptRemote } from './loader/LogicLoader';
 import { RootState } from './store/store';
 import WorldMap from './locationTracker/mapTracker/WorldMap';
+import { Link, Navigate } from 'react-router-dom';
+import { rawLogicSelector } from './logic/selectors';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -58,22 +56,26 @@ function useWindowDimensions() {
 }
 
 export default function TrackerContainer() {
+    const logic = useSelector(rawLogicSelector);
+
+    if (!logic) {
+        return <Navigate to="/" />
+    }
+
     return (
         <ErrorBoundary FallbackComponent={ErrorPage}>
             <MakeTooltipsAvailable>
-                <NewTracker />
+                <Tracker />
             </MakeTooltipsAvailable>
         </ErrorBoundary>
     );
 }
 
-function NewTracker() {
+function Tracker() {
     const { height, width } = useWindowDimensions();
-    const dispatch = useDispatch();
 
     const [showCustomizationDialog, setShowCustomizationDialog] = useState(false);
     const [showEntranceDialog, setShowEntranceDialog] = useState(false);
-    const [showOptionsDialog, setShowOptionsDialog] = useState(false);
     const [activeArea, setActiveArea] = useState<string | undefined>(undefined);
     const [activeSubmap, setActiveSubmap] = useState<string | undefined>(undefined);
 
@@ -81,7 +83,6 @@ function NewTracker() {
     const itemLayout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
     const rawRemote = useSelector((state: RootState) => state.logic.remote!);
-    const remote = useSelector(shownLogicUpstreamSelector);
 
     useLayoutEffect(() => {
         const html = document.querySelector('html')!;
@@ -98,6 +99,10 @@ function NewTracker() {
     useEffect(() => {
         localStorage.setItem('ssrTrackerLayout', itemLayout);
     }, [itemLayout]);
+
+    useEffect(() => {
+        localStorage.setItem('ssrTrackerLocationLayout', locationLayout);
+    }, [locationLayout]);
 
     useEffect(() => {
         localStorage.setItem('ssrTrackerRemoteLogic', JSON.stringify(rawRemote));
@@ -257,50 +262,29 @@ function NewTracker() {
                     <Col xs="auto">
                         <ImportExport />
                     </Col>
-                    <Col xs>
-                        <div
-                            style={{
-                                display: 'flex',
-                                flexFlow: 'row nowrap',
-                                justifyContent: 'space-between',
-                            }}
+                    <Col>
+                        <Link
+                            className={`btn btn-primary`}
+                            to="/"
                         >
-                            <Button
-                                variant="primary"
-                                onClick={() => setShowCustomizationDialog(true)}
-                            >
-                                Customization
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={() => setShowEntranceDialog(true)}
-                            >
-                                Entrances
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={() => setShowOptionsDialog(true)}
-                            >
-                                Options
-                            </Button>
-                            <Button
-                                variant="primary"
-                                onClick={() =>
-                                    dispatch(reset({ settings: undefined }))
-                                }
-                            >
-                                Reset
-                            </Button>
-                        </div>
+                            Options
+                        </Link>
                     </Col>
-                    <Col xs="auto">
-                        <span
-                            onClick={() => {
-                                promptRemote(dispatch, rawRemote);
-                            }}
+                    <Col>
+                        <Button
+                            variant="primary"
+                            onClick={() => setShowCustomizationDialog(true)}
                         >
-                            {remote}
-                        </span>
+                            Customization
+                        </Button>
+                    </Col>
+                    <Col>
+                        <Button
+                            variant="primary"
+                            onClick={() => setShowEntranceDialog(true)}
+                        >
+                            Entrances
+                        </Button>
                     </Col>
                 </Row>
             </Container>
@@ -311,10 +295,6 @@ function NewTracker() {
             <EntranceTracker
                 show={showEntranceDialog}
                 onHide={() => setShowEntranceDialog(false)}
-            />
-            <OptionsMenu
-                show={showOptionsDialog}
-                onHide={() => setShowOptionsDialog(false)}
             />
         </div>
     );

@@ -16,9 +16,9 @@ export interface TrackerState {
      */
     inventory: Partial<Record<InventoryItem, number>>;
     /**
-     * Whether we've modified our inventory since we loaded from starting items.
+     * Whether this state has been modified.
      */
-    hasModifiedInventory: boolean;
+    hasBeenModified: boolean;
     /**
      * Exits we've has mapped. Later merged with the vanilla connections depending on settings.
      */
@@ -44,7 +44,7 @@ export interface TrackerState {
 const initialState: TrackerState = {
     checkedChecks: [],
     inventory: {},
-    hasModifiedInventory: false,
+    hasBeenModified: false,
     mappedExits: {},
     requiredDungeons: [],
     hints: {},
@@ -82,7 +82,7 @@ const trackerSlice = createSlice({
             } else if (newCount > max) {
                 newCount -= max + 1;
             }
-            state.hasModifiedInventory = true;
+            state.hasBeenModified = true;
             state.inventory[item] = newCount;
         },
         clickCheck: (
@@ -101,6 +101,7 @@ const trackerSlice = createSlice({
                     (c) => c !== checkId,
                 );
             }
+            state.hasBeenModified = true;
         },
         clickDungeonName: (
             state,
@@ -112,6 +113,7 @@ const trackerSlice = createSlice({
             } else {
                 state.requiredDungeons.push(dungeonName);
             }
+            state.hasBeenModified = true;
         },
         bulkEditChecks: (
             state,
@@ -129,6 +131,7 @@ const trackerSlice = createSlice({
                 }
             }
             state.checkedChecks = [...oldChecks];
+            state.hasBeenModified = true;
         },
         mapEntrance: (
             state,
@@ -136,6 +139,7 @@ const trackerSlice = createSlice({
         ) => {
             const { from, to } = action.payload;
             state.mappedExits[from] = to;
+            state.hasBeenModified = true;
         },
         setHint: (
             state,
@@ -143,6 +147,7 @@ const trackerSlice = createSlice({
         ) => {
             const { areaId, hint } = action.payload;
             state.hints[areaId] = hint;
+            state.hasBeenModified = true;
         },
         setCheckHint: (
             state,
@@ -153,19 +158,14 @@ const trackerSlice = createSlice({
         ) => {
             const { checkId, hint } = action.payload;
             state.checkHints[checkId] = hint;
+            state.hasBeenModified = true;
         },
         acceptSettings: (
             state,
-            action: PayloadAction<{ settings: AllTypedOptions, initialLoad?: boolean }>,
+            action: PayloadAction<{ settings: AllTypedOptions }>,
         ) => {
-            const { settings, initialLoad } = action.payload;
-            if (initialLoad && state.settings) {
-                return;
-            }
+            const { settings } = action.payload;
             state.settings = settings;
-            if (!state.hasModifiedInventory) {
-                state.inventory = getInitialItems(settings);
-            }
         },
         reset: (
             state,

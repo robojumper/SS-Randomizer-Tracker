@@ -12,35 +12,12 @@ import {
     unifyRequirements,
 } from '../logic/bitlogic/BitLogic';
 import _ from 'lodash';
+import { CancelToken, withCancel } from '../utils/CancelToken';
 
 /**
  * This module contains various strategies to turn the requirements into a more compact and readable
  * form, with the goal of creating readable and understandable requirements for tooltips.
  */
-
-/**
- * A CancelToken should be passed to cancelable functions. Those functions should then check the state of the
- * token and return early.
- */
-interface CancelToken {
-    readonly canceled: boolean;
-}
-
-/**
- * Returns a cancel token and a cancellation function. The token can be passed to functions and checked
- * to see whether it has been canceled. The function can be called to cancel the token.
- */
-function withCancel(): [CancelToken, () => void] {
-    let isCanceled = false;
-    return [
-        {
-            get canceled() {
-                return isCanceled;
-            },
-        },
-        () => (isCanceled = true),
-    ];
-}
 
 // setTimeout as a promise
 function delay(ms: number) {

@@ -11,15 +11,15 @@ index 8861f13..0e85c95 100644
      "@react-hook/resize-observer": "^1.2.6",
      "@reduxjs/toolkit": "^2.0.0",
 diff --git a/src/App.tsx b/src/App.tsx
-index e0d63c8..daaec68 100644
+index 7afa7c7..b5e574f 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -4,7 +4,7 @@ import Shell from './Shell';
+@@ -5,7 +5,7 @@ import Tracker from './Tracker';
  
  function App() {
      return (
 -        <Router>
 +        <Router basename="/SS-Randomizer-Tracker">
              <Routes>
-                 <Route path="/" element={<Shell />} />
-                 <Route path="/acknowledgement" element={<FullAcknowledgement />} />
+                 <Route path="/" element={<Options />} />
+                 <Route path="/tracker" element={<Tracker />} />
