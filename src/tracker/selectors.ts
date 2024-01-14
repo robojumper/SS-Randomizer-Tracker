@@ -223,10 +223,10 @@ export const entrancePoolsSelector = createSelector(
 
         result[startingEntrancePool] = { usedEntrancesExcluded: false, entrances: allowedStartingEntrances };
 
-        for (const [pool, entries] of Object.entries(areaGraph.entrancePools)) {
+        for (const [pool, exitAndEntrances] of Object.entries(areaGraph.birdStatueSanity)) {
             result[pool] = {
-                usedEntrancesExcluded: true,
-                entrances: Object.values(entries).map((entranceId) => {
+                usedEntrancesExcluded: false,
+                entrances: Object.values(exitAndEntrances.entrances).map((entranceId) => {
                     return {
                         id: entranceId,
                         name: areaGraph.entrances[entranceId].short_name,
@@ -294,6 +294,7 @@ export const exitRulesSelector = createSelector(
         settingSelector('randomize-entrances'),
         settingSelector('randomize-dungeon-entrances'),
         settingSelector('randomize-trials'),
+        settingSelector('random-start-statues'),
     ],
     (
         logic,
@@ -301,6 +302,7 @@ export const exitRulesSelector = createSelector(
         randomEntranceSetting,
         randomDungeonEntranceSetting,
         randomTrialsSetting,
+        statueSanity,
     ) => {
         const result: Record<string, ExitRule> = {};
 
@@ -343,6 +345,13 @@ export const exitRulesSelector = createSelector(
                     type: 'lmfSecondExit',
                 };
                 continue;
+            }
+
+            const birdStatueSanityPool = Object.entries(
+                logic.areaGraph.birdStatueSanity,
+            ).find(([, entry]) => entry.exit === exitId);
+            if (birdStatueSanityPool && statueSanity) {
+                result[exitId] = { type: 'random', pool: birdStatueSanityPool[0] };
             }
 
             const poolData = (() => {

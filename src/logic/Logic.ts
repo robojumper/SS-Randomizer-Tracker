@@ -25,6 +25,7 @@ import {
 } from './booleanlogic/ExpressionParse';
 import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
+import { statueSanity } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
 export interface Logic {
     bitLogic: BitLogic;
@@ -116,10 +117,10 @@ export interface AreaGraph {
         >;
     };
     /**
-     * Other entrance pools without linkage. E.g. starting entrance, bird statues, full ER...
+     * An entrance pool without linkage.
      */
-    entrancePools: {
-        [pool: string]: string[];
+    birdStatueSanity: {
+        [pool: string]: { exit: string, entrances: string[] };
     };
 }
 
@@ -734,6 +735,23 @@ export function parseLogic(raw: RawLogic): Logic {
         }
     }
 
+    const birdStatueSanity: AreaGraph['birdStatueSanity'] = {};
+    const allBirdStatues = _.groupBy(
+        Object.entries(raw.entrances).filter(
+            ([, entrance]) => entrance.subtype === 'bird-statue-entrance',
+        ),
+        ([, entrance]) => entrance.province,
+    );
+
+    for (const { exitId, province } of statueSanity) {
+        birdStatueSanity[province] = {
+            exit: exitId,
+            entrances: allBirdStatues[province].map(
+                (e) => entrancesByShortName[e[1].short_name].id,
+            ),
+        };
+    }
+
 
     const areaGraph: AreaGraph = {
         areas: allAreas,
@@ -746,9 +764,7 @@ export function parseLogic(raw: RawLogic): Logic {
         vanillaConnections,
         autoExits,
         linkedEntrancePools,
-        // TODO: This will contain bird statue data retrieved from the logic dump
-        // E.g. Faron Pillar Exit -> [...Bird Statues]
-        entrancePools: {}
+        birdStatueSanity,
     };
 
     // Now map our area graph to BitLogic

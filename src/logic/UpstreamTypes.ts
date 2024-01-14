@@ -24,6 +24,7 @@ export interface RawEntrance {
     allowed_time_of_day: TimeOfDay;
     subtype: string | undefined;
     stage: string | undefined;
+    province: string | undefined;
     short_name: string;
     'tod': TimeOfDay;
 }
