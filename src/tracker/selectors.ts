@@ -352,6 +352,7 @@ export const exitRulesSelector = createSelector(
             ).find(([, entry]) => entry.exit === exitId);
             if (birdStatueSanityPool && statueSanity) {
                 result[exitId] = { type: 'random', pool: birdStatueSanityPool[0] };
+                continue;
             }
 
             const poolData = (() => {

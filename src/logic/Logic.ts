@@ -738,7 +738,9 @@ export function parseLogic(raw: RawLogic): Logic {
     const birdStatueSanity: AreaGraph['birdStatueSanity'] = {};
     const allBirdStatues = _.groupBy(
         Object.entries(raw.entrances).filter(
-            ([, entrance]) => entrance.subtype === 'bird-statue-entrance',
+            ([, entrance]) =>
+                entrance.subtype === 'bird-statue-entrance' &&
+                !entrance.short_name.includes('Fire Sanctuary'),
         ),
         ([, entrance]) => entrance.province,
     );
