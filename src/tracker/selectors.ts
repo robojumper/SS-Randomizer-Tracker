@@ -72,7 +72,7 @@ export const checkHintSelector = currySelector(
  * Selects ALL settings, even the ones not logically relevant.
  */
 export const allSettingsSelector = createSelector(
-    [optionsSelector, (state: RootState) => state.tracker.settings!],
+    [optionsSelector, (state: RootState) => state.tracker.settings],
     validateSettings,
 );
 

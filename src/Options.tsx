@@ -4,7 +4,7 @@ import './options.css';
 import { optionsSelector, rawOptionsSelector } from './logic/selectors';
 import { OptionValue, TypedOptions } from './permalink/SettingsTypes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { decodePermalink, encodePermalink } from './permalink/Settings';
+import { decodePermalink, encodePermalink, validateSettings } from './permalink/Settings';
 import { Option } from './permalink/SettingsTypes';
 import { Button, Col, Container, FormCheck, FormControl, FormLabel, Row, Tab, Tabs } from 'react-bootstrap';
 import { RemoteReference, defaultUpstream, formatRemote, loadRemoteLogic, parseRemote } from './loader/LogicLoader';
@@ -237,13 +237,13 @@ function LogicChooser() {
     );
 }
 
-/** A component to choose your logic release. This is a controlled component. */
+/** A component to choose your logic release. */
 function PermalinkChooser() {
     const dispatch = useDispatch();
     const options = useSelector(optionsSelector);
     const settings = useSelector((state: RootState) => state.tracker.settings);
     const permalink = useMemo(
-        () => options && settings && encodePermalink(options, settings),
+        () => options && settings && encodePermalink(options, validateSettings(options, settings)),
         [options, settings],
     );
 

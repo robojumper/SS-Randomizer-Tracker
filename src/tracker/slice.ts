@@ -38,7 +38,7 @@ export interface TrackerState {
     /**
      * Fully decoded settings.
      */
-    settings: AllTypedOptions | undefined;
+    settings: Partial<AllTypedOptions>;
 }
 
 const initialState: TrackerState = {
@@ -49,7 +49,7 @@ const initialState: TrackerState = {
     requiredDungeons: [],
     hints: {},
     checkHints: {},
-    settings: undefined,
+    settings: {},
 };
 
 export function preloadedTrackerState(): TrackerState {
@@ -168,15 +168,14 @@ const trackerSlice = createSlice({
             state.settings = settings;
         },
         reset: (
-            state,
-            action: PayloadAction<{ settings: AllTypedOptions | undefined }>,
+            _state,
+            action: PayloadAction<{ settings: AllTypedOptions }>,
         ) => {
             const { settings } = action.payload;
-            const effectiveSettings = settings ?? state.settings;
             return {
                 ...initialState,
-                settings: effectiveSettings,
-                inventory: effectiveSettings ? getInitialItems(effectiveSettings) : {},
+                settings: settings,
+                inventory: getInitialItems(settings),
             }
         },
         loadTracker: (
