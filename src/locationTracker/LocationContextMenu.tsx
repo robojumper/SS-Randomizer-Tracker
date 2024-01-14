@@ -6,6 +6,7 @@ import hintItems from '../data/hintItems.json';
 import { LocationContextMenuProps } from './Location';
 import { useDispatch } from 'react-redux';
 import { clickCheck, setCheckHint } from '../tracker/slice';
+import images from '../itemTracker/Images';
 
 type CtxProps<T = void> = ItemParams<LocationContextMenuProps, T>;
 interface ItemData {
@@ -65,7 +66,7 @@ export default function LocationContextMenu() {
                                 onClick={handleSetItemClick}
                                 data={{ item: listItem } satisfies ItemData}
                             >
-                                {listItem}
+                                <HintItem itemName={listItem} />
                             </Item>
                         ))}
                     </Submenu>
@@ -74,4 +75,14 @@ export default function LocationContextMenu() {
             <Item onClick={handleClearItemClick}>Clear Item</Item>
         </Menu>
     );
+}
+
+function HintItem({ itemName }: { itemName: string }) {
+    const image = _.last(images[itemName]);
+    return (<span style={{ display: 'flex', flexFlow: 'row nowrap' }}>
+        <div style={{ width: '36px', height: '36px', paddingRight: '6px' }}>
+            <img style={{ width: '100%', height: '100%', objectFit: 'contain' }} src={image} alt={itemName} />
+        </div>
+        {itemName}
+    </span>);
 }
