@@ -11,12 +11,12 @@ index 8861f13..0e85c95 100644
      "@react-hook/resize-observer": "^1.2.6",
      "@reduxjs/toolkit": "^2.0.0",
 diff --git a/src/App.tsx b/src/App.tsx
-index 7afa7c7..b5e574f 100644
+index 73cbf10..9889455 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -5,7 +5,7 @@ import Tracker from './Tracker';
+@@ -16,7 +16,7 @@ function App() {
+     }, [colorScheme]);
  
- function App() {
      return (
 -        <Router>
 +        <Router basename="/SS-Randomizer-Tracker">
