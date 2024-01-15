@@ -9,6 +9,11 @@
   --bs-modal-bg: var(--scheme-background);
 }
 
+.nav-tabs .nav-link.active {
+  color: var(--scheme-text);
+  background-color: var(--scheme-background);
+}
+
 .form-control {
   color: var(--scheme-text);
   background-color: var(--scheme-background);

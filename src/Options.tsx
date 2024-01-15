@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { LogicOptions } from './logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import './options.css';
-import { optionsSelector, rawOptionsSelector } from './logic/selectors';
+import { optionsSelector } from './logic/selectors';
 import { OptionValue, TypedOptions } from './permalink/SettingsTypes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { decodePermalink, encodePermalink, validateSettings } from './permalink/Settings';
@@ -17,7 +17,7 @@ import _, { range } from 'lodash';
 import { loadLogic } from './logic/slice';
 import Tippy from '@tippyjs/react';
 import Select, { MultiValue, ActionMeta } from 'react-select';
-// import { selectStyles } from './customization/ComponentStyles';
+import { selectStyles } from './customization/ComponentStyles';
 
 const optionCategorization: Record<string, LogicOptions[]> = {
     'Shuffles': [
@@ -87,7 +87,7 @@ function getStoredRemote() {
  * As a result, it does not access any selectors that assume logic has already loaded unless we know it's loaded.
  */
 export default function Options() {
-    const rawOptions = useSelector(rawOptionsSelector);
+    const options = useSelector(optionsSelector);
 
     return (
         <Container fluid>
@@ -97,7 +97,7 @@ export default function Options() {
                     <PermalinkChooser />
                 </div>
                 <LaunchButtons />
-                {rawOptions && (
+                {options && (
                     <OptionsList />
                 )}
             </div>
@@ -108,7 +108,7 @@ export default function Options() {
 
 function resetTracker(): ThunkResult {
     return (dispatch, getState) => {
-        if (rawOptionsSelector(getState())) {
+        if (optionsSelector(getState())) {
             dispatch(reset({ settings: allSettingsSelector(getState()) }));
         }
     };
@@ -116,7 +116,7 @@ function resetTracker(): ThunkResult {
 
 function LaunchButtons() {
     const dispatch = useAppDispatch();
-    const loaded = Boolean(useSelector(rawOptionsSelector));
+    const loaded = Boolean(useSelector(optionsSelector));
     const modified = Boolean(useSelector((state: RootState) => state.tracker.hasBeenModified));
 
     const canStart = loaded;
@@ -223,6 +223,7 @@ function LogicChooser() {
             <legend>Randomizer Version</legend>
             <div className="logicInputWithStatus">
                 <input
+                    type="text"
                     className={badFormat ? 'optionsBadRemote' : ''}
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -243,7 +244,7 @@ function PermalinkChooser() {
     const options = useSelector(optionsSelector);
     const settings = useSelector((state: RootState) => state.tracker.settings);
     const permalink = useMemo(
-        () => options && settings && encodePermalink(options, validateSettings(options, settings)),
+        () => options && encodePermalink(options, validateSettings(options, settings)),
         [options, settings],
     );
 
@@ -264,7 +265,7 @@ function PermalinkChooser() {
     return (
         <div className="optionsCategory permalinkChooser">
             <legend>Settings String</legend>
-            <input className="permalinkInput" disabled={!permalink} placeholder="Select a Randomizer version first" value={permalink ?? ""} onChange={(e) => onChangePermalink(e.target.value)} />
+            <input type="text" className="permalinkInput" disabled={!permalink} placeholder="Select a Randomizer version first" value={permalink ?? ""} onChange={(e) => onChangePermalink(e.target.value)} />
         </div>
     );
 }
@@ -422,13 +423,14 @@ function Setting({
                     </Col>
                     <Col xs={6}>
                         <Select
-                            // styles={selectStyles<true, { label: string, value: string }>()}
+                            styles={selectStyles<true, { label: string, value: string }>()}
                             isMulti
                             value={(value as string[]).map((val) => ({
                                 value: val,
                                 label: val,
                             }))}
                             onChange={onChange}
+                            // TODO: These keys aren't unique. Ensure unique keys somehow...
                             options={def.choices.map((val) => ({
                                 value: val,
                                 label: val,

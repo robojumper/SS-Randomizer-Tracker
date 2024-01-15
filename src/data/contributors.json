@@ -74,6 +74,16 @@
                 "Bug Fixes",
                 "Miscellaneous Additions"
             ]
+        },
+        {
+            "name": "robojumper",
+            "links": {
+                "github": "https://github.com/robojumper"
+            },
+            "attributions": [
+                "New Logic",
+                "Tracker Architecture"
+            ]
         }
     ],
     "additionalShoutouts": [

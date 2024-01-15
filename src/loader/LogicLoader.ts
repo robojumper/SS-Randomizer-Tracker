@@ -1,6 +1,6 @@
 import { load } from 'js-yaml';
 import { RawLogic } from '../logic/UpstreamTypes';
-import { OptionDefs } from '../permalink/SettingsTypes';
+import { MultiChoiceOption, OptionDefs } from '../permalink/SettingsTypes';
 
 export type RemoteReference =
     | {
@@ -78,5 +78,15 @@ export async function loadRemoteLogic(remote: RemoteReference): Promise<[RawLogi
         loadFile<OptionDefs>(baseUrl, 'options'),
     ]);
 
-    return [logic, options];
+    // We need to patch the "excluded locations" option with the actual checks from logic.
+    const excludedLocsIndex = options.findIndex(
+        (x) => x.command === 'excluded-locations' && x.type === 'multichoice'
+    );
+    
+    const choices = Object.values(logic.checks).map((c) => c.short_name);
+
+    const patchedOptions = options.slice();
+    patchedOptions[excludedLocsIndex] = { ...(options[excludedLocsIndex] as MultiChoiceOption), choices };
+
+    return [logic, patchedOptions];
 }

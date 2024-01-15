@@ -2,8 +2,7 @@
     margin-left: 5px;
     margin-right: 5px;
     font-size: 0.75em;
-    margin-left: 4px;
-    width: 864px;
+    width: 100%;
 }
 
 .optionsPage {
@@ -30,8 +29,7 @@
 
 .optionsCategory {
     border: thick solid;
-    padding-left: 1%;
-    padding-bottom: 1%;
+    padding: 0% 1% 1% 1%;
     background: rgba(40, 40, 20, 0.1);
     text-align: left;
 }

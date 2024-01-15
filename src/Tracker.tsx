@@ -1,7 +1,6 @@
 import {
     CSSProperties,
     useEffect,
-    useLayoutEffect,
     useMemo,
     useState,
     useSyncExternalStore,
@@ -27,7 +26,7 @@ import ErrorPage from './ErrorPage';
 import { RootState } from './store/store';
 import WorldMap from './locationTracker/mapTracker/WorldMap';
 import { Link, Navigate } from 'react-router-dom';
-import { rawLogicSelector } from './logic/selectors';
+import { isLogicLoadedSelector } from './logic/selectors';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -56,9 +55,11 @@ function useWindowDimensions() {
 }
 
 export default function TrackerContainer() {
-    const logic = useSelector(rawLogicSelector);
+    const logicLoaded = useSelector(isLogicLoadedSelector);
 
-    if (!logic) {
+    // If we haven't loaded logic yet, redirect to the main menu,
+    // which will take care of loading logic for us.
+    if (!logicLoaded) {
         return <Navigate to="/" />
     }
 
@@ -83,13 +84,6 @@ function Tracker() {
     const itemLayout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
     const rawRemote = useSelector((state: RootState) => state.logic.remote!);
-
-    useLayoutEffect(() => {
-        const html = document.querySelector('html')!;
-        Object.entries(colorScheme).forEach(([key, val]) => {
-            html.style.setProperty(`--scheme-${key}`, val.toString());
-        });
-    }, [colorScheme]);
 
     // TODO: Store observers
     useEffect(() => {

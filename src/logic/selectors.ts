@@ -1,32 +1,17 @@
 import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../store/store';
 import { parseLogic } from './Logic';
-import { MultiChoiceOption, OptionDefs } from '../permalink/SettingsTypes';
 import { formatRemote } from '../loader/LogicLoader';
 
-export const rawLogicSelector = (state: RootState) => state.logic.logic!;
-export const rawOptionsSelector = (state: RootState) => state.logic.options!;
+const rawLogicSelector = (state: RootState) => state.logic.logic!;
+/** Selects loaded options. If not loaded, returns undefined (even if the types don't say so.) */
+export const optionsSelector = (state: RootState) => state.logic.options!;
 
+/** A selector that returns true iff logic is loaded. */
+export const isLogicLoadedSelector = (state: RootState) => Boolean(rawLogicSelector(state));
 
+/** Select parsed logic. Throws if logic hasn't loaded yet (guard with `isLogicLoadedSelector`). */
 export const logicSelector = createSelector([rawLogicSelector], parseLogic);
-export const optionsSelector = createSelector([rawLogicSelector, rawOptionsSelector], (rawLogic, rawOptions) => {
-    // Lie a bit about the types here so that we can use the selector in cases where logic may not already have loaded
-    if (!rawOptions) {
-        return undefined as unknown as OptionDefs;
-    }
-
-    const excludedLocsIndex = rawOptions.findIndex(
-        (x) => x.command === 'excluded-locations' && x.type === 'multichoice'
-    );
-    
-    
-    const choices = Object.values(rawLogic.checks).map((c) => c.short_name);
-
-    const parsedOptions = rawOptions.slice();
-    parsedOptions[excludedLocsIndex] = { ...(rawOptions[excludedLocsIndex] as MultiChoiceOption), choices };
-
-    return parsedOptions;
-});
 
 export const areaGraphSelector = createSelector(
     [logicSelector],
