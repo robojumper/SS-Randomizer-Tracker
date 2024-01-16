@@ -4,7 +4,7 @@ import './options.css';
 import { optionsSelector } from './logic/selectors';
 import { OptionValue, TypedOptions } from './permalink/SettingsTypes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { decodePermalink, encodePermalink, validateSettings } from './permalink/Settings';
+import { decodePermalink, encodePermalink, randomSettings, validateSettings } from './permalink/Settings';
 import { Option } from './permalink/SettingsTypes';
 import { Button, Col, Container, FormCheck, FormControl, FormLabel, Row, Tab, Tabs } from 'react-bootstrap';
 import { RemoteReference, defaultUpstream, formatRemote, loadRemoteLogic, parseRemote } from './loader/LogicLoader';
@@ -116,7 +116,8 @@ function resetTracker(): ThunkResult {
 
 function LaunchButtons() {
     const dispatch = useAppDispatch();
-    const loaded = Boolean(useSelector(optionsSelector));
+    const options = useSelector(optionsSelector);
+    const loaded = Boolean(options);
     const modified = Boolean(useSelector((state: RootState) => state.tracker.hasBeenModified));
 
     const canStart = loaded;
@@ -135,6 +136,12 @@ function LaunchButtons() {
         }
     }, [canResume, canStart, dispatch, navigate]);
 
+    const doRandomizeOptions = useCallback(() => {
+        if (options && window.confirm('Randomize all settings?')) {
+            dispatch(acceptSettings({ settings: randomSettings(options) }));
+        }
+    }, [dispatch, options]);
+
     return (
         <div className="launchButtons">
             <Link
@@ -150,6 +157,13 @@ function LaunchButtons() {
                 onClick={reset}
             >
                 Launch New Tracker
+            </Button>
+            <Button
+                className="randomizeButton"
+                disabled={!loaded}
+                onClick={doRandomizeOptions}
+            >
+                Randomize Settings
             </Button>
         </div>
     );
@@ -401,6 +415,7 @@ function Setting({
                 value: string;
                 label: string;
             };
+            const numPaddingDigits = 4;
             const onChange = (
                 selectedOption: MultiValue<Option>,
                 meta: ActionMeta<Option>,
@@ -409,11 +424,16 @@ function Setting({
                     meta.action === 'select-option' ||
                     meta.action === 'remove-value'
                 ) {
-                    setValue(selectedOption.map((o) => o.value));
+                    setValue(selectedOption.map((o) => o.value.slice(0, -numPaddingDigits)));
                 } else if (meta.action === 'clear') {
                     setValue([]);
                 }
             };
+            // Hack: Ensure unique keys...........
+            const options = def.choices.map((val, idx) => ({
+                value: val + idx.toString().padStart(numPaddingDigits, '0'),
+                label: val,
+            }));
             return (
                 <>
                     <Col xs={5}>
@@ -425,16 +445,12 @@ function Setting({
                         <Select
                             styles={selectStyles<true, { label: string, value: string }>()}
                             isMulti
-                            value={(value as string[]).map((val) => ({
-                                value: val,
+                            value={(value as string[]).map((val, idx) => ({
+                                value: val + idx.toString().padStart(numPaddingDigits, '0'),
                                 label: val,
                             }))}
                             onChange={onChange}
-                            // TODO: These keys aren't unique. Ensure unique keys somehow...
-                            options={def.choices.map((val) => ({
-                                value: val,
-                                label: val,
-                            }))}
+                            options={options}
                             name={def.name}
                         />
                     </Col>
