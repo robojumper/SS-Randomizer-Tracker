@@ -13,12 +13,6 @@ export type RemoteReference =
           branch: string;
       };
 
-export const defaultUpstream: RemoteReference = {
-    type: 'forkBranch',
-    author: 'robojumper',
-    branch: 'logic-dump',
-};
-
 function resolveRemote(ref: RemoteReference) {
     switch (ref.type) {
         case 'releaseVersion':

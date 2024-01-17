@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { decodePermalink, encodePermalink, randomSettings, validateSettings } from './permalink/Settings';
 import { Option } from './permalink/SettingsTypes';
 import { Button, Col, Container, FormCheck, FormControl, FormLabel, Row, Tab, Tabs } from 'react-bootstrap';
-import { RemoteReference, defaultUpstream, formatRemote, loadRemoteLogic, parseRemote } from './loader/LogicLoader';
+import { RemoteReference, formatRemote, loadRemoteLogic, parseRemote } from './loader/LogicLoader';
 import { allSettingsSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
 import Acknowledgement from './Acknowledgment';
@@ -74,9 +74,29 @@ const optionCategorization: Record<string, LogicOptions[]> = {
     ],
 };
 
+// logic-v2.1.1 is a temporary branch that's permalink-compatible with the v2.1.1 release,
+// but uses the logic dump from main.
+
+const defaultUpstream: RemoteReference = {
+    type: 'forkBranch',
+    author: 'robojumper',
+    branch: 'logic-v2.1.1'
+};
+
+const logicMigrations: Record<string, string> = {
+    'robojumper/logic-dump': 'robojumper/logic-v2.1.1',
+    'robojumper/statuesanity': 'YourAverageLink/random-pillar-statue',
+};
+
 function getStoredRemote() {
     const storedRemote = localStorage.getItem('ssrTrackerRemoteLogic');
-    return storedRemote !== null ? JSON.parse(storedRemote) as RemoteReference : defaultUpstream;
+    const theRemote = storedRemote !== null ? JSON.parse(storedRemote) as RemoteReference : defaultUpstream;
+    const migration = logicMigrations[formatRemote(theRemote)];
+    if (migration) {
+        return parseRemote(migration)!;
+    } else {
+        return theRemote;
+    }
 }
 
 /**
