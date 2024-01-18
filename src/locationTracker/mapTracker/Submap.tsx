@@ -11,11 +11,13 @@ import leaveFaron from '../../assets/maps/leaveFaron.png';
 import leaveEldin from '../../assets/maps/leaveEldin.png';
 import leaveLanayru from '../../assets/maps/leaveLanayru.png';
 import { useSelector } from 'react-redux';
-import { areasSelector, exitsSelector } from '../../tracker/selectors';
+import { areasSelector, exitsSelector, settingSelector } from '../../tracker/selectors';
 import { AreaGraph, Logic } from '../../logic/Logic';
 import { logicSelector } from '../../logic/selectors';
 import HintDescription, { DecodedHint, decodeHint } from '../Hints';
 import { RootState } from '../../store/store';
+import { useContextMenu } from '../context-menu';
+import { TriggerEvent } from 'react-contexify';
 
 export type RegionMarkerParams = {
     region: string,
@@ -36,6 +38,10 @@ export type ExitParams = {
     left: number,
     top: number
 }
+
+export interface BirdStatueContextMenuProps {
+    province: string;
+};
 
 type SubmapProps = {
     markerX: number;
@@ -112,6 +118,9 @@ const Submap = (props: SubmapProps) => {
         markerColor = 'checked';
     }
 
+    const birdSanityOn = useSelector(settingSelector('random-start-statues'));
+    const showBirdStatueSanityHint = birdSanityOn && Boolean(logic.areaGraph.birdStatueSanity[title]);
+
     const markerStyle: CSSProperties = {
         position: 'absolute',
         top: `${markerY}%`,
@@ -131,18 +140,32 @@ const Submap = (props: SubmapProps) => {
         <center>
             <div> {title} ({accessibleChecks}/{remainingChecks}) </div>
             <div> Click to Expand </div>
+            {showBirdStatueSanityHint && <div>Right-click to choose Statue</div>}
             {subregionHints.map(({hint, area}) => <HintDescription key={area} hint={hint} area={area} />)}
         </center>
     )
 
+    const { show } = useContextMenu<BirdStatueContextMenuProps>({
+        id: 'birdstatue-context',
+    });
+
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
-            onSubmapChange(title);
             e.preventDefault();
         } else {
             onSubmapChange(title);
         }
     };
+
+    const displayMenu = useCallback(
+        (e: TriggerEvent) => {
+            show({
+                event: e,
+                props: { province: title },
+            });
+        },
+        [show, title],
+    );
 
     const handleBack = useCallback(() => onSubmapChange(undefined), [onSubmapChange]);
 
@@ -153,6 +176,7 @@ const Submap = (props: SubmapProps) => {
                 onKeyDown={keyDownWrapper(handleClick)}
                 role="button"
                 tabIndex={0}
+                onContextMenu={displayMenu}
             >
                 <span style={markerStyle} id="marker">
                     {(accessibleChecks > 0) && accessibleChecks}

@@ -1,6 +1,6 @@
 import _ from 'lodash';
 import { useCallback } from 'react';
-import { Menu, Item, Separator, Submenu, ItemParams } from 'react-contexify';
+import { Menu, Item, Separator, Submenu, ItemParams, PredicateParams } from 'react-contexify';
 import { LocationGroupContextMenuProps } from './LocationGroupHeader';
 import { bulkEditChecks, mapEntrance, setHint } from '../tracker/slice';
 import { MapExitContextMenuProps } from './mapTracker/EntranceMarker';
@@ -10,9 +10,15 @@ import { AreaGraph, LinkedEntrancePool } from '../logic/Logic';
 import { areaGraphSelector } from '../logic/selectors';
 import { bosses } from './Hints';
 import { ThunkResult, useAppDispatch } from '../store/store';
+import { BirdStatueContextMenuProps } from './mapTracker/Submap';
 
 type AreaCtxProps<T = void> = ItemParams<LocationGroupContextMenuProps, T>;
 type ExitCtxProps<T = void> = ItemParams<MapExitContextMenuProps, T>;
+
+type BirdStatueCtxProps<T = void> = ItemParams<BirdStatueContextMenuProps, T>;
+interface EntranceData {
+    entrance: string;
+};
 
 interface BossData {
     boss: number;
@@ -45,6 +51,8 @@ function LocationGroupContextMenu() {
     const dungeonEntranceSetting =
         randomDungeonEntrances ?? randomEntrances;
     const areDungeonEntrancesRandomized = dungeonEntranceSetting !== 'None';
+
+    const birdSanityOn = useSelector(settingSelector('random-start-statues'));
 
     const uncheckAll = useCallback(
         (params: AreaCtxProps | ExitCtxProps) => {
@@ -113,6 +121,7 @@ function LocationGroupContextMenu() {
             <UnboundEntranceMenu id="unbound-dungeon-context" pool="dungeons" />
             <BoundEntranceMenu id="trial-context" pool="silent_realms" canChooseEntrance={randomSilentRealms} />
             <UnboundEntranceMenu id="unbound-trial-context" pool="silent_realms" />
+            {birdSanityOn && <BirdStatueSanityPillarMenu />}
         </>
     );
 }
@@ -241,6 +250,39 @@ function UnboundEntranceMenu({ id, pool }: { id: string, pool: LinkedEntrancePoo
     return (
         <Menu id={id}>
             {createBindSubmenu(areaGraph, new Set(usedEntrances[pool]), pool, handleMapEntrance, false)}
+        </Menu>
+    );
+}
+
+function BirdStatueSanityPillarMenu() {
+    const dispatch = useDispatch();
+    const areaGraph = useSelector(areaGraphSelector);
+
+    const handleEntranceClick = useCallback(
+        (params: BirdStatueCtxProps<EntranceData>) => dispatch(mapEntrance({
+            from: areaGraph.birdStatueSanity[params.props!.province].exit,
+            to: params.data!.entrance,
+        })),
+        [areaGraph.birdStatueSanity, dispatch],
+    );
+
+    return (
+        <Menu id="birdstatue-context">
+            {Object.entries(areaGraph.birdStatueSanity).flatMap(
+                ([province, data]) =>
+                    data.entrances.map((e) => (
+                        <Item
+                            key={e}
+                            data={{ entrance: e } satisfies EntranceData}
+                            onClick={handleEntranceClick}
+                            hidden={(
+                                args: PredicateParams<BirdStatueContextMenuProps>,
+                            ) => args.props!.province !== province}
+                        >
+                            {areaGraph.entrances[e].short_name}
+                        </Item>
+                    )),
+            )}
         </Menu>
     );
 }

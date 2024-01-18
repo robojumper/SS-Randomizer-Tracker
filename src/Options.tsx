@@ -76,6 +76,8 @@ const optionCategorization: Record<string, LogicOptions[]> = {
 
 // logic-v2.1.1 is a temporary branch that's permalink-compatible with the v2.1.1 release,
 // but uses the logic dump from main.
+// That branch will be removed once we get a stable release with the logic dump.
+// Older releases will be unsupported then.
 
 const defaultUpstream: RemoteReference = {
     type: 'forkBranch',
