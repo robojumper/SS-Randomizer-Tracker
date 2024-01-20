@@ -105,21 +105,6 @@ export const impaSongCheck =
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
 export const completeTriforceReq = '\\Complete Triforce';
 
-export const statueSanity: { exitId: string; province: string }[] = [
-    {
-        exitId: '\\Sky\\South East\\Faron Pillar\\First Time Dive',
-        province: 'Faron Province',
-    },
-    {
-        exitId: '\\Sky\\North East\\Eldin Pillar\\First Time Dive',
-        province: 'Eldin Province',
-    },
-    {
-        exitId: '\\Sky\\South West\\Lanayru Pillar\\First Time Dive',
-        province: 'Lanayru Province',
-    },
-];
-
 export const swordsToAdd = {
     Swordless: 0,
     'Practice Sword': 1,

@@ -25,7 +25,6 @@ import {
 } from './booleanlogic/ExpressionParse';
 import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
-import { statueSanity } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
 export interface Logic {
     bitLogic: BitLogic;
@@ -745,13 +744,16 @@ export function parseLogic(raw: RawLogic): Logic {
         ([, entrance]) => entrance.province,
     );
 
-    for (const { exitId, province } of statueSanity) {
-        birdStatueSanity[province] = {
-            exit: exitId,
-            entrances: allBirdStatues[province].map(
-                (e) => entrancesByShortName[e[1].short_name].id,
-            ),
-        };
+    for (const [exitId, exitDef] of Object.entries(raw.exits)) {
+        const province = exitDef['pillar-province'];
+        if (province) {
+            birdStatueSanity[province] = {
+                exit: exitId,
+                entrances: allBirdStatues[province].map(
+                    (e) => entrancesByShortName[e[1].short_name].id,
+                ),
+            };
+        }
     }
 
 

@@ -26,7 +26,6 @@ export interface RawEntrance {
     stage: string | undefined;
     province: string | undefined;
     short_name: string;
-    'tod': TimeOfDay;
 }
 
 export interface RawExit {
@@ -35,6 +34,7 @@ export interface RawExit {
     vanilla: string | undefined;
     stage: string | undefined;
     short_name: string;
+    'pillar-province': string | undefined;
 }
 
 export interface RawCheck {
