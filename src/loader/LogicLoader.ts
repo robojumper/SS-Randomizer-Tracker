@@ -4,6 +4,9 @@ import { MultiChoiceOption, OptionDefs } from '../permalink/SettingsTypes';
 
 export type RemoteReference =
     | {
+          type: 'latestRelease';
+      }
+    | {
           type: 'releaseVersion';
           versionTag: string;
       }
@@ -13,17 +16,41 @@ export type RemoteReference =
           branch: string;
       };
 
-function resolveRemote(ref: RemoteReference) {
+async function fetchLatestGithubRelease() {
+    const releaseData = await fetch(
+        'https://api.github.com/repos/ssrando/ssrando/releases',
+    );
+    const release = (await releaseData.json()) as { tag_name: string }[];
+    return release[0].tag_name;
+}
+
+async function resolveRemote(ref: RemoteReference): Promise<[url: string, name: string]> {
     switch (ref.type) {
+        case 'latestRelease':
+            try {
+                const latest = await fetchLatestGithubRelease();
+                return [`https://raw.githubusercontent.com/ssrando/ssrando/${latest}`, latest];
+            } catch (e) {
+                throw new Error(
+                    'Could not retrieve latest release from GitHub: ' +
+                        (e
+                            ? typeof e === 'object' && 'message' in e
+                                ? (e.message as string)
+                                : JSON.stringify(e)
+                            : 'Unknown error'),
+                );
+            }
         case 'releaseVersion':
-            return `https://raw.githubusercontent.com/ssrando/ssrando/${ref.versionTag}`;
+            return [`https://raw.githubusercontent.com/ssrando/ssrando/${ref.versionTag}`, formatRemote(ref)];
         case 'forkBranch':
-            return `https://raw.githubusercontent.com/${ref.author}/ssrando/${ref.branch}`;
+            return [`https://raw.githubusercontent.com/${ref.author}/ssrando/${ref.branch}`, formatRemote(ref)];
     }
 }
 
 export function formatRemote(ref: RemoteReference) {
     switch (ref.type) {
+        case 'latestRelease':
+            return 'Latest';
         case 'releaseVersion':
             return ref.versionTag;
         case 'forkBranch':
@@ -36,13 +63,21 @@ const branchPattern = /^(.*)\/(.*)$/;
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
 export function parseRemote(remote: string): RemoteReference | undefined {
+    if (remote === 'Latest') {
+        return { type: 'latestRelease' };
+    }
     if (remote.match(versionPattern)) {
         return { type: 'releaseVersion', versionTag: remote };
     }
 
-    const prBranchMatch = remote.match(prBranchPattern) ?? remote.match(branchPattern);
+    const prBranchMatch =
+        remote.match(prBranchPattern) ?? remote.match(branchPattern);
     if (prBranchMatch) {
-        return { type: 'forkBranch', author: prBranchMatch[1], branch: prBranchMatch[2] };
+        return {
+            type: 'forkBranch',
+            author: prBranchMatch[1],
+            branch: prBranchMatch[2],
+        };
     }
 }
 
@@ -64,8 +99,10 @@ const loadFile = async <T>(baseUrl: string, file: string) => {
     return load(data) as T;
 };
 
-export async function loadRemoteLogic(remote: RemoteReference): Promise<[RawLogic, OptionDefs]> {
-    const baseUrl = resolveRemote(remote);
+export async function loadRemoteLogic(
+    remote: RemoteReference,
+): Promise<[RawLogic, OptionDefs, string]> {
+    const [baseUrl, remoteName] = await resolveRemote(remote);
 
     const [logic, options] = await Promise.all([
         loadFile<RawLogic>(baseUrl, 'dump'),
@@ -74,13 +111,20 @@ export async function loadRemoteLogic(remote: RemoteReference): Promise<[RawLogi
 
     // We need to patch the "excluded locations" option with the actual checks from logic.
     const excludedLocsIndex = options.findIndex(
-        (x) => x.command === 'excluded-locations' && x.type === 'multichoice'
+        (x) => x.command === 'excluded-locations' && x.type === 'multichoice',
     );
-    
+
     const choices = Object.values(logic.checks).map((c) => c.short_name);
 
     const patchedOptions = options.slice();
-    patchedOptions[excludedLocsIndex] = { ...(options[excludedLocsIndex] as MultiChoiceOption), choices };
+    patchedOptions[excludedLocsIndex] = {
+        ...(options[excludedLocsIndex] as MultiChoiceOption),
+        choices,
+    };
 
-    return [logic, patchedOptions];
+    return [
+        logic,
+        patchedOptions,
+        remoteName,
+    ];
 }

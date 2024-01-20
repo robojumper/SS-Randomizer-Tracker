@@ -9,6 +9,10 @@
     width: 90%;
     margin: 0% 5%;
     margin-top: 5%;
+
+    > * input {
+        width: 100%;
+    }
 }
 
 .logicChooser {
@@ -48,9 +52,4 @@
 
 .optionsBadRemote {
     border: 1px solid red;
-}
-
-.logicInputWithStatus {
-    display: flex;
-    flex-flow: row nowrap;
 }

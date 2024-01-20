@@ -2,25 +2,61 @@ import { useDispatch, useSelector } from 'react-redux';
 import { LogicOptions } from './logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import './options.css';
 import { optionsSelector } from './logic/selectors';
-import { OptionValue, TypedOptions } from './permalink/SettingsTypes';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { decodePermalink, encodePermalink, randomSettings, validateSettings } from './permalink/Settings';
+import {
+    OptionDefs,
+    OptionValue,
+    TypedOptions,
+} from './permalink/SettingsTypes';
+import {
+    forwardRef,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
+import {
+    decodePermalink,
+    encodePermalink,
+    randomSettings,
+    validateSettings,
+} from './permalink/Settings';
 import { Option } from './permalink/SettingsTypes';
-import { Button, Col, Container, FormCheck, FormControl, FormLabel, Row, Tab, Tabs } from 'react-bootstrap';
-import { RemoteReference, formatRemote, loadRemoteLogic, parseRemote } from './loader/LogicLoader';
+import {
+    Button,
+    Col,
+    Container,
+    FormCheck,
+    FormControl,
+    FormLabel,
+    Row,
+    Tab,
+    Tabs,
+} from 'react-bootstrap';
+import {
+    RemoteReference,
+    formatRemote,
+    loadRemoteLogic,
+    parseRemote,
+} from './loader/LogicLoader';
 import { allSettingsSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
 import Acknowledgement from './Acknowledgment';
 import { Link, useNavigate } from 'react-router-dom';
 import { RootState, ThunkResult, useAppDispatch } from './store/store';
-import _, { range } from 'lodash';
+import { range } from 'lodash';
 import { loadLogic } from './logic/slice';
 import Tippy from '@tippyjs/react';
-import Select, { MultiValue, ActionMeta } from 'react-select';
+import Select, { MultiValue, ActionMeta, SingleValue } from 'react-select';
 import { selectStyles } from './customization/ComponentStyles';
+import { withCancel } from './utils/CancelToken';
+import { RawLogic } from './logic/UpstreamTypes';
+import _ from 'lodash';
+import ImageLink from './additionalComponents/ImageLink';
 
 const optionCategorization: Record<string, LogicOptions[]> = {
-    'Shuffles': [
+    Shuffles: [
         'rupeesanity',
         'shopsanity',
         'beedle-shopsanity',
@@ -43,21 +79,21 @@ const optionCategorization: Record<string, LogicOptions[]> = {
         'starting-tadtones',
         'starting-items',
     ],
-    'Entrances': [
+    Entrances: [
         'random-start-entrance',
         'random-start-statues',
         'randomize-entrances',
         'randomize-dungeon-entrances',
         'randomize-trials',
     ],
-    'Convenience': [
+    Convenience: [
         'open-lake-floria',
         'open-et',
         'open-lmf',
         'open-thunderhead',
         'fs-lava-flow',
     ],
-    'Victory': [
+    Victory: [
         'got-start',
         'got-sword-requirement',
         'got-dungeon-requirement',
@@ -65,7 +101,7 @@ const optionCategorization: Record<string, LogicOptions[]> = {
         'triforce-required',
         'triforce-shuffle',
     ],
-    'Miscellaneous': [
+    Miscellaneous: [
         'bit-patches',
         'damage-multiplier',
         'enabled-tricks-bitless',
@@ -82,7 +118,7 @@ const optionCategorization: Record<string, LogicOptions[]> = {
 const defaultUpstream: RemoteReference = {
     type: 'forkBranch',
     author: 'robojumper',
-    branch: 'logic-v2.1.1'
+    branch: 'logic-v2.1.1',
 };
 
 const logicMigrations: Record<string, string> = {
@@ -90,9 +126,19 @@ const logicMigrations: Record<string, string> = {
     'robojumper/statuesanity': 'YourAverageLink/random-pillar-statue',
 };
 
+const wellKnownRemotes = [
+    'Latest',
+    'ssrando/main',
+    'robojumper/logic-v2.1.1',
+    'YourAverageLink/random-pillar-statue',
+];
+
 function getStoredRemote() {
     const storedRemote = localStorage.getItem('ssrTrackerRemoteLogic');
-    const theRemote = storedRemote !== null ? JSON.parse(storedRemote) as RemoteReference : defaultUpstream;
+    const theRemote =
+        storedRemote !== null
+            ? (JSON.parse(storedRemote) as RemoteReference)
+            : defaultUpstream;
     const migration = logicMigrations[formatRemote(theRemote)];
     if (migration) {
         return parseRemote(migration)!;
@@ -104,7 +150,7 @@ function getStoredRemote() {
 /**
  * The default landing page for the tracker. Allows choosing logic source, permalink, and settings,
  * and allows moving to the main tracker.
- * 
+ *
  * This component does not expect logic to be loaded, and will help loading logic.
  * As a result, it does not access any selectors that assume logic has already loaded unless we know it's loaded.
  */
@@ -119,9 +165,7 @@ export default function Options() {
                     <PermalinkChooser />
                 </div>
                 <LaunchButtons />
-                {options && (
-                    <OptionsList />
-                )}
+                {options && <OptionsList />}
             </div>
             <Acknowledgement />
         </Container>
@@ -140,7 +184,9 @@ function LaunchButtons() {
     const dispatch = useAppDispatch();
     const options = useSelector(optionsSelector);
     const loaded = Boolean(options);
-    const modified = Boolean(useSelector((state: RootState) => state.tracker.hasBeenModified));
+    const modified = Boolean(
+        useSelector((state: RootState) => state.tracker.hasBeenModified),
+    );
 
     const canStart = loaded;
     const canResume = loaded && modified;
@@ -174,10 +220,7 @@ function LaunchButtons() {
             >
                 Continue Tracker
             </Link>
-            <Button
-                disabled={!canStart}
-                onClick={reset}
-            >
+            <Button disabled={!canStart} onClick={reset}>
                 Launch New Tracker
             </Button>
             <Button
@@ -194,82 +237,188 @@ function LaunchButtons() {
 type LoadingState =
     | { type: 'loading' }
     | {
-          type: 'badFormat';
-      }
-    | {
           type: 'downloadError';
           error: string;
       };
 
+async function loadRemote(
+    remote: RemoteReference,
+): Promise<[RawLogic, OptionDefs, string] | string> {
+    try {
+        return await loadRemoteLogic(remote);
+    } catch (e) {
+        return e
+            ? typeof e === 'object' && 'message' in e
+                ? (e.message as string)
+                : JSON.stringify(e)
+            : 'Unknown error';
+    }
+}
+
 /** A component to choose your logic release. */
 function LogicChooser() {
     const dispatch = useDispatch();
-    const [inputValue, setInputValue] = useState(() => formatRemote(getStoredRemote()));
-    const [loadingState, setLoadingState] = useState<LoadingState | undefined>(undefined);
+    const [desiredRemote, setDesiredRemote] = useState(() => getStoredRemote());
+    const [loadingState, setLoadingState] = useState<LoadingState | undefined>(
+        undefined,
+    );
+    const inputRef = useRef<PlaintextRef>(null);
 
-    const loadedRemote = useSelector((state: RootState) => state.logic.remote);
+    const loadedRemote = useSelector(
+        (state: RootState) => state.logic.remoteName,
+    );
 
+    const wellKnownSelectOptions = useMemo(() => {
+        return wellKnownRemotes.map((remote) => ({
+            value: parseRemote(remote)!,
+            label: remote,
+        }));
+    }, []);
+
+    const activeOption = wellKnownSelectOptions.find((option) =>
+        _.isEqual(option.value, desiredRemote),
+    );
+
+    const onRemoteChange = (
+        selectedOption: SingleValue<{ label: string; value: RemoteReference }>,
+        meta: ActionMeta<{ label: string; value: RemoteReference }>,
+    ) => {
+        if (meta.action === 'select-option' && selectedOption) {
+            setDesiredRemote(selectedOption.value);
+        }
+    };
 
     useEffect(() => {
-        let canceled = false;
-        const load = async () => {
-            setLoadingState({ type: 'loading' });
-            const parsed = parseRemote(inputValue);
-            if (!parsed) {
-                setLoadingState({ type: 'badFormat' });
-                return;
-            }
-
-            if (_.isEqual(parsed, loadedRemote)) {
-                setLoadingState(undefined);
-                return;
-            }
-            try {
-                const [logic, options] = await loadRemoteLogic(parsed);
-                if (!canceled) {
-                    dispatch(loadLogic({ logic, options, remote: parsed }))
-                    setLoadingState(undefined);
-                }
-            } catch (e) {
-                if (!canceled) {
-                    setLoadingState({
-                        type: 'downloadError',
-                        error: e
-                            ? typeof e === 'object' && 'message' in e
-                                ? (e.message as string)
-                                : JSON.stringify(e)
-                            : 'Unknown error',
-                    });
+        const [cancelToken, cancel] = withCancel();
+        (async () => {
+            if (!cancelToken.canceled) {
+                setLoadingState({ type: 'loading' });
+                const result = await loadRemote(desiredRemote);
+                if (!cancelToken.canceled) {
+                    if (typeof result === 'string') {
+                        setLoadingState({
+                            type: 'downloadError',
+                            error: result,
+                        });
+                    } else {
+                        const [logic, options, remoteName] = result;
+                        setLoadingState(undefined);
+                        dispatch(
+                            loadLogic({
+                                logic,
+                                options,
+                                remote: desiredRemote,
+                                remoteName,
+                            }),
+                        );
+                    }
                 }
             }
+        })();
 
-        };
-
-        load();
-
-        return () => {
-            canceled = true;
-        }
-    }, [dispatch, inputValue, loadedRemote]);
-    
-    const badFormat = loadingState?.type === 'badFormat';
+        return cancel;
+    }, [desiredRemote, dispatch, loadedRemote]);
 
     return (
         <div className="optionsCategory logicChooser">
-            <legend>Randomizer Version</legend>
-            <div className="logicInputWithStatus">
-                <input
-                    type="text"
-                    className={badFormat ? 'optionsBadRemote' : ''}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                />
-                {loadingState?.type === 'loading'
-                    ? '⏳'
-                    : loadingState
-                        ? '❌'
-                        : '✅'}
-            </div>
+            <legend>
+                Randomizer Version
+                {loadedRemote && `: ${loadedRemote}`}
+            </legend>
+            <Tabs
+                defaultActiveKey="wellKnown"
+                onSelect={(e) => {
+                    if (e === 'raw') {
+                        inputRef.current?.setInput(formatRemote(desiredRemote));
+                    }
+                }}
+            >
+                <Tab key="wellKnown" eventKey="wellKnown" title="Releases">
+                    <Select
+                        styles={selectStyles<
+                            false,
+                            { label: string; value: RemoteReference }
+                        >()}
+                        value={activeOption}
+                        onChange={onRemoteChange}
+                        options={wellKnownSelectOptions}
+                        name="Select remote"
+                    />
+                </Tab>
+                <Tab key="raw" eventKey="raw" title="Beta Feature">
+                    <span>
+                        Find cool beta features on the Discord{' '}
+                        <ImageLink
+                            href="https://discord.gg/evpNKkaaw6"
+                            src="https://discordapp.com/api/guilds/767090759773323264/embed.png?style=shield"
+                            alt="Discord Embed"
+                        />
+                    </span>
+                    <PlaintextLogicInput
+                        ref={inputRef}
+                        desiredRemote={desiredRemote}
+                        setDesiredRemote={setDesiredRemote}
+                    />
+                </Tab>
+            </Tabs>
+            <LoadingStateIndicator loadingState={loadingState} />
+        </div>
+    );
+}
+
+export interface PlaintextRef {
+    setInput: (text: string) => void;
+}
+
+const PlaintextLogicInput = forwardRef(function PlaintextLogicInput(
+    {
+        desiredRemote,
+        setDesiredRemote,
+    }: {
+        desiredRemote: RemoteReference;
+        setDesiredRemote: (ref: RemoteReference) => void;
+    },
+    ref: React.ForwardedRef<PlaintextRef>,
+) {
+    const [input, setInput] = useState(() => formatRemote(desiredRemote));
+    const parsed = useMemo(() => parseRemote(input), [input]);
+    const badFormat = !parsed;
+    useEffect(() => {
+        if (parsed) {
+            setDesiredRemote(parsed);
+        }
+    }, [parsed, setDesiredRemote]);
+
+    useImperativeHandle(ref, () => ({ setInput }), []);
+
+    return (
+        <div>
+            <input
+                type="text"
+                className={badFormat ? 'optionsBadRemote' : ''}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+            />
+        </div>
+    );
+});
+
+function LoadingStateIndicator({
+    loadingState,
+}: {
+    loadingState: LoadingState | undefined;
+}) {
+    return (
+        <div>
+            {loadingState?.type === 'loading' ? (
+                '⏳'
+            ) : loadingState ? (
+                <Tippy content={<>{loadingState.error}</>}>
+                    <span>❌</span>
+                </Tippy>
+            ) : (
+                '✅'
+            )}
         </div>
     );
 }
@@ -280,7 +429,9 @@ function PermalinkChooser() {
     const options = useSelector(optionsSelector);
     const settings = useSelector((state: RootState) => state.tracker.settings);
     const permalink = useMemo(
-        () => options && encodePermalink(options, validateSettings(options, settings)),
+        () =>
+            options &&
+            encodePermalink(options, validateSettings(options, settings)),
         [options, settings],
     );
 
@@ -301,7 +452,14 @@ function PermalinkChooser() {
     return (
         <div className="optionsCategory permalinkChooser">
             <legend>Settings String</legend>
-            <input type="text" className="permalinkInput" disabled={!permalink} placeholder="Select a Randomizer version first" value={permalink ?? ""} onChange={(e) => onChangePermalink(e.target.value)} />
+            <input
+                type="text"
+                className="permalinkInput"
+                disabled={!permalink}
+                placeholder="Select a Randomizer version first"
+                value={permalink ?? ''}
+                onChange={(e) => onChangePermalink(e.target.value)}
+            />
         </div>
     );
 }
@@ -314,7 +472,9 @@ function OptionsList() {
 
     const changeSetting = useCallback(
         <K extends LogicOptions>(key: K, value: TypedOptions[K]) => {
-            dispatch(acceptSettings({ settings: {...settings, [key]: value }}));
+            dispatch(
+                acceptSettings({ settings: { ...settings, [key]: value } }),
+            );
         },
         [dispatch, settings],
     );
@@ -446,7 +606,11 @@ function Setting({
                     meta.action === 'select-option' ||
                     meta.action === 'remove-value'
                 ) {
-                    setValue(selectedOption.map((o) => o.value.slice(0, -numPaddingDigits)));
+                    setValue(
+                        selectedOption.map((o) =>
+                            o.value.slice(0, -numPaddingDigits),
+                        ),
+                    );
                 } else if (meta.action === 'clear') {
                     setValue([]);
                 }
@@ -465,10 +629,17 @@ function Setting({
                     </Col>
                     <Col xs={6}>
                         <Select
-                            styles={selectStyles<true, { label: string, value: string }>()}
+                            styles={selectStyles<
+                                true,
+                                { label: string; value: string }
+                            >()}
                             isMulti
                             value={(value as string[]).map((val, idx) => ({
-                                value: val + idx.toString().padStart(numPaddingDigits, '0'),
+                                value:
+                                    val +
+                                    idx
+                                        .toString()
+                                        .padStart(numPaddingDigits, '0'),
                                 label: val,
                             }))}
                             onChange={onChange}
