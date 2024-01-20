@@ -1,16 +1,25 @@
-import { TypedOptions } from "../permalink/SettingsTypes";
-import { InventoryItem, isItem } from "./Inventory";
+import { TypedOptions } from '../permalink/SettingsTypes';
+import { InventoryItem, isItem } from './Inventory';
 import goddessCubesList_ from '../data/goddessCubes2.json';
-import _ from "lodash";
-import { swordsToAdd } from "./ThingsThatWouldBeNiceToHaveInTheDump";
-import { RegularDungeon } from "./Locations";
-import { TrackerState } from "../tracker/slice";
+import _ from 'lodash';
+import { swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
+import { RegularDungeon } from './Locations';
+import { TrackerState } from '../tracker/slice';
 
 const collectedCubeSuffix = '_TR_Cube_Collected';
 
-export const goddessChestCheckToCubeCheck = Object.fromEntries(goddessCubesList_.map(([chest, cube]) => [chest, cube]));
-export const cubeCheckToGoddessChestCheck = _.invert(goddessChestCheckToCubeCheck);
-export const cubeCollectedToCubeCheck = Object.fromEntries(Object.keys(cubeCheckToGoddessChestCheck).map((check) => [mapToCubeCollectedRequirement(check), check]));
+export const goddessChestCheckToCubeCheck = Object.fromEntries(
+    goddessCubesList_.map(([chest, cube]) => [chest, cube]),
+);
+export const cubeCheckToGoddessChestCheck = _.invert(
+    goddessChestCheckToCubeCheck,
+);
+export const cubeCollectedToCubeCheck = Object.fromEntries(
+    Object.keys(cubeCheckToGoddessChestCheck).map((check) => [
+        mapToCubeCollectedRequirement(check),
+        check,
+    ]),
+);
 export const cubeCheckToCubeCollected = _.invert(cubeCollectedToCubeCheck);
 
 export function mapToCubeCollectedRequirement(check: string) {
@@ -35,18 +44,17 @@ export const triforceItems = [
 
 export const triforceItemReplacement = 'Triforce';
 
-
 // Checking a dungeon completion check gives the respective "item"
 // so that the "All Required Dungeons Complete" requirement is
 // logically fulfilled when the player completes the dungeon, not
 // when they gain the ability to do so (semilogic...)
 export const dungeonCompletionItems: Record<string, string> = {
     Skyview: '\\Tracker\\Skyview Completed',
-    "Earth Temple": '\\Tracker\\Earth Temple Completed',
-    "Lanayru Mining Facility": '\\Tracker\\Lanayru Mining Facility Completed',
-    "Ancient Cistern": '\\Tracker\\Ancient Cistern Completed',
+    'Earth Temple': '\\Tracker\\Earth Temple Completed',
+    'Lanayru Mining Facility': '\\Tracker\\Lanayru Mining Facility Completed',
+    'Ancient Cistern': '\\Tracker\\Ancient Cistern Completed',
     Sandship: '\\Tracker\\Sandship Completed',
-    "Fire Sanctuary": '\\Tracker\\Fire Sanctuary Completed'
+    'Fire Sanctuary': '\\Tracker\\Fire Sanctuary Completed',
 } satisfies Record<RegularDungeon, string>;
 
 export function getInitialItems(
@@ -77,7 +85,10 @@ export function getInitialItems(
             add(sothItemReplacement);
         } else if (item.includes(triforceItemReplacement)) {
             add(triforceItemReplacement);
-        } else if (isItem(item) && (!item.includes('Pouch') || !items['Progressive Pouch'])) {
+        } else if (
+            isItem(item) &&
+            (!item.includes('Pouch') || !items['Progressive Pouch'])
+        ) {
             add(item);
         }
     }
