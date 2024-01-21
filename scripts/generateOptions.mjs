@@ -1,8 +1,10 @@
+// @ts-check
+
 import { load } from 'js-yaml';
 import fs from 'node:fs';
 
 const baseFileUrl = (file) =>
-    `https://raw.githubusercontent.com/robojumper/ssrando/logic-dump/${file}.yaml`;
+    `https://raw.githubusercontent.com/ssrando/ssrando/main/${file}.yaml`;
 
 const loadFileFromUrl = async (url) => {
     const response = await fetch(url);
@@ -15,10 +17,18 @@ const loadFile = async (file) => {
     return load(data);
 };
 
-const data = await loadFile('options');
-const excludedSettings = ['enabled-tricks-bitless', 'enabled-tricks-glitched'];
+/**
+ * @typedef {import('../src/permalink/SettingsTypes').OptionDefs} OptionDefs 
+ */
 
-let output = 'export interface GeneratedOptions {\n';
+const data = /** @type OptionDefs */ (await loadFile('options'));
+let output =
+    '/**\n' +
+    ' * DO NOT MANUALLY EDIT!\n' +
+    ' * Automatically generated option types based on ssrando options.yaml\n' +
+    ' * Run `npm run generate:options` to regenerate.\n' +
+    ' */\n';
+output += 'export interface GeneratedOptions {\n';
 for (const option of data) {
     if (option.permalink === false) {
         continue;
@@ -42,8 +52,9 @@ for (const option of data) {
             type = 'string[]';
             break;
         default:
-            throw new Error("unknown option type")
+            throw new Error('unknown option type');
     }
+    output += `    /** ${option.name} */\n`;
     output += `    '${option.command}': ${type};\n`;
 }
 output += '}\n';

@@ -1,14 +1,14 @@
 import _ from 'lodash';
 import PackedBitsWriter from './PackedBitsWriter';
 import PackedBitsReader from './PackedBitsReader';
-import { Option, OptionValue, OptionDefs, AllTypedOptions } from './SettingsTypes';
+import { Option, OptionValue, OptionDefs, AllTypedOptions, OptionsCommand } from './SettingsTypes';
 
 export function decodePermalink(
     optionDefs: OptionDefs,
     permalink: string,
 ): AllTypedOptions {
     const permaNoSeed = permalink.split('#')[0];
-    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
+    const settings: Partial<Record<OptionsCommand, OptionValue>> = {};
     const reader = PackedBitsReader.fromBase64(permaNoSeed);
     _.forEach(optionDefs, (option) => {
         if (option.permalink !== false) {
@@ -34,7 +34,7 @@ export function decodePermalink(
 }
 
 export function defaultSettings(optionDefs: OptionDefs): AllTypedOptions {
-    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
+    const settings: Partial<Record<OptionsCommand, OptionValue>> = {};
     _.forEach(optionDefs, (option) => {
         if (option.permalink !== false) {
             settings[option.command] = option.default;
@@ -44,13 +44,13 @@ export function defaultSettings(optionDefs: OptionDefs): AllTypedOptions {
 }
 
 
-const nonRandomizedSettings: (keyof AllTypedOptions)[] = [
+const nonRandomizedSettings: (OptionsCommand)[] = [
     'damage-multiplier',
     'logic-mode',
 ];
 
 export function randomSettings(optionDefs: OptionDefs): AllTypedOptions {
-    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
+    const settings: Partial<Record<OptionsCommand, OptionValue>> = {};
     _.forEach(optionDefs, (option) => {
         if (option.permalink !== false) {
             if (nonRandomizedSettings.includes(option.command)) {
@@ -96,7 +96,7 @@ function validateValue(option: Option, value: unknown): OptionValue | undefined 
 }
 
 export function validateSettings(optionDefs: OptionDefs, userSettings: Partial<AllTypedOptions>): AllTypedOptions {
-    const settings: Partial<Record<keyof AllTypedOptions, OptionValue>> = {};
+    const settings: Partial<Record<OptionsCommand, OptionValue>> = {};
     for (const optionDef of optionDefs) {
         if (optionDef.permalink === false) {
             continue;

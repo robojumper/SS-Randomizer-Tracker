@@ -5,7 +5,7 @@ export type BaseOption = {
     permalink: boolean | undefined;
     help: string;
     name: string;
-    command: keyof AllTypedOptions;
+    command: OptionsCommand;
 };
 
 export type BooleanOption = BaseOption & {
@@ -44,6 +44,7 @@ export type OptionDefs = Option[];
 
 export type OptionValue = string | string[] | number | boolean;
 export type OptionType = Option['type'];
+export type OptionsCommand = keyof AllTypedOptions;
 
 export interface AllTypedOptions
     extends Omit<GeneratedOptions, 'rupeesanity' | 'shopsanity' | 'randomize-entrances'> {

@@ -1,7 +1,7 @@
 import {
-    AllTypedOptions,
     OptionType,
     OptionValue,
+    OptionsCommand,
     TypedOptions,
 } from '../permalink/SettingsTypes';
 
@@ -96,10 +96,9 @@ const inLogicOptions_ = [
     'excluded-locations',
     'enabled-tricks-bitless',
     'enabled-tricks-glitched',
-] satisfies (keyof AllTypedOptions)[];
+] satisfies (OptionsCommand)[];
 
 export type LogicOptions = (typeof inLogicOptions_)[number];
-export const inLogicOptions: string[] = inLogicOptions_;
 
 export const impaSongCheck =
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
