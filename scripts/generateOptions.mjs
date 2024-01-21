@@ -3,15 +3,15 @@
 import { load } from 'js-yaml';
 import fs from 'node:fs';
 
-const baseFileUrl = (file) =>
+const baseFileUrl = (/** @type {string} */ file) =>
     `https://raw.githubusercontent.com/ssrando/ssrando/main/${file}.yaml`;
 
-const loadFileFromUrl = async (url) => {
+const loadFileFromUrl = async (/** @type {string | URL | Request} */ url) => {
     const response = await fetch(url);
     return response.text();
 };
 
-const loadFile = async (file) => {
+const loadFile = async (/** @type {string} */ file) => {
     const fileUrl = baseFileUrl(file);
     const data = await loadFileFromUrl(fileUrl);
     return load(data);

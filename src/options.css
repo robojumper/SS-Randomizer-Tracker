@@ -15,12 +15,25 @@
     }
 }
 
+.logicAndPermalink {
+    display: grid;
+    grid-template-areas: "logic permalink";
+    grid-template-columns: 30% 70%;
+
+    @media (max-width: 1000px) {
+        grid-template-areas:
+            "logic"
+            "permalink";
+        grid-template-columns: 100%;
+    }
+}
+
 .logicChooser {
-    width: 30%;
+    grid-area: logic;
 }
 
 .permalinkChooser {
-    width: 70%;
+    grid-area: permalink;
 }
 
 .launchButtons {
@@ -40,6 +53,7 @@
     padding: 0% 1% 1% 1%;
     background: rgba(40, 40, 20, 0.1);
     text-align: left;
+    width: 100%;
 }
 
 .optionsTab {

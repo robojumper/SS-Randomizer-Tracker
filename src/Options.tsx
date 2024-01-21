@@ -53,7 +53,7 @@ import { selectStyles } from './customization/ComponentStyles';
 import { withCancel } from './utils/CancelToken';
 import { RawLogic } from './logic/UpstreamTypes';
 import _ from 'lodash';
-import ImageLink from './additionalComponents/ImageLink';
+import DiscordButton from './additionalComponents/DiscordButton';
 
 const optionCategorization: Record<string, LogicOptions[]> = {
     Shuffles: [
@@ -123,14 +123,14 @@ const defaultUpstream: RemoteReference = {
 
 const logicMigrations: Record<string, string> = {
     'robojumper/logic-dump': 'robojumper/logic-v2.1.1',
-    'robojumper/statuesanity': 'YourAverageLink/random-pillar-statue',
+    'robojumper/statuesanity': 'ssrando/main',
+    'YourAverageLink/random-pillar-statue': 'ssrando/main',
 };
 
 const wellKnownRemotes = [
     'Latest',
     'ssrando/main',
     'robojumper/logic-v2.1.1',
-    'YourAverageLink/random-pillar-statue',
 ];
 
 function getStoredRemote() {
@@ -160,7 +160,7 @@ export default function Options() {
     return (
         <Container fluid>
             <div className="optionsPage">
-                <div style={{ display: 'flex', flexFlow: 'row nowrap' }}>
+                <div className="logicAndPermalink">
                     <LogicChooser />
                     <PermalinkChooser />
                 </div>
@@ -348,11 +348,7 @@ function LogicChooser() {
                 <Tab key="raw" eventKey="raw" title="Beta Feature">
                     <span>
                         Find cool beta features on the Discord{' '}
-                        <ImageLink
-                            href="https://discord.gg/evpNKkaaw6"
-                            src="https://discordapp.com/api/guilds/767090759773323264/embed.png?style=shield"
-                            alt="Discord Embed"
-                        />
+                        <DiscordButton />
                     </span>
                     <PlaintextLogicInput
                         ref={inputRef}

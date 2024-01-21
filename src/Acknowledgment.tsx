@@ -2,8 +2,8 @@ import _ from 'lodash';
 import { Row, Col } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import Contributor from './additionalComponents/Contributor';
-import ImageLink from './additionalComponents/ImageLink';
 import contributors from './data/contributors.json';
+import DiscordButton from './additionalComponents/DiscordButton';
 
 export default function Acknowledgement() {
     return (
@@ -39,7 +39,7 @@ export default function Acknowledgement() {
                         </a>
                     </span>
                     <span>
-                        <ImageLink href="https://discord.gg/evpNKkaaw6" src="https://discordapp.com/api/guilds/767090759773323264/embed.png?style=shield" alt="Discord Embed" />
+                        <DiscordButton />
                     </span>
                 </Col>
             </Row>
