@@ -43,39 +43,6 @@ export function defaultSettings(optionDefs: OptionDefs): AllTypedOptions {
     return settings as AllTypedOptions;
 }
 
-
-const nonRandomizedSettings: (OptionsCommand)[] = [
-    'damage-multiplier',
-    'logic-mode',
-];
-
-export function randomSettings(optionDefs: OptionDefs): AllTypedOptions {
-    const settings: Partial<Record<OptionsCommand, OptionValue>> = {};
-    _.forEach(optionDefs, (option) => {
-        if (option.permalink !== false) {
-            if (nonRandomizedSettings.includes(option.command)) {
-                settings[option.command] = option.default;
-            } else {
-                switch (option.type) {
-                    case 'boolean':
-                        settings[option.command] = Math.random() < 0.5;
-                        break;
-                    case 'singlechoice':
-                        settings[option.command] = _.sample(option.choices);
-                        break;
-                    case 'multichoice':
-                        settings[option.command] = option.choices.filter(() => Math.random() < 0.5);
-                        break;
-                    case 'int':
-                        settings[option.command] = _.sample(_.range(option.min, option.max + 1));
-                        break;
-                }
-            }
-        }
-    });
-    return settings as AllTypedOptions;
-}
-
 function validateValue(option: Option, value: unknown): OptionValue | undefined {
     switch (option.type) {
         case 'boolean':

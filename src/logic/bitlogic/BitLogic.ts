@@ -105,11 +105,11 @@ export function findNewSubgoals(
     /** ...starting from here. */
     idx: number,
     /**
-     * Expressions we've already revealed/precomputed
+     * Expressions we've already precomputed
      * in a previous run, used to reveal new paths
      * and stop searching if there aren't any paths remaining.
      */
-    revealedExpressions: Set<number>,
+    learnedExpressions: Set<number>,
     visitedExpressions: Set<number> = new Set(),
 ): BitVector | undefined {
     if (visitedExpressions.has(idx)) {
@@ -120,7 +120,7 @@ export function findNewSubgoals(
         return undefined;
     }
 
-    if (revealedExpressions.has(idx)) {
+    if (learnedExpressions.has(idx)) {
         return undefined;
     }
 
@@ -128,12 +128,12 @@ export function findNewSubgoals(
 
     for (const conj of requirements[idx].conjunctions) {
         for (const bit of conj.iter()) {
-            if (!opaqueBits.test(bit) && !revealedExpressions.has(bit)) {
+            if (!opaqueBits.test(bit) && !learnedExpressions.has(bit)) {
                 const moreBits = findNewSubgoals(
                     opaqueBits,
                     requirements,
                     bit,
-                    revealedExpressions,
+                    learnedExpressions,
                     visitedExpressions,
                 );
                 if (moreBits) {
@@ -175,12 +175,15 @@ export function computeGroundExpression(
     // works for some requirements, is fairly slow for others, and fails catastrophically
     // for a few unless some specific subgoals are evaluated first (see `findNewSubgoals`).
     // So if you see the tooltips task getting stuck, it's likely here and because `findNewSubgoals`
-    // didn't reveal an important expression.
+    // didn't make us learn an important expression.
     // Some alternatives:
     // * Not output a DNF but a multi-level form. This however needs tooltips to implement
     //   more sophisticated simplification algorithms.
     // * Convert the requirements to a proper directed graph structure first, where things like
     //   degree and "bottlenecks" are known, then use better heuristics there.
+    // * Find a All-SAT solver that can deal with fixed-point logic.
+    //   Good luck with that, SAT solvers need input in CNF, All-SAT solvers seem to
+    //   only exist in theory, and cycles are not considered.
 
     nextConj: for (const conj of requirements[idx].conjunctions) {
         let tmpExpr = LogicalExpression.true();

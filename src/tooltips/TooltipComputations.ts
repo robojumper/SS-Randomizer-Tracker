@@ -13,17 +13,20 @@ import {
 } from '../logic/bitlogic/BitLogic';
 import _ from 'lodash';
 import { CancelToken, withCancel } from '../utils/CancelToken';
+import { createDeadlineKeeper } from '../utils/Promises';
 
 /**
  * This module contains various strategies to turn the requirements into a more compact and readable
  * form, with the goal of creating readable and understandable requirements for tooltips.
  */
 
-// setTimeout as a promise
-function delay(ms: number) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
+/**
+ * The TooltipComputer acts as:
+ * * A cache for computed tooltip expressions,
+ * * A task queue for the tooltip computation worker, and
+ * * A subscribeable store for tooltip components to request tooltip computations.
+ */
 export class TooltipComputer {
     logic: Logic;
     subscriptions: Record<string, { checkId: string; callback: () => void }>;
@@ -31,7 +34,7 @@ export class TooltipComputer {
 
     opaqueBits: BitVector;
     requirements: LogicalExpression[];
-    revealed: Set<number>;
+    learned: Set<number>;
 
     cancel: () => void;
     wakeupWorker: () => void;
@@ -39,7 +42,7 @@ export class TooltipComputer {
     constructor(logic: Logic, requirements: Record<number, LogicalExpression>) {
         this.logic = logic;
         this.subscriptions = {};
-        this.revealed = new Set();
+        this.learned = new Set();
         this.wakeupWorker = noop;
         this.results = {};
         this.opaqueBits = getTooltipOpaqueBits(logic);
@@ -114,16 +117,17 @@ async function computationTask(
     cancelToken: CancelToken,
     store: TooltipComputer,
 ) {
+    const keepDeadline = createDeadlineKeeper(30);
     do {
         // First, perform some cheap optimizations that will help every
         // query afterwards.
-        await delay(0);
+        await keepDeadline();
         removeDuplicates(store.requirements);
-        await delay(0);
+        await keepDeadline();
         while (shallowSimplify(store.opaqueBits, store.requirements)) {
-            await delay(0);
+            await keepDeadline();
             removeDuplicates(store.requirements);
-            await delay(0);
+            await keepDeadline();
         }
     } while (unifyRequirements(store.opaqueBits, store.requirements));
 
@@ -148,27 +152,27 @@ async function computationTask(
         const checkId = task.checkId;
         const bit = store.logic.itemBits[checkId];
 
-        // We precompute some subgoals because it improves performance.
+        // We precompute ("learn") some subgoals because it improves performance.
         // However, we can sometimes end up precomputing trivial requirements
         // like \Distance Activator for X Rupee items while expensive requirements
-        // like \Can Medium Rupee Farm end up being not revealed yet. So
+        // like \Can Medium Rupee Farm end up being not "learned" yet. So
         // we always perform a minimum amount of work per item.
-        let numRevealedInPrecomputation = 0;
-        while (numRevealedInPrecomputation < 5) {
+        let numLearnedInPrecomputation = 0;
+        while (numLearnedInPrecomputation < 5) {
             const potentialPath = findNewSubgoals(
                 store.opaqueBits,
                 store.requirements,
                 bit,
-                store.revealed,
+                store.learned,
             );
     
-            await delay(0);
+            await keepDeadline();
     
             if (potentialPath && potentialPath.numSetBits > 0) {
                 for (const precomputeBit of potentialPath.iter()) {
                     if (
                         !store.opaqueBits.test(precomputeBit) &&
-                        !store.revealed.has(precomputeBit)
+                        !store.learned.has(precomputeBit)
                     ) {
                         // And then precompute some non-opaque requirements. This persists between tooltips, so
                         // different checks can reuse these results.
@@ -179,13 +183,13 @@ async function computationTask(
                             store.requirements,
                             precomputeBit,
                         );
-                        store.revealed.add(precomputeBit);
-                        numRevealedInPrecomputation += 1;
-                        await delay(0);
+                        store.learned.add(precomputeBit);
+                        numLearnedInPrecomputation += 1;
+                        await keepDeadline();
                     }
                 }
             } else {
-                // There are no unrevealed subgoals, so we can go straight to computing the goal.
+                // There are no subgoals to learn, so we can go straight to computing the goal.
                 break;
             }
         }
@@ -196,11 +200,12 @@ async function computationTask(
             bit,
         );
         store.requirements[bit] = opaqueOnlyExpr;
+        await keepDeadline();
         store.acceptTaskResult(
             task.checkId,
             dnfToRequirementExpr(store.logic, opaqueOnlyExpr.conjunctions),
         );
-        await delay(0);
+        await keepDeadline();
     }
 }
 

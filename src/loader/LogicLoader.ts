@@ -59,7 +59,7 @@ export function formatRemote(ref: RemoteReference) {
 }
 
 const prBranchPattern = /^https:\/\/github.com\/(.*)\/ssrando\/tree\/(.*)$/;
-const branchPattern = /^(.*)\/(.*)$/;
+const branchPattern = /^(.*)(?:[/|:])(.*)$/;
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
 export function parseRemote(remote: string): RemoteReference | undefined {

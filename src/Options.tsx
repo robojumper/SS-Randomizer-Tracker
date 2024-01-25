@@ -19,7 +19,6 @@ import {
 import {
     decodePermalink,
     encodePermalink,
-    randomSettings,
     validateSettings,
 } from './permalink/Settings';
 import { Option } from './permalink/SettingsTypes';
@@ -54,6 +53,7 @@ import { withCancel } from './utils/CancelToken';
 import { RawLogic } from './logic/UpstreamTypes';
 import _ from 'lodash';
 import DiscordButton from './additionalComponents/DiscordButton';
+import { delay } from './utils/Promises';
 
 const optionCategorization: Record<string, LogicOptions[]> = {
     Shuffles: [
@@ -204,12 +204,6 @@ function LaunchButtons() {
         }
     }, [canResume, canStart, dispatch, navigate]);
 
-    const doRandomizeOptions = useCallback(() => {
-        if (options && window.confirm('Randomize all settings?')) {
-            dispatch(acceptSettings({ settings: randomSettings(options) }));
-        }
-    }, [dispatch, options]);
-
     return (
         <div className="launchButtons">
             <Link
@@ -222,13 +216,6 @@ function LaunchButtons() {
             </Link>
             <Button disabled={!canStart} onClick={reset}>
                 Launch New Tracker
-            </Button>
-            <Button
-                className="randomizeButton"
-                disabled={!loaded}
-                onClick={doRandomizeOptions}
-            >
-                Randomize Settings
             </Button>
         </div>
     );
@@ -291,6 +278,7 @@ function LogicChooser() {
     useEffect(() => {
         const [cancelToken, cancel] = withCancel();
         (async () => {
+            await delay(500);
             if (!cancelToken.canceled) {
                 setLoadingState({ type: 'loading' });
                 const result = await loadRemote(desiredRemote);
@@ -406,15 +394,13 @@ function LoadingStateIndicator({
 }) {
     return (
         <div>
-            {loadingState?.type === 'loading' ? (
-                '⏳'
-            ) : loadingState ? (
-                <Tippy content={<>{loadingState.error}</>}>
-                    <span>❌</span>
-                </Tippy>
-            ) : (
-                '✅'
-            )}
+            <span>
+                {loadingState?.type === 'loading'
+                    ? '⏳'
+                    : loadingState
+                        ? `❌ ${loadingState.error}`
+                        : '✅'}
+            </span>
         </div>
     );
 }

@@ -42,10 +42,6 @@
     display: flex;
     flex-flow: row wrap;
     column-gap: 4px;
-
-    > .randomizeButton {
-        margin-left: auto;
-    }
 }
 
 .optionsCategory {
