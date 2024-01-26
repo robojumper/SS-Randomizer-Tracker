@@ -3,7 +3,7 @@ import { InventoryItem, isItem } from './Inventory';
 import goddessCubesList_ from '../data/goddessCubes2.json';
 import _ from 'lodash';
 import { swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
-import { RegularDungeon } from './Locations';
+import { DungeonName } from './Locations';
 import { TrackerState } from '../tracker/slice';
 
 const collectedCubeSuffix = '_TR_Cube_Collected';
@@ -55,7 +55,8 @@ export const dungeonCompletionItems: Record<string, string> = {
     'Ancient Cistern': '\\Tracker\\Ancient Cistern Completed',
     Sandship: '\\Tracker\\Sandship Completed',
     'Fire Sanctuary': '\\Tracker\\Fire Sanctuary Completed',
-} satisfies Record<RegularDungeon, string>;
+    'Sky Keep': '\\Tracker\\Sky Keep Completed',
+} satisfies Record<DungeonName, string>;
 
 export function getInitialItems(
     settings: TypedOptions,

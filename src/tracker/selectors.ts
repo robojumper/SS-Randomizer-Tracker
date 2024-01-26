@@ -31,7 +31,12 @@ import {
     isRegularDungeon,
     LogicalState,
 } from '../logic/Locations';
-import { LinkedEntrancePool, Logic, LogicalCheck, itemName } from '../logic/Logic';
+import {
+    LinkedEntrancePool,
+    Logic,
+    LogicalCheck,
+    itemName,
+} from '../logic/Logic';
 import {
     cubeCheckToCubeCollected,
     cubeCheckToGoddessChestCheck,
@@ -108,7 +113,8 @@ export const inventorySelector = createSelector(
 );
 
 export const rawItemCountSelector = currySelector(
-    (state: RootState, item: InventoryItem) => inventorySelector(state)[item] ?? 0,
+    (state: RootState, item: InventoryItem) =>
+        inventorySelector(state)[item] ?? 0,
 );
 
 export const checkedChecksSelector = (state: RootState) =>
@@ -123,13 +129,28 @@ function getNumLooseGratitudeCrystals(
     ).length;
 }
 
-export function getAdditionalItems(logic: Logic, checkedChecks: string[]) {
+export function getAdditionalItems(
+    logic: Logic,
+    settings: TypedOptions,
+    inventory: Record<InventoryItem, number>,
+    checkedChecks: string[],
+) {
     const result: Record<string, number> = {};
     // Completed dungeons
-    for (const [dungeon, completionCheck] of Object.entries(logic.dungeonCompletionRequirements)) {
+    for (const [dungeon, completionCheck] of Object.entries(
+        logic.dungeonCompletionRequirements,
+    )) {
         if (checkedChecks.includes(completionCheck)) {
             result[dungeonCompletionItems[dungeon]] = 1;
         }
+    }
+
+    if (
+        settings['triforce-required'] &&
+        settings['triforce-shuffle'] !== 'Anywhere' &&
+        inventory['Triforce'] === 3
+    ) {
+        result[dungeonCompletionItems['Sky Keep']] = 1;
     }
 
     // If this is a goddess cube check, mark the requirement as checked
@@ -147,9 +168,9 @@ export function getAdditionalItems(logic: Logic, checkedChecks: string[]) {
 }
 
 export const checkItemsSelector = createSelector(
-    [logicSelector, checkedChecksSelector],
-    getAdditionalItems
-)
+    [logicSelector, settingsSelector, inventorySelector, checkedChecksSelector],
+    getAdditionalItems,
+);
 
 export const totalGratitudeCrystalsSelector = createSelector(
     [
@@ -167,10 +188,9 @@ export const totalGratitudeCrystalsSelector = createSelector(
 );
 
 export interface EntrancePool {
-    entrances: { name: string, id: string }[];
+    entrances: { name: string; id: string }[];
     usedEntrancesExcluded: boolean;
 }
-
 
 export const allowedStartingEntrancesSelector = createSelector(
     [logicSelector, settingSelector('random-start-entrance')],
@@ -200,7 +220,6 @@ export const allowedStartingEntrancesSelector = createSelector(
     },
 );
 
-
 /**
  * Describes which entrances are available for a given pool (dungeons, silent realms, starting, ...)
  */
@@ -208,7 +227,9 @@ export const entrancePoolsSelector = createSelector(
     [areaGraphSelector, allowedStartingEntrancesSelector],
     (areaGraph, allowedStartingEntrances) => {
         const result: Record<string, EntrancePool> = {};
-        for (const [pool, entries] of Object.entries(areaGraph.linkedEntrancePools)) {
+        for (const [pool, entries] of Object.entries(
+            areaGraph.linkedEntrancePools,
+        )) {
             result[pool] = {
                 usedEntrancesExcluded: true,
                 entrances: Object.values(entries).map((linkage) => {
@@ -217,21 +238,28 @@ export const entrancePoolsSelector = createSelector(
                         id: entranceId,
                         name: areaGraph.entrances[entranceId].short_name,
                     };
-                })
+                }),
             };
         }
 
-        result[startingEntrancePool] = { usedEntrancesExcluded: false, entrances: allowedStartingEntrances };
+        result[startingEntrancePool] = {
+            usedEntrancesExcluded: false,
+            entrances: allowedStartingEntrances,
+        };
 
-        for (const [pool, exitAndEntrances] of Object.entries(areaGraph.birdStatueSanity)) {
+        for (const [pool, exitAndEntrances] of Object.entries(
+            areaGraph.birdStatueSanity,
+        )) {
             result[pool] = {
                 usedEntrancesExcluded: false,
-                entrances: Object.values(exitAndEntrances.entrances).map((entranceId) => {
-                    return {
-                        id: entranceId,
-                        name: areaGraph.entrances[entranceId].short_name,
-                    };
-                })
+                entrances: Object.values(exitAndEntrances.entrances).map(
+                    (entranceId) => {
+                        return {
+                            id: entranceId,
+                            name: areaGraph.entrances[entranceId].short_name,
+                        };
+                    },
+                ),
             };
         }
 
@@ -251,8 +279,8 @@ export const entrancePoolsSelector = createSelector(
         };
 
         return result;
-    }
-)
+    },
+);
 
 const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
 
@@ -325,7 +353,10 @@ export const exitRulesSelector = createSelector(
 
             if (exitId === '\\Start') {
                 if (startingEntranceSetting !== 'Vanilla') {
-                    result[exitId] = { type: 'random', pool: startingEntrancePool };
+                    result[exitId] = {
+                        type: 'random',
+                        pool: startingEntrancePool,
+                    };
                 } else {
                     result[exitId] = { type: 'vanilla' };
                 }
@@ -351,7 +382,10 @@ export const exitRulesSelector = createSelector(
                 logic.areaGraph.birdStatueSanity,
             ).find(([, entry]) => entry.exit === exitId);
             if (birdStatueSanityPool && statueSanity) {
-                result[exitId] = { type: 'random', pool: birdStatueSanityPool[0] };
+                result[exitId] = {
+                    type: 'random',
+                    pool: birdStatueSanityPool[0],
+                };
                 continue;
             }
 
@@ -361,9 +395,7 @@ export const exitRulesSelector = createSelector(
                 )) {
                     const pool =
                         pool_ as keyof typeof logic.areaGraph.linkedEntrancePools;
-                    for (const [entry, linkage] of Object.entries(
-                        entries,
-                    )) {
+                    for (const [entry, linkage] of Object.entries(entries)) {
                         if (linkage.exits[0] === exitId) {
                             return [pool, entry, true] as const;
                         } else if (linkage.exits[1] === exitId) {
@@ -450,7 +482,9 @@ export const exitsSelector = createSelector(
             'lmfSecondExit',
         ];
 
-        const sortedRules = _.sortBy(rules, ([, rule]) => assignmentOrder.indexOf(rule.type));
+        const sortedRules = _.sortBy(rules, ([, rule]) =>
+            assignmentOrder.indexOf(rule.type),
+        );
         for (const [exitId, rule] of sortedRules) {
             switch (rule.type) {
                 case 'vanilla':
@@ -502,7 +536,8 @@ export const exitsSelector = createSelector(
                             rule,
                         };
                     } else {
-                        const reverseEntrance = pool[sourceLocation].entrances[1];
+                        const reverseEntrance =
+                            pool[sourceLocation].entrances[1];
                         result[exitId] = {
                             canAssign: false,
                             entrance: makeEntrance(reverseEntrance),
@@ -514,9 +549,15 @@ export const exitsSelector = createSelector(
                 }
                 case 'lmfSecondExit': {
                     // LMF's second exit leads to ToT (vanilla) if LMF is at LMF, otherwise it's neutered
-                    const lmfPool = logic.areaGraph.linkedEntrancePools.dungeons['Lanayru Mining Facility'];
-                    if (result[lmfPool.exits[0]].entrance?.id === lmfPool.entrances[0]) {
-                        // LMF is vanilla 
+                    const lmfPool =
+                        logic.areaGraph.linkedEntrancePools.dungeons[
+                            'Lanayru Mining Facility'
+                        ];
+                    if (
+                        result[lmfPool.exits[0]].entrance?.id ===
+                        lmfPool.entrances[0]
+                    ) {
+                        // LMF is vanilla
                         result[exitId] = {
                             canAssign: false,
                             entrance: makeEntrance(
@@ -542,17 +583,29 @@ export const exitsSelector = createSelector(
     },
 );
 
+const skyKeepRequiredSelector = (state: RootState) => {
+    const settings = settingsSelector(state);
+    if (!settings['triforce-required']) {
+        return false;
+    }
+    return settings['triforce-shuffle'] !== 'Anywhere';
+};
+
 export const requiredDungeonsSelector = createSelector(
     [
         (state: RootState) => state.tracker.requiredDungeons,
         settingSelector('required-dungeon-count'),
+        skyKeepRequiredSelector,
     ],
-    (selectedRequiredDungeons, numRequiredDungeons) => {
-        if (numRequiredDungeons === 6) {
-            return dungeonNames.filter((n) => n !== 'Sky Keep');
-        } else {
-            return selectedRequiredDungeons.filter(isRegularDungeon);
+    (selectedRequiredDungeons, numRequiredDungeons, skyKeepRequired) => {
+        const requiredDungeons =
+            numRequiredDungeons === 6
+                ? dungeonNames.filter((n) => n !== 'Sky Keep')
+                : selectedRequiredDungeons.filter(isRegularDungeon);
+        if (skyKeepRequired) {
+            requiredDungeons.push('Sky Keep');
         }
+        return requiredDungeons;
     },
 );
 
@@ -562,7 +615,13 @@ export const requiredDungeonsSelector = createSelector(
  * cached tooltips and recalculate requirements (after logic has loaded, this is only settings, mapped exits, and required dungeons).
  */
 export const settingsRequirementsSelector = createSelector(
-    [logicSelector, optionsSelector, settingsSelector, exitsSelector, requiredDungeonsSelector],
+    [
+        logicSelector,
+        optionsSelector,
+        settingsSelector,
+        exitsSelector,
+        requiredDungeonsSelector,
+    ],
     mapSettings,
 );
 
@@ -610,12 +669,15 @@ function mapSettings(
         ? b.singleBit(completeTriforceReq)
         : b.true();
 
-    const allRequiredDungeonsBits = requiredDungeons.reduce(
-        (acc, dungeon) =>
-            acc.setBit(logic.itemBits[dungeonCompletionItems[dungeon]]),
-        new BitVector(),
-    );
-    const dungeonsExpr = requiredDungeons.length ? new LogicalExpression([allRequiredDungeonsBits]) : b.false();
+    const allRequiredDungeonsBits = requiredDungeons.reduce((acc, dungeon) => {
+        if (dungeon !== 'Sky Keep') {
+            acc.setBit(logic.itemBits[dungeonCompletionItems[dungeon]]);
+        }
+        return acc;
+    }, new BitVector());
+    const dungeonsExpr = requiredDungeons.length
+        ? new LogicalExpression([allRequiredDungeonsBits])
+        : b.false();
 
     if (settings['got-dungeon-requirement'] === 'Required') {
         openGotExpr = openGotExpr.and(dungeonsExpr);
@@ -862,9 +924,9 @@ export const isCheckBannedSelector = createSelector(
         ) => {
             return (
                 check.type === 'tr_cube' &&
-                (bannedChecks.has(
+                bannedChecks.has(
                     logic.checks[cubeCheckToGoddessChestCheck[checkId]].name,
-                ))
+                )
             );
         };
 
@@ -902,6 +964,7 @@ export const dungeonKeyLogicSelector = createSelector(
 export const inSemiLogicBitsSelector = createSelector(
     [
         logicSelector,
+        settingsSelector,
         settingsRequirementsSelector,
         inventorySelector,
         dungeonKeyLogicSelector,
@@ -912,6 +975,7 @@ export const inSemiLogicBitsSelector = createSelector(
     ],
     (
         logic,
+        settings,
         settingsRequirements,
         itemCounts,
         dungeonKeyLogic,
@@ -941,10 +1005,11 @@ export const inSemiLogicBitsSelector = createSelector(
                 }
             }
 
-            for (const cubeCheck of Object.keys(
-                cubeCheckToCubeCollected,
-            )) {
-                if (semiLogicBits.test(logic.itemBits[cubeCheck]) && !assumedChecks.includes(cubeCheck)) {
+            for (const cubeCheck of Object.keys(cubeCheckToCubeCollected)) {
+                if (
+                    semiLogicBits.test(logic.itemBits[cubeCheck]) &&
+                    !assumedChecks.includes(cubeCheck)
+                ) {
                     assumedChecks.push(cubeCheck);
                     changed = true;
                 }
@@ -968,7 +1033,8 @@ export const inSemiLogicBitsSelector = createSelector(
                 const hasNewKeys = getSemiLogicKeys(
                     logic,
                     bossKeyMode === 'Own Dungeon',
-                    smallKeyMode === 'Own Dungeon - Restricted' || smallKeyMode === 'Lanayru Caves Key Only',
+                    smallKeyMode === 'Own Dungeon - Restricted' ||
+                        smallKeyMode === 'Lanayru Caves Key Only',
                     assumedInventory,
                     dungeon,
                     semiLogicBits,
@@ -980,7 +1046,7 @@ export const inSemiLogicBitsSelector = createSelector(
             const assumedInventoryReqs = mapInventory(logic, assumedInventory);
             const assumedCheckReqs = mapInventory(
                 logic,
-                getAdditionalItems(logic, assumedChecks),
+                getAdditionalItems(logic, settings, assumedInventory, assumedChecks),
             );
 
             semiLogicBits = computeLeastFixedPoint(
@@ -1012,12 +1078,10 @@ export const dungeonCompletedSelector = currySelector(
     createSelector(
         [
             (_state: RootState, name: DungeonName) => name,
-            logicSelector,
-            checkedChecksSelector,
+            // This dependency is the wrong way around, I think
+            checkItemsSelector,
         ],
-        (name, logic, checkedChecks) =>
-            name !== 'Sky Keep' &&
-            checkedChecks.includes(logic.dungeonCompletionRequirements[name]),
+        (name, checkItems) => Boolean(checkItems[dungeonCompletionItems[name]]),
     ),
 );
 
@@ -1159,20 +1223,20 @@ export const totalCountersSelector = createSelector(
     },
 );
 
-export const usedEntrancesSelector = createSelector([
-    entrancePoolsSelector,
-    exitsSelector
-], (entrancePools, exits) => {
-    const result = _.mapValues(entrancePools, (): string[] => []);
+export const usedEntrancesSelector = createSelector(
+    [entrancePoolsSelector, exitsSelector],
+    (entrancePools, exits) => {
+        const result = _.mapValues(entrancePools, (): string[] => []);
 
-    for (const exit of exits) {
-        if (exit.canAssign && exit.entrance) {
-            result[exit.rule.pool].push(exit.entrance.id);
+        for (const exit of exits) {
+            if (exit.canAssign && exit.entrance) {
+                result[exit.rule.pool].push(exit.entrance.id);
+            }
         }
-    }
 
-    return result;
-})
+        return result;
+    },
+);
 
 export const inLogicPathfindingSelector = createSelector(
     [areaGraphSelector, exitsSelector, inLogicBitsSelector],
