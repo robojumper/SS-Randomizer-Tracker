@@ -54,6 +54,7 @@ import { RawLogic } from './logic/UpstreamTypes';
 import _ from 'lodash';
 import DiscordButton from './additionalComponents/DiscordButton';
 import { delay } from './utils/Promises';
+import React from 'react';
 
 const optionCategorization: Record<string, LogicOptions[]> = {
     Shuffles: [
@@ -515,9 +516,7 @@ function Setting({
             return (
                 <>
                     <Col xs={5}>
-                        <Tippy content={def.help}>
-                            <FormLabel htmlFor={def.name}>{def.name}</FormLabel>
-                        </Tippy>
+                        <OptionLabel option={def} />
                     </Col>
                     <Col xs={6}>
                         <FormCheck
@@ -532,9 +531,7 @@ function Setting({
             return (
                 <>
                     <Col xs={5}>
-                        <Tippy content={def.help}>
-                            <FormLabel htmlFor={def.name}>{def.name}</FormLabel>
-                        </Tippy>
+                        <OptionLabel option={def} />
                     </Col>
                     <Col xs={6}>
                         <FormControl
@@ -556,9 +553,7 @@ function Setting({
             return (
                 <>
                     <Col xs={5}>
-                        <Tippy content={def.help}>
-                            <FormLabel htmlFor={def.name}>{def.name}</FormLabel>
-                        </Tippy>
+                        <OptionLabel option={def} />
                     </Col>
                     <Col xs={6}>
                         <FormControl
@@ -605,9 +600,7 @@ function Setting({
             return (
                 <>
                     <Col xs={5}>
-                        <Tippy content={def.help}>
-                            <FormLabel htmlFor={def.name}>{def.name}</FormLabel>
-                        </Tippy>
+                        <OptionLabel option={def} />
                     </Col>
                     <Col xs={6}>
                         <Select
@@ -634,3 +627,32 @@ function Setting({
         }
     }
 }
+
+function OptionTooltip({ children }: { children: string }) {
+    const split = children.split('**');
+    return (
+        <>
+            {split.map((part, index) => (
+                <React.Fragment key={index}>
+                    {index % 2 === 1 && <br />}
+                    <span
+                        style={{
+                            whiteSpace: 'pre-wrap',
+                            fontWeight: index % 2 === 1 ? 'bold' : 'normal',
+                        }}
+                    >
+                        {part}
+                    </span>
+                </React.Fragment>
+            ))}
+        </>
+    );
+}
+
+const OptionLabel = React.memo(function OptionLabel({ option }: { option: Option }) {
+    return (
+        <Tippy content={<OptionTooltip>{option.help}</OptionTooltip>}>
+            <FormLabel htmlFor={option.name}>{option.name}</FormLabel>
+        </Tippy>
+    );
+});
