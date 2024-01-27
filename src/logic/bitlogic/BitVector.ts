@@ -31,12 +31,14 @@ export class BitVector {
         this.intSet = intSet ?? new Set();
     }
 
+    /** Sets the bit `bit` in this BitVector, if not already set. */
     setBit(bit: number): this {
         this.data |= ONE << BigInt(bit);
         this.intSet.add(bit);
         return this;
     }
 
+    /** Clears the bit `bit` in this BitVector, if set. */
     clearBit(bit: number): this {
         if (this.intSet.has(bit)) {
             this.data = this.data - (ONE << BigInt(bit));
@@ -45,22 +47,27 @@ export class BitVector {
         return this;
     }
 
+    /** Creates a new BitVector consisting of the bits that are both in `this` and `other`. */
     and(other: BitVector) {
         return new BitVector(other.data & this.data, intersection(other.intSet, this.intSet));
     }
 
+    /** Creates a new BitVector consisting of the bits that are in `this` or in `other`. */
     or(other: BitVector) {
         return new BitVector(other.data | this.data, union(other.intSet, this.intSet));
     }
 
+    /** Returns true iff `bit` is set in this BitVector. */
     test(bit: number) {
         return this.intSet.has(bit);
     }
 
+    /** Returns true iff all the bits in `this` are also set in `other`. */
     isSubsetOf(other: BitVector) {
         return this.numSetBits <= other.numSetBits && (this.data | other.data) === other.data;
     }
 
+    /** Returns true iff all the bits in `this` are also set in `other`. */
     equals(other: BitVector) {
         return this.data === other.data;
     }
@@ -80,18 +87,22 @@ export class BitVector {
         return str;
     }
 
+    /** Returns a new BitVector with exactly the same bits set. */
     clone() {
         return new BitVector(this.data, new Set(this.intSet));
     }
 
+    /** Returns true iff no bits are set. */
     isEmpty() {
         return this.numSetBits === 0;
     }
 
-    iter() {
+    /** Iterates over all set bits in this BitVector. */
+    iter(): IterableIterator<number> {
         return this.intSet.values()
     }
 
+    /** Returns the number of bits set in this BitVector. */
     get numSetBits() {
         return this.intSet.size
     }

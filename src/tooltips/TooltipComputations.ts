@@ -168,7 +168,7 @@ async function computationTask(
     
             await keepDeadline();
     
-            if (potentialPath && potentialPath.numSetBits > 0) {
+            if (potentialPath && !potentialPath.isEmpty()) {
                 for (const precomputeBit of potentialPath.iter()) {
                     if (
                         !store.opaqueBits.test(precomputeBit) &&
@@ -239,7 +239,7 @@ function dnfToRequirementExpr(
 
     if (
         sop.length === 1 &&
-        sop[0].numSetBits === 0
+        sop[0].isEmpty()
     ) {
         return BooleanExpression.and();
     }
@@ -265,6 +265,7 @@ function dnfToRequirementExpr(
         );
     }
 
+    // Build a list of all variables mentioned in this expression.
     const variables = new Set<number>();
 
     for (const conj of conjunctions) {
@@ -281,7 +282,7 @@ function dnfToRequirementExpr(
         conjunctions,
         [...variables],
         new BitVector(),
-    ).filter((k) => k.coKernel.numSetBits !== 0);
+    ).filter((k) => !k.coKernel.isEmpty());
     
     // Columns are all unique cubes in all kernels
     const columns = kernels.reduce<BitVector[]>((acc, kernel) => {

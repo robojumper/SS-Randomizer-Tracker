@@ -6,18 +6,25 @@ import { BitVector } from './BitVector';
 export class LogicalExpression {
     conjunctions: BitVector[];
 
+    /** Creates an expression that always evaluates to false. */
     static false() {
         return new LogicalExpression([]);
     }
 
+    /** Creates an expression that always evaluates to true. */
     static true() {
         return new LogicalExpression([new BitVector()]);
     }
 
+    /** Constructs an expression from the given BitVectors describing a DNF expression. */
     constructor(conjs: BitVector[]) {
         this.conjunctions = conjs;
     }
 
+    /**
+     * Constructs an expression that evaluates to true if `this`
+     * evaluates to true or `other` evaluates to true.
+     */
     or(other: LogicalExpression | BitVector) {
         if (other instanceof BitVector) {
             return new LogicalExpression([...this.conjunctions, other]);
@@ -29,6 +36,10 @@ export class LogicalExpression {
         }
     }
 
+    /**
+     * Constructs an expression that evaluates to true if `this`
+     * evaluates to true and `other` evaluates to true.
+     */
     and(other: LogicalExpression | BitVector) {
         if (other instanceof BitVector) {
             return new LogicalExpression(
@@ -44,6 +55,10 @@ export class LogicalExpression {
         );
     }
 
+    /**
+     * From each conjunction in the DNF, removes `drop` unless the
+     * `unless` bit is set.
+     */
     drop_unless(drop: number, unless: number) {
         return new LogicalExpression(
             this.conjunctions.map((c) =>
@@ -52,6 +67,9 @@ export class LogicalExpression {
         );
     }
 
+    /**
+     * Simplifies the expression by removing disjuncts that are implied by a another disjunct.
+     */
     removeDuplicates() {
         const terms: BitVector[] = [];
         for (let i = 0; i < this.conjunctions.length; i++) {
@@ -73,23 +91,35 @@ export class LogicalExpression {
         return new LogicalExpression(terms);
     }
 
+    /**
+     * Evaluates the expression assuming the variables in `vec` are true.
+     */
     eval(vec: BitVector) {
         return this.conjunctions.some((c) => c.isSubsetOf(vec));
     }
 
+    /**
+     * Whether the expression always definitely evaluates to false.
+     */
     isTriviallyFalse() {
         return this.conjunctions.length === 0;
     }
 
+    /**
+     * Whether the expression always definitely evaluates to true.
+     */
     isTriviallyTrue() {
         return (
             this.conjunctions.length > 0 &&
-            this.conjunctions.some((c) => c.numSetBits === 0)
+            this.conjunctions.some((c) => c.isEmpty())
         );
     }
 }
 
-export function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
+/**
+ * An optimized (unrolled) version of `andToDnf` for AND-ing exactly two expressions.
+ */
+function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
     const newExpr = [];
     for (const l of left) {
         for (const r of right) {
@@ -100,6 +130,9 @@ export function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
 }
 
 export function andToDnf(arr: BitVector[][]): BitVector[] {
+    if (arr.length === 2) {
+        return andToDnf2(arr[0], arr[1]);
+    }
     const newExpr = [];
     for (const tuple of cartesianProduct(...arr)) {
         const newVec = tuple.reduce(
@@ -111,7 +144,7 @@ export function andToDnf(arr: BitVector[][]): BitVector[] {
     return newExpr;
 }
 
-export function cartesianProduct<T>(...allEntries: T[][]): T[][] {
+function cartesianProduct<T>(...allEntries: T[][]): T[][] {
     return allEntries.reduce<T[][]>(
         (results, entries) =>
             results
