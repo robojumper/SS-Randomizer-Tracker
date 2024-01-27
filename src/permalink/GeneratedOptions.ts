@@ -97,7 +97,7 @@ export interface GeneratedOptions {
     /** Damage Multiplier */
     'damage-multiplier': number;
     /** Hint Distribution */
-    'hint-distribution': 'Weak' | 'Balanced' | 'Junk' | 'Co-op S1' | 'S2 - 2D' | 'S2 - 3D' | 'S2 - 3D EUD Off' | 'CDMC' | 'Dowsing & Fi Hints' | '2D Dowsing & Fi Hints' | 'Boss Keysanity Fi Hints' | 'Strong Dowsing All Dungeons' | 'Custom';
+    'hint-distribution': 'Weak' | 'Balanced' | 'Junk' | 'Co-op S1' | 'S2 - 2D' | 'S2 - 3D' | 'S2 - 3D EUD Off' | 'CDMC' | 'Dowsing & Fi Hints' | '2D Dowsing & Fi Hints' | 'Boss Keysanity Fi Hints' | 'Strong Dowsing All Dungeons' | 'Remlits Tournament' | 'Custom';
     /** Starting Items */
     'starting-items': string[];
     /** Starting Gratitude Crystal Packs */
@@ -138,4 +138,6 @@ export interface GeneratedOptions {
     'treasuresanity-in-silent-realms': boolean;
     /** Trial Treasure Amount */
     'trial-treasure-amount': number;
+    /** Random Starting Statues */
+    'random-start-statues': boolean;
 }

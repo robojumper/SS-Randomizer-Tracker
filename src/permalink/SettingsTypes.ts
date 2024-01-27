@@ -61,10 +61,6 @@ export interface AllTypedOptions
     // https://github.com/ssrando/ssrando/pull/497
     'randomize-entrances': GeneratedOptions['randomize-entrances'] | 'All' | 'Vanilla',
     'randomize-dungeon-entrances': GeneratedOptions['randomize-entrances'] | undefined,
-
-    // Statuesanity randomizes the first time dive target statue
-    // https://github.com/ssrando/ssrando/pull/525/
-    'random-start-statues': boolean | undefined
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOptions>;
