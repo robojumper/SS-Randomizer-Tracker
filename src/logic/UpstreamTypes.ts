@@ -40,6 +40,7 @@ export interface RawExit {
 export interface RawCheck {
     type: string | null;
     short_name: string;
+    'original item': string;
 }
 
 export interface ExitLink {

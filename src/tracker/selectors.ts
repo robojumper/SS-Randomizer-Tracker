@@ -870,7 +870,7 @@ export const areaHiddenSelector = createSelector(
     },
 );
 
-export const isCheckBannedSelector = createSelector(
+const isCheckBannedSelector = createSelector(
     [
         logicSelector,
         areaNonprogressSelector,
@@ -950,9 +950,11 @@ export const isCheckBannedSelector = createSelector(
     },
 );
 
-export const dungeonKeyLogicSelector = createSelector(
+const dungeonKeyLogicSelector = createSelector(
     [
         logicSelector,
+        settingSelector('boss-key-mode'),
+        settingSelector('small-key-mode'),
         settingsRequirementsSelector,
         checkRequirementsSelector,
         isCheckBannedSelector,
@@ -970,8 +972,6 @@ export const inSemiLogicBitsSelector = createSelector(
         dungeonKeyLogicSelector,
         inLogicBitsSelector,
         checkedChecksSelector,
-        settingSelector('boss-key-mode'),
-        settingSelector('small-key-mode'),
     ],
     (
         logic,
@@ -981,8 +981,6 @@ export const inSemiLogicBitsSelector = createSelector(
         dungeonKeyLogic,
         inLogicBits,
         checkedChecks,
-        bossKeyMode,
-        smallKeyMode,
     ) => {
         let semiLogicBits = inLogicBits;
         let changed = true;
@@ -1032,9 +1030,6 @@ export const inSemiLogicBitsSelector = createSelector(
             for (const dungeon of dungeonKeyLogic) {
                 const hasNewKeys = getSemiLogicKeys(
                     logic,
-                    bossKeyMode === 'Own Dungeon',
-                    smallKeyMode === 'Own Dungeon - Restricted' ||
-                        smallKeyMode === 'Lanayru Caves Key Only',
                     assumedInventory,
                     dungeon,
                     semiLogicBits,

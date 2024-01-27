@@ -61,6 +61,7 @@ export interface LogicalCheck {
         | 'tr_cube'
         | 'tr_dummy';
     name: string;
+    originalItem: string | undefined;
     area: string | undefined;
 }
 
@@ -216,6 +217,15 @@ type Location<R, T extends LocationAvailability> = MapExit<R, T> | LogicalExit<R
 
 const itemIndexPat = /^(.+) #(\d+)$/;
 
+function splitItemIndex(item: string): [item: string, index: number | undefined] {
+    const match = item.match(itemIndexPat);
+    if (!match) {
+        return [item, undefined];
+    } else {
+        return [match[1], parseInt(match[2], 10)];
+    }
+}
+
 export function itemName(item: string, amount: number) {
     return amount > 1 ? `${item} x ${amount}` : item;
 }
@@ -232,12 +242,11 @@ function preprocessItems(raw: string[]): {
     const dominators: Logic['dominators'] = {};
     const reverseDominators: Logic['reverseDominators'] = {};
     const newItems = raw.map((rawItem) => {
-        const match = rawItem.match(itemIndexPat);
-        if (!match) {
+        const [item, index] = splitItemIndex(rawItem);
+        if (index === undefined) {
             return rawItem;
         } else {
-            const [, item, amount_] = match;
-            const amount = parseInt(amount_, 10) + 1;
+            const amount = index + 1;
 
             for (let i = 0; i <= amount; i++) {
                 (dominators[itemName(item, i)] ??= []).push(
@@ -276,9 +285,13 @@ export function parseLogic(raw: RawLogic): Logic {
     }
 
     const checks: Logic['checks'] = _.mapValues(raw.checks, (check) => {
+        const item = check['original item']
+            ? splitItemIndex(check['original item'])[0]
+            : undefined;
         return {
             name: check.short_name,
             type: getCheckType(check.short_name, check.type),
+            originalItem: item,
             area: checkAreaPlaceholder,
         } as const;
     });
@@ -287,11 +300,13 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[cubeCheck] = {
             type: 'tr_cube',
             name: _.last(cubeCheck.split('\\'))!,
+            originalItem: undefined,
             area: checkAreaPlaceholder,
         };
         checks[cubeItem] = {
             type: 'tr_dummy',
             name: _.last(cubeCheck.split('\\'))!,
+            originalItem: undefined,
             area: undefined,
         };
     }
@@ -302,6 +317,7 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[gossipStoneId] = {
             type: 'gossip_stone',
             name: gossipStoneName,
+            originalItem: undefined,
             area: checkAreaPlaceholder,
         };
     }
@@ -310,6 +326,7 @@ export function parseLogic(raw: RawLogic): Logic {
         checks[req] = {
             name: `${dungeon} Completed`,
             type: 'tr_dummy',
+            originalItem: undefined,
             area: undefined,
         };
     }
@@ -366,8 +383,7 @@ export function parseLogic(raw: RawLogic): Logic {
         // Once we know that `Upgraded Skyward Strike option` is true, subsequent simplification steps (`removeDuplicates`)
         // can turn this into (Progressive Sword and Progressive Sword x 2) since it's easier to satisfy.
         for (const conj of terms) {
-            const bits = [...conj.iter()];
-            for (const bit of bits) {
+            for (const bit of conj.iter()) {
                 const alsoRequired = reverseDominators[itemBits[bit]];
                 if (alsoRequired?.length) {
                     for (const otherTerm of alsoRequired) {

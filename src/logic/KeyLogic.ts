@@ -7,15 +7,16 @@ import { BitVector } from './bitlogic/BitVector';
 import { LogicalExpression } from './bitlogic/LogicalExpression';
 import { mapInventory } from '../tracker/selectors';
 import _ from 'lodash';
+import { TypedOptions } from '../permalink/SettingsTypes';
 
 interface DungeonData {
     dungeon: RegularDungeon;
-    checks: string[];
     smallKey: InventoryItem | undefined;
     numSmallKeys: number;
     bossKey: InventoryItem;
-    bossKeyChecks: string[];
-    smallKeyChecksByNumSmallKeys: string[][];
+    potentialBossKeyChecks: string[] | undefined;
+    potentialSmallKeyChecks: string[] | undefined;
+    potentialSmallKeyChecksByRequiredSmallKeys: string[][] | undefined;
 }
 
 /**
@@ -24,6 +25,8 @@ interface DungeonData {
  */
 export function keyData(
     logic: Logic,
+    bossKeySetting: TypedOptions['boss-key-mode'],
+    smallKeySetting: TypedOptions['small-key-mode'],
     settingsRequirements: Record<string, LogicalExpression>,
     checkRequirements: Record<string, LogicalExpression>,
     isCheckBanned: (checkId: string, check: LogicalCheck) => boolean,
@@ -32,37 +35,71 @@ export function keyData(
     const data: DungeonData[] = _.compact(
         logic.hintRegions.filter(isRegularDungeon).map((dungeon) => {
             const checks = logic.checksByHintRegion[dungeon];
+            const nonBannedChecks = checks.filter(
+                (check) => !isCheckBanned(check, logic.checks[check]),
+            );
+
             // For every dungeon, check if "optimistically" (with all items, keys, ...) all non-banned checks are in logic.
             // If not, we may be missing some entrances and we can't actually do key logic in this dungeon.
             if (
-                !checks.every(
+                !nonBannedChecks.every(
                     (check) =>
                         isCheckBanned(check, logic.checks[check]) ||
-                        optimisticLogicBits.test(logic.itemBits[check])
+                        optimisticLogicBits.test(logic.itemBits[check]),
                 )
             ) {
                 return undefined;
             }
 
+            const bossKey = `${dungeon} Boss Key` as const;
             const smallKey =
                 dungeon !== 'Earth Temple'
                     ? (`${dungeon} Small Key` as const)
                     : undefined;
+
+            const checksThatCanContainBossKey =
+                bossKeySetting === 'Vanilla'
+                    ? checks.filter(
+                        (check) =>
+                            logic.checks[check].originalItem === bossKey,
+                    )
+                    : bossKeySetting === 'Own Dungeon'
+                        ? nonBannedChecks
+                        : undefined;
+
+            const checksThatCanContainSmallKey = smallKey
+                ? smallKeySetting === 'Vanilla'
+                    ? checks.filter(
+                        (check) =>
+                            logic.checks[check].originalItem === smallKey,
+                    )
+                    : smallKeySetting === 'Own Dungeon - Restricted' ||
+                      smallKeySetting === 'Lanayru Caves Key Only'
+                        ? nonBannedChecks
+                        : undefined
+                : undefined;
+
+            const allChecksPotentiallyReachable = (checks: string[] | undefined): true | undefined => checks?.every(
+                (check) =>
+                    optimisticLogicBits.test(logic.itemBits[check]),
+            ) || undefined;
+
+            const canDoBossKeyLogic = allChecksPotentiallyReachable(checksThatCanContainBossKey);
+            const canDoSmallKeyLogic = allChecksPotentiallyReachable(checksThatCanContainSmallKey);
+
             const numSmallKeys = smallKey ? itemMaxes[smallKey] : 0;
             const keyIndex = Array(numSmallKeys + 1)
                 .fill(null)
                 .map(() => []);
             return {
                 dungeon,
-                checks: checks.filter(
-                    (check) => !isCheckBanned(check, logic.checks[check]),
-                ),
                 smallKey,
                 numSmallKeys,
-                bossKey: `${dungeon} Boss Key`,
-                bossKeyChecks: [],
-                smallKeyChecksByNumSmallKeys: keyIndex,
-            };
+                bossKey,
+                potentialBossKeyChecks: canDoBossKeyLogic && checksThatCanContainBossKey,
+                potentialSmallKeyChecks: canDoSmallKeyLogic && checksThatCanContainSmallKey,
+                potentialSmallKeyChecksByRequiredSmallKeys: canDoSmallKeyLogic && keyIndex,
+            } satisfies DungeonData;
         }),
     );
 
@@ -100,70 +137,69 @@ export function keyData(
             },
         );
 
-        const logicStateNoBossKeys = computeLeastFixedPoint(
-            logic.bitLogic,
-            [
-                settingsRequirements,
-                checkRequirements,
-                mapInventory(logic, fullInventoryNoBossKeys),
-            ],
-            baselineLogicState,
-        );
-
-        for (const check of dungeon.checks) {
-            const bit = logic.itemBits[check];
-            if (
-                !logicStateNoBossKeys.test(bit) &&
-                optimisticLogicBits.test(bit)
-            ) {
-                dungeon.bossKeyChecks.push(check);
-            }
-        }
-
-        // Then repeatedly take small keys and see which checks are out of logic.
-
-        let previousLogicState = logicStateNoBossKeys;
-        let i = dungeon.numSmallKeys;
-        for (; i >= 1; i--) {
-            const inventoryWithNumKeys = produce(
-                itemMaxes,
-                // eslint-disable-next-line no-loop-func
-                (draft: Record<string, number>) => {
-                    delete draft.Sailcloth;
-                    delete draft[dungeon.bossKey];
-                    if (dungeon.smallKey) {
-                        draft[dungeon.smallKey] = i - 1;
-                    }
-                },
-            );
-            const logicStateWithNumKeys = computeLeastFixedPoint(
+        if (
+            dungeon.potentialSmallKeyChecks &&
+            dungeon.potentialSmallKeyChecksByRequiredSmallKeys
+        ) {
+            const logicStateNoBossKeys = computeLeastFixedPoint(
                 logic.bitLogic,
                 [
                     settingsRequirements,
                     checkRequirements,
-                    mapInventory(logic, inventoryWithNumKeys),
+                    mapInventory(logic, fullInventoryNoBossKeys),
                 ],
                 baselineLogicState,
             );
 
-            for (const check of dungeon.checks) {
+            // Then repeatedly take small keys and see which checks are out of logic.
+
+            let previousLogicState = logicStateNoBossKeys;
+            let i = dungeon.numSmallKeys;
+            for (; i >= 1; i--) {
+                const inventoryWithNumKeys = produce(
+                    itemMaxes,
+                    // eslint-disable-next-line no-loop-func
+                    (draft: Record<string, number>) => {
+                        delete draft.Sailcloth;
+                        delete draft[dungeon.bossKey];
+                        if (dungeon.smallKey) {
+                            draft[dungeon.smallKey] = i - 1;
+                        }
+                    },
+                );
+                const logicStateWithNumKeys = computeLeastFixedPoint(
+                    logic.bitLogic,
+                    [
+                        settingsRequirements,
+                        checkRequirements,
+                        mapInventory(logic, inventoryWithNumKeys),
+                    ],
+                    baselineLogicState,
+                );
+
+                for (const check of dungeon.potentialSmallKeyChecks) {
+                    const bit = logic.itemBits[check];
+                    if (
+                        !logicStateWithNumKeys.test(bit) &&
+                        previousLogicState.test(bit)
+                    ) {
+                        dungeon.potentialSmallKeyChecksByRequiredSmallKeys[
+                            i
+                        ].push(check);
+                    }
+                }
+                previousLogicState = logicStateWithNumKeys;
+            }
+            for (const check of dungeon.potentialSmallKeyChecks) {
                 const bit = logic.itemBits[check];
-                if (
-                    !logicStateWithNumKeys.test(bit) &&
-                    previousLogicState.test(bit)
-                ) {
-                    dungeon.smallKeyChecksByNumSmallKeys[i].push(check);
+                if (previousLogicState.test(bit)) {
+                    dungeon.potentialSmallKeyChecksByRequiredSmallKeys[
+                        i
+                    ].push(check);
                 }
             }
-            previousLogicState = logicStateWithNumKeys;
+            console.log(dungeon);
         }
-        for (const check of dungeon.checks) {
-            const bit = logic.itemBits[check];
-            if (previousLogicState.test(bit)) {
-                dungeon.smallKeyChecksByNumSmallKeys[i].push(check);
-            }
-        }
-        console.log(dungeon);
     }
 
     return data;
@@ -172,8 +208,6 @@ export function keyData(
 /** Predict which keys must be accessible in the dungeon, given logical and tracker state. */
 export function getSemiLogicKeys(
     logic: Logic,
-    bossKeysInDungeon: boolean,
-    smallKeysInDungeon: boolean,
     inventory: Record<InventoryItem, number>,
     dungeon: DungeonData,
     inLogicBits: BitVector,
@@ -181,33 +215,35 @@ export function getSemiLogicKeys(
 ) {
     if (
         !inventory[dungeon.bossKey] &&
-        bossKeysInDungeon &&
-        dungeon.checks.every(
+        dungeon.potentialBossKeyChecks?.every(
             (check) =>
-                dungeon.bossKeyChecks.includes(check) ||
                 inLogicBits.test(logic.itemBits[check]) ||
                 checkedChecks.includes(check),
         )
     ) {
         inventory[dungeon.bossKey] = 1;
         return true;
-    } else if (smallKeysInDungeon && dungeon.smallKey) {
+    } else if (
+        dungeon.potentialSmallKeyChecksByRequiredSmallKeys &&
+        dungeon.smallKey
+    ) {
         const smallKeyItem = dungeon.smallKey;
         const numKeys = inventory[smallKeyItem];
-        const checksWeHaveKeysFor: string[] = [];
-        const nextNumKeys = dungeon.smallKeyChecksByNumSmallKeys.findIndex(
-            (_checks, idx) => idx > numKeys,
-        );
+        const smallKeyChecksWeHaveKeysFor: string[] = [];
+        const nextNumKeys =
+            dungeon.potentialSmallKeyChecksByRequiredSmallKeys.findIndex(
+                (_checks, idx) => idx > numKeys,
+            );
         if (nextNumKeys === -1) {
             return false;
         }
         for (let i = 0; i <= numKeys; i++) {
-            checksWeHaveKeysFor.push(
-                ...dungeon.smallKeyChecksByNumSmallKeys[i],
+            smallKeyChecksWeHaveKeysFor.push(
+                ...dungeon.potentialSmallKeyChecksByRequiredSmallKeys[i],
             );
         }
         if (
-            checksWeHaveKeysFor.every(
+            smallKeyChecksWeHaveKeysFor.every(
                 (check) =>
                     checkedChecks.includes(check) ||
                     inLogicBits.test(logic.itemBits[check]),
