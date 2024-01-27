@@ -1,5 +1,3 @@
-// @ts-check
-
 import { load } from 'js-yaml';
 import fs from 'node:fs';
 
