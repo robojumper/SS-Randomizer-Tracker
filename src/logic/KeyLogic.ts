@@ -9,6 +9,8 @@ import { mapInventory } from '../tracker/selectors';
 import _ from 'lodash';
 import { TypedOptions } from '../permalink/SettingsTypes';
 
+// TODO: Semilogic for Lanayru Small Caves key
+
 interface DungeonData {
     dungeon: RegularDungeon;
     smallKey: InventoryItem | undefined;
@@ -39,18 +41,6 @@ export function keyData(
                 (check) => !isCheckBanned(check, logic.checks[check]),
             );
 
-            // For every dungeon, check if "optimistically" (with all items, keys, ...) all non-banned checks are in logic.
-            // If not, we may be missing some entrances and we can't actually do key logic in this dungeon.
-            if (
-                !nonBannedChecks.every(
-                    (check) =>
-                        isCheckBanned(check, logic.checks[check]) ||
-                        optimisticLogicBits.test(logic.itemBits[check]),
-                )
-            ) {
-                return undefined;
-            }
-
             const bossKey = `${dungeon} Boss Key` as const;
             const smallKey =
                 dungeon !== 'Earth Temple'
@@ -79,6 +69,8 @@ export function keyData(
                         : undefined
                 : undefined;
 
+            // For every kind of check, check if "optimistically" (with all items, keys, ...) all relevant checks are in logic.
+            // If not, we may be missing some entrances and we can't actually do key logic in this dungeon.
             const allChecksPotentiallyReachable = (checks: string[] | undefined): true | undefined => checks?.every(
                 (check) =>
                     optimisticLogicBits.test(logic.itemBits[check]),
