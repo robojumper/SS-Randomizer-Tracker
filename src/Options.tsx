@@ -39,7 +39,7 @@ import {
     loadRemoteLogic,
     parseRemote,
 } from './loader/LogicLoader';
-import { allSettingsSelector } from './tracker/selectors';
+import { allSettingsSelector, totalCountersSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
 import Acknowledgement from './Acknowledgment';
 import { Link, useNavigate } from 'react-router-dom';
@@ -55,6 +55,8 @@ import _ from 'lodash';
 import DiscordButton from './additionalComponents/DiscordButton';
 import { delay } from './utils/Promises';
 import React from 'react';
+import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
+import { ImportButton } from './ImportExport';
 
 const optionCategorization: Record<string, LogicOptions[]> = {
     Shuffles: [
@@ -120,6 +122,7 @@ const defaultUpstream: RemoteReference = {
     type: 'forkBranch',
     author: 'robojumper',
     branch: 'logic-v2.1.1',
+    repoName: undefined,
 };
 
 const logicMigrations: Record<string, string> = {
@@ -157,15 +160,16 @@ function getStoredRemote() {
  */
 export default function Options() {
     const options = useSelector(optionsSelector);
+    const [desiredRemote, setDesiredRemote] = useState(() => getStoredRemote());
 
     return (
         <Container fluid>
             <div className="optionsPage">
                 <div className="logicAndPermalink">
-                    <LogicChooser />
+                    <LogicChooser desiredRemote={desiredRemote} setDesiredRemote={setDesiredRemote} />
                     <PermalinkChooser />
                 </div>
-                <LaunchButtons />
+                <LaunchButtons setDesiredRemote={setDesiredRemote} />
                 {options && <OptionsList />}
             </div>
             <Acknowledgement />
@@ -181,7 +185,7 @@ function resetTracker(): ThunkResult {
     };
 }
 
-function LaunchButtons() {
+function LaunchButtons({ setDesiredRemote }: { setDesiredRemote: (ref: RemoteReference) => void }) {
     const dispatch = useAppDispatch();
     const options = useSelector(optionsSelector);
     const loaded = Boolean(options);
@@ -213,13 +217,38 @@ function LaunchButtons() {
                 }`}
                 to="/tracker"
             >
-                Continue Tracker
+                <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
+                    <span>Continue Tracker</span>
+                    <span style={{ fontSize: 14, justifySelf: 'flex-start', marginLeft: 4 }}><ProgressWrapper /></span>
+                </div>
             </Link>
             <Button disabled={!canStart} onClick={reset}>
                 Launch New Tracker
             </Button>
+            <ImportButton setLogicBranch={setDesiredRemote} />
         </div>
     );
+}
+
+function ProgressWrapper() {
+    return <ErrorBoundary FallbackComponent={Fallback} ><Progress /></ErrorBoundary>
+}
+
+function Fallback({ resetErrorBoundary }: FallbackProps) {
+    const completeState = useSelector((state: RootState) => state);
+    const lastState = useRef<RootState>(completeState);
+    useEffect(() => {
+        if (lastState.current !== null && lastState.current !== completeState) {
+            resetErrorBoundary();
+        }
+    }, [completeState, resetErrorBoundary]);
+  
+    return null;
+}
+
+function Progress() {
+    const counts = useSelector(totalCountersSelector);
+    return <>{`${counts.numChecked}/${counts.numRemaining}`}</>
 }
 
 type LoadingState =
@@ -244,9 +273,8 @@ async function loadRemote(
 }
 
 /** A component to choose your logic release. */
-function LogicChooser() {
+function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: RemoteReference, setDesiredRemote: (ref: RemoteReference) => void }) {
     const dispatch = useDispatch();
-    const [desiredRemote, setDesiredRemote] = useState(() => getStoredRemote());
     const [loadingState, setLoadingState] = useState<LoadingState | undefined>(
         undefined,
     );

@@ -11,7 +11,6 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import { useSelector } from 'react-redux';
 import BasicCounters from './BasicCounters';
-import ImportExport from './ImportExport';
 import EntranceTracker from './entranceTracker/EntranceTracker';
 import DungeonTracker from './itemTracker/DungeonTracker';
 import GridTracker from './itemTracker/GridTracker';
@@ -27,6 +26,7 @@ import { RootState } from './store/store';
 import WorldMap from './locationTracker/mapTracker/WorldMap';
 import { Link, Navigate } from 'react-router-dom';
 import { isLogicLoadedSelector } from './logic/selectors';
+import { ExportButton } from './ImportExport';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -253,8 +253,8 @@ function Tracker() {
                         alignContent: 'center',
                     }}
                 >
-                    <Col xs="auto">
-                        <ImportExport />
+                    <Col>
+                        <ExportButton />
                     </Col>
                     <Col>
                         <Link

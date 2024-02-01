@@ -13,6 +13,7 @@ export type RemoteReference =
     | {
           type: 'forkBranch';
           author: string;
+          repoName: string | undefined;
           branch: string;
       };
 
@@ -43,7 +44,12 @@ async function resolveRemote(ref: RemoteReference): Promise<[url: string, name: 
         case 'releaseVersion':
             return [`https://raw.githubusercontent.com/ssrando/ssrando/${ref.versionTag}`, formatRemote(ref)];
         case 'forkBranch':
-            return [`https://raw.githubusercontent.com/${ref.author}/ssrando/${ref.branch}`, formatRemote(ref)];
+            return [
+                `https://raw.githubusercontent.com/${ref.author}/${
+                    ref.repoName ?? 'ssrando'
+                }/${ref.branch}`,
+                formatRemote(ref),
+            ];
     }
 }
 
@@ -54,12 +60,18 @@ export function formatRemote(ref: RemoteReference) {
         case 'releaseVersion':
             return ref.versionTag;
         case 'forkBranch':
-            return `${ref.author}/${ref.branch}`;
+            if (ref.repoName) {
+                return `https://github.com/${ref.author}/${ref.repoName}/tree/${ref.branch}`;
+            } else {
+                return `${ref.author}/${ref.branch}`;
+            }
+            
     }
 }
 
-const prBranchPattern = /^https:\/\/github.com\/(.*)\/ssrando\/tree\/(.*)$/;
-const branchPattern = /^(.*)(?:[/|:])(.*)$/;
+const prBranchPattern = /^https:\/\/github.com\/([^/]+)\/ssrando\/tree\/([^/]+)$/;
+const extendedPrBranchPattern = /^https:\/\/github.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)$/;
+const branchPattern = /^([^/]+)(?:[/|:])([^/]+)$/;
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
 export function parseRemote(remote: string): RemoteReference | undefined {
@@ -77,6 +89,17 @@ export function parseRemote(remote: string): RemoteReference | undefined {
             type: 'forkBranch',
             author: prBranchMatch[1],
             branch: prBranchMatch[2],
+            repoName: undefined,
+        };
+    }
+
+    const extendedPrBranchMatch = remote.match(extendedPrBranchPattern);
+    if (extendedPrBranchMatch) {
+        return {
+            type: 'forkBranch',
+            author: extendedPrBranchMatch[1],
+            branch: extendedPrBranchMatch[3],
+            repoName: extendedPrBranchMatch[2],
         };
     }
 }

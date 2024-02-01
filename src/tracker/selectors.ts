@@ -53,7 +53,6 @@ import { TimeOfDay } from '../logic/UpstreamTypes';
 import { computeLeastFixedPoint } from '../logic/bitlogic/BitLogic';
 import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
-import { produce } from 'immer';
 import { exploreAreaGraph } from '../logic/Pathfinding';
 import { getSemiLogicKeys, keyData } from '../logic/KeyLogic';
 import { BitVector } from '../logic/bitlogic/BitVector';
@@ -790,9 +789,7 @@ const optimisticInventoryItemRequirementsSelector = createSelector(
     (logic) =>
         mapInventory(
             logic,
-            produce(itemMaxes, (draft: Record<string, number>) => {
-                delete draft.Sailcloth;
-            }),
+            itemMaxes,
         ),
 );
 

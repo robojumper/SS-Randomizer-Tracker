@@ -811,7 +811,7 @@ export function parseLogic(raw: RawLogic): Logic {
     // Now map our area graph to BitLogic
     const newBuilder = new LogicBuilder(bitLogic, rawItems, bitLogic.requirements);
     mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems);
-    
+
 
     // check for orphaned locations. This again should probably not be in here
     // but in the rando instead...
@@ -901,7 +901,10 @@ function mapAreaToBitLogic(
             case 'mapExit':
                 {
                     const locName = location.id;
-                    opaqueItems.clearBit(b.bit(locName));
+                    // Hack: We keep these virtual locations opaque...
+                    if (!locName.endsWith("Gratitude Crystals")) {
+                        opaqueItems.clearBit(b.bit(locName));   
+                    }
 
                     if (location.areaAvailability === 'abstract') {
                         b.addAlternative(locName, location.requirements);

@@ -60,7 +60,6 @@ export function keyData(
     const fullInventoryNoKeys = produce(
         itemMaxes,
         (draft: Record<string, number>) => {
-            delete draft.Sailcloth;
             for (const dungeon of dungeonNames.filter(isRegularDungeon)) {
                 delete draft[`${dungeon} Boss Key` satisfies InventoryItem];
                 if (dungeon !== 'Earth Temple') {
@@ -145,6 +144,7 @@ export function keyData(
             }
         }
 
+        // NB this uses the results from small key logic
         if (checksThatCanContainBossKey && canDoBossKeyLogic) {
             locations.push({
                 item: bossKey,

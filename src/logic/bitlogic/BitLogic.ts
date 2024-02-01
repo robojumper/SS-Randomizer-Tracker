@@ -259,8 +259,7 @@ export function unifyRequirements(
  * Rewrite to:
  *  z <= a
  *  a <= b,
- *  b <= x,
- *  b <= y.
+ *  b <= x | y,
  * This breaks a cycle between `a` and `b`, and any dependencies on `a`
  * can be rewritten to depend on `b` in a later shallowSimplify call.
  */
@@ -331,7 +330,7 @@ export function shallowSimplify(
     }
 
     for (const [idx, expr] of requirements.entries()) {
-        if (expr.conjunctions.length >= 30) {
+        if (expr.conjunctions.length >= 30 || opaqueBits.test(idx)) {
             continue;
         }
         let newExpr = LogicalExpression.false();
