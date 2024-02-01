@@ -143,6 +143,15 @@ export function keyData(
                 baselineLogicState,
             );
 
+            if (dungeon.potentialBossKeyChecks) {
+                dungeon.potentialBossKeyChecks =
+                    dungeon.potentialBossKeyChecks.filter((c) =>
+                        logicStateNoBossKeys.test(
+                            logic.itemBits[c],
+                        ),
+                    );
+            }
+
             // Then repeatedly take small keys and see which checks are out of logic.
 
             let previousLogicState = logicStateNoBossKeys;
