@@ -1,10 +1,10 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { LogicOptions } from './logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import './options.css';
 import { optionsSelector } from './logic/selectors';
 import {
     OptionDefs,
     OptionValue,
+    OptionsCommand,
     TypedOptions,
 } from './permalink/SettingsTypes';
 import {
@@ -58,7 +58,8 @@ import React from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ImportButton } from './ImportExport';
 
-const optionCategorization: Record<string, LogicOptions[]> = {
+/** The tracker will only show these options, and tracker logic code is only allowed to access these! */
+const optionCategorization_ = {
     Shuffles: [
         'rupeesanity',
         'shopsanity',
@@ -111,7 +112,10 @@ const optionCategorization: Record<string, LogicOptions[]> = {
         'enabled-tricks-glitched',
         'excluded-locations',
     ],
-};
+} as const satisfies Record<string, readonly OptionsCommand[]>;
+
+export type LogicOption = (typeof optionCategorization_)[keyof typeof optionCategorization_][number];
+const optionCategorization: Record<string, readonly LogicOption[]> = optionCategorization_;
 
 // logic-v2.1.1 is a temporary branch that's permalink-compatible with the v2.1.1 release,
 // but uses the logic dump from main.
@@ -408,7 +412,7 @@ const PlaintextLogicInput = forwardRef(function PlaintextLogicInput(
         <div>
             <input
                 type="text"
-                className={badFormat ? 'optionsBadRemote' : ''}
+                className={(badFormat ? 'optionsBadRemote' : '') + ' form-control'}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
             />
@@ -465,7 +469,7 @@ function PermalinkChooser() {
             <legend>Settings String</legend>
             <input
                 type="text"
-                className="permalinkInput"
+                className="permalinkInput form-control"
                 disabled={!permalink}
                 placeholder="Select a Randomizer version first"
                 value={permalink ?? ''}
@@ -482,7 +486,7 @@ function OptionsList() {
     const dispatch = useDispatch();
 
     const changeSetting = useCallback(
-        <K extends LogicOptions>(key: K, value: TypedOptions[K]) => {
+        <K extends LogicOption>(key: K, value: TypedOptions[K]) => {
             dispatch(
                 acceptSettings({ settings: { ...settings, [key]: value } }),
             );

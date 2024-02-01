@@ -1,4 +1,4 @@
-import { LogicOptions } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
+import { LogicOption } from '../Options';
 import { GeneratedOptions } from './GeneratedOptions';
 
 export type BaseOption = {
@@ -63,4 +63,4 @@ export interface AllTypedOptions
     'randomize-dungeon-entrances': GeneratedOptions['randomize-entrances'] | undefined,
 }
 
-export type TypedOptions = Pick<AllTypedOptions, LogicOptions>;
+export type TypedOptions = Pick<AllTypedOptions, LogicOption>;

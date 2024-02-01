@@ -1,7 +1,6 @@
 import {
     OptionType,
     OptionValue,
-    OptionsCommand,
     TypedOptions,
 } from '../permalink/SettingsTypes';
 
@@ -53,52 +52,6 @@ export const runtimeOptions: OptionMapping[] = [
     m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),
     m('FS Lava Flow option', 'fs-lava-flow', true),
 ];
-
-/** The tracker will only show these options, and tracker logic code is only allowed to access these! */
-const inLogicOptions_ = [
-    'starting-sword',
-    'starting-bottles',
-    'starting-crystal-packs',
-    'starting-tadtones',
-    'starting-items',
-    'starting-tablet-count',
-    'got-start',
-    'got-dungeon-requirement',
-    'got-sword-requirement',
-    'required-dungeon-count',
-    'empty-unrequired-dungeons',
-    'triforce-required',
-    'triforce-shuffle',
-    'open-thunderhead',
-    'open-lake-floria',
-    'open-et',
-    'open-lmf',
-    'fs-lava-flow',
-    'boss-key-mode',
-    'small-key-mode',
-    'shopsanity',
-    'beedle-shopsanity',
-    'rupin-shopsanity',
-    'luv-shopsanity',
-    'rupeesanity',
-    'tadtonesanity',
-    'treasuresanity-in-silent-realms',
-    'trial-treasure-amount',
-    'gondo-upgrades',
-    'bit-patches',
-    'damage-multiplier',
-    'upgraded-skyward-strike',
-    'random-start-entrance',
-    'random-start-statues',
-    'randomize-entrances',
-    'randomize-dungeon-entrances',
-    'randomize-trials',
-    'excluded-locations',
-    'enabled-tricks-bitless',
-    'enabled-tricks-glitched',
-] satisfies (OptionsCommand)[];
-
-export type LogicOptions = (typeof inLogicOptions_)[number];
 
 export const impaSongCheck =
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
