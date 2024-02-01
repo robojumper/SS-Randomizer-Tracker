@@ -85,6 +85,27 @@ export function isLinkedEntrancePool(
 }
 
 /**
+ * Is this a check that can contain mostly any random item, assuming it is unbanned?
+ */
+export function isRegularItemCheck(type: LogicalCheck['type']) {
+    switch (type) {
+        case 'regular':
+        case 'trial_treasure':
+        case 'rupee':
+        case 'tadtone':
+        case 'beedle_shop':
+        case 'gear_shop':
+        case 'potion_shop':
+            return true;
+        case 'loose_crystal':
+        case 'gossip_stone':
+        case 'tr_cube':
+        case 'tr_dummy':
+            return false;
+    }
+}
+
+/**
  * The AreaGraph is a parsed dump with some preprocessing for TimeOfDay logic.
  * This graph will be mapped to a self-contained BitLogic for logical state.
  * The BitLogic results can the be used to interpret edges in this graph.

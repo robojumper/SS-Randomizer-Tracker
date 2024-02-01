@@ -1027,16 +1027,14 @@ export const inSemiLogicBitsSelector = createSelector(
                 }
             }
 
-            for (const dungeon of dungeonKeyLogic) {
-                const hasNewKeys = getSemiLogicKeys(
-                    logic,
-                    assumedInventory,
-                    dungeon,
-                    semiLogicBits,
-                    checkedChecks,
-                );
-                changed ||= hasNewKeys;
-            }
+            const hasNewKeys = getSemiLogicKeys(
+                logic,
+                assumedInventory,
+                dungeonKeyLogic,
+                semiLogicBits,
+                checkedChecks,
+            );
+            changed ||= hasNewKeys;
 
             const assumedInventoryReqs = mapInventory(logic, assumedInventory);
             const assumedCheckReqs = mapInventory(
