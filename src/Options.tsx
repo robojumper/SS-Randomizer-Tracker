@@ -285,6 +285,10 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
     const inputRef = useRef<PlaintextRef>(null);
 
     const loadedRemote = useSelector(
+        (state: RootState) => state.logic.remote,
+    );
+
+    const loadedRemoteName = useSelector(
         (state: RootState) => state.logic.remoteName,
     );
 
@@ -310,6 +314,11 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
 
     useEffect(() => {
         const [cancelToken, cancel] = withCancel();
+
+        if (_.isEqual(loadedRemote, desiredRemote)) {
+            return undefined;
+        }
+
         (async () => {
             await delay(500);
             if (!cancelToken.canceled) {
@@ -344,7 +353,7 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
         <div className="optionsCategory logicChooser">
             <legend>
                 Randomizer Version
-                {loadedRemote && `: ${loadedRemote}`}
+                {loadedRemoteName && `: ${loadedRemoteName}`}
             </legend>
             <Tabs
                 defaultActiveKey="wellKnown"
