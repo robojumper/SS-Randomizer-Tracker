@@ -209,6 +209,7 @@ const Submap = (props: SubmapProps) => {
                         title={exitName}
                         mapWidth={mapWidth}
                         expandedGroup={expandedGroup}
+                        active={title === activeSubmap}
                         exitId={exitId}
                         onGlickGroup={onGroupChange}
                     />

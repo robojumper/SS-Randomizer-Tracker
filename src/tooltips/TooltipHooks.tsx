@@ -57,6 +57,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
 /** Compute the tooltip expression for a given check. This will return undefined until results are available. */
 export function useTooltipExpr(
     checkId: string,
+    active = true,
 ): RootTooltipExpression | undefined {
     const id = useId();
     const store = useContext(TooltipsContext);
@@ -67,12 +68,12 @@ export function useTooltipExpr(
 
     const subscribe = useCallback(
         (callback: () => void) =>
-            store?.subscribe(id, checkId, callback) ?? noop,
-        [checkId, id, store],
+            active && store?.subscribe(id, checkId, callback) || noop,
+        [active, checkId, id, store],
     );
     const getSnapshot = useCallback(
-        () => store?.getSnapshot(checkId),
-        [checkId, store],
+        () => active && store?.getSnapshot(checkId) || undefined,
+        [active, checkId, store],
     );
     const booleanExpr = useSyncExternalStore(subscribe, getSnapshot);
 

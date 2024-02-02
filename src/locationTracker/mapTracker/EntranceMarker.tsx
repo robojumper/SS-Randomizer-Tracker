@@ -12,6 +12,8 @@ import { logicSelector } from '../../logic/selectors';
 import ColorScheme from '../../customization/ColorScheme';
 import HintDescription, { decodeHint } from '../Hints';
 import { ExitMapping } from '../../logic/Locations';
+import { useTooltipExpr } from '../../tooltips/TooltipHooks';
+import RequirementsTooltip from '../RequirementsTooltip';
 
 type EntranceMarkerProps = {
     markerX: number;
@@ -19,6 +21,7 @@ type EntranceMarkerProps = {
     exitId: string;
     title: string;
     mapWidth: number;
+    active: boolean;
     expandedGroup: string | undefined;
     onGlickGroup: (group: string) => void;
 };
@@ -31,7 +34,7 @@ export interface MapExitContextMenuProps {
 
 const EntranceMarker = (props: EntranceMarkerProps) => {
     
-    const { title, exitId, markerX, markerY, mapWidth, expandedGroup, onGlickGroup } = props;
+    const { title, exitId, markerX, markerY, mapWidth, active, expandedGroup, onGlickGroup } = props;
     const exit = useSelector((state: RootState) => exitsSelector(state).find((e) => e.exit.id === exitId))!;
     const inLogicBits = useSelector(inLogicBitsSelector);
     const logic = useSelector(logicSelector);
@@ -98,6 +101,9 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
         lineHeight: '1.2',
     };
 
+    // Only calculate tooltip if this region is shown
+    const requirements = useTooltipExpr(exit.exit.id, active);
+
     let tooltip;
 
     if (hasConnection) {
@@ -105,6 +111,9 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
             <center>
                 <div> {title}</div>
                 <div> {region} ({accessibleChecks}/{remainingChecks}) </div>
+                <div style={{ textAlign: 'left' }}>
+                    <RequirementsTooltip requirements={requirements} />
+                </div>
                 {hint && <HintDescription hint={hint} />}
             </center>
         )
@@ -112,6 +121,9 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
         tooltip = (
             <center>
                 <div> {title} ({(canReach ? 'Accessible' : 'Inaccessible')})</div>
+                <div style={{ textAlign: 'left' }}>
+                    <RequirementsTooltip requirements={requirements} />
+                </div>
                 <div> Click to Attach {isDungeon ? 'Dungeon' : 'Silent Realm'} </div>
             </center>
         )
