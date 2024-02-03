@@ -405,7 +405,7 @@ export function parseLogic(raw: RawLogic): Logic {
         // can turn this into (Progressive Sword and Progressive Sword x 2) since it's easier to satisfy.
         for (const conj of terms) {
             for (const bit of conj.iter()) {
-                const alsoRequired = reverseDominators[itemBits[bit]];
+                const alsoRequired = reverseDominators[rawItems[bit]];
                 if (alsoRequired?.length) {
                     for (const otherTerm of alsoRequired) {
                         conj.setBit(itemBits[otherTerm]);
