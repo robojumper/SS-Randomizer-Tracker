@@ -4,6 +4,7 @@ import { getInitialItems } from '../logic/TrackerModifications';
 import { RegularDungeon } from '../logic/Locations';
 import { InventoryItem, isItem, itemMaxes } from '../logic/Inventory';
 import { Hint } from '../locationTracker/Hints';
+import { getStoredTrackerState } from '../LocalStorage';
 
 export interface TrackerState {
     /**
@@ -53,9 +54,7 @@ const initialState: TrackerState = {
 };
 
 export function preloadedTrackerState(): TrackerState {
-    const stateJson = localStorage.getItem('ssrTrackerState');
-    const state = stateJson ? JSON.parse(stateJson) as Partial<TrackerState> : undefined;
-    return {...initialState, ...state};
+    return { ...initialState, ...getStoredTrackerState() };
 }
 
 const trackerSlice = createSlice({

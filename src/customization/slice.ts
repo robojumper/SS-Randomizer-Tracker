@@ -1,3 +1,8 @@
+import {
+    getStoredColorScheme,
+    getStoredItemLayout,
+    getStoredLocationLayout,
+} from '../LocalStorage';
 import ColorScheme, { lightColorScheme } from './ColorScheme';
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
@@ -18,13 +23,9 @@ const initialState: CustomizationState = {
 
 export function preloadedCustomizationState(): CustomizationState {
     const state = initialState;
-    const schemeJson = localStorage.getItem('ssrTrackerColorScheme');
-    const colorScheme = schemeJson && (JSON.parse(schemeJson) as ColorScheme)
-    const itemLayout =
-        (localStorage.getItem('ssrTrackerLayout') as ItemLayout | null);
-
-    const locationLayout =
-        (localStorage.getItem('ssrTrackerLocationLayout') as LocationLayout | null);
+    const colorScheme = { ...lightColorScheme, ...getStoredColorScheme() };
+    const itemLayout = getStoredItemLayout();
+    const locationLayout = getStoredLocationLayout();
 
     if (colorScheme) {
         state.colorScheme = colorScheme;
@@ -54,6 +55,7 @@ const customizationSlice = createSlice({
     },
 });
 
-export const { setColorScheme, setItemLayout, setLocationLayout } = customizationSlice.actions;
+export const { setColorScheme, setItemLayout, setLocationLayout } =
+    customizationSlice.actions;
 
 export default customizationSlice.reducer;

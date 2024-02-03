@@ -1,6 +1,6 @@
-import { ChangeEvent, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from './store/store';
+import { ChangeEvent, useCallback } from 'react';
+import { useDispatch } from 'react-redux';
+import { ThunkResult, useAppDispatch } from './store/store';
 import { TrackerState, loadTracker } from './tracker/slice';
 import { RemoteReference } from './loader/LogicLoader';
 import { Button } from 'react-bootstrap';
@@ -13,15 +13,11 @@ export interface ExportState {
     logicBranch: RemoteReference;
 }
 
-export function ExportButton() {
-    const state = useSelector((state: RootState) => state.tracker);
-    const logicBranch = useSelector((state: RootState) => state.logic.remote!);
+function doExport(): ThunkResult {
+    return (_dispatch, getState) => {
+        const state = getState().tracker;
+        const logicBranch = getState().logic.remote!;
 
-    useEffect(() => {
-        localStorage.setItem('ssrTrackerState', JSON.stringify(state));
-    }, [state]);
-
-    const doExport = () => {
         const filename = `SS-Rando-Tracker${new Date().toISOString()}`;
         const exportVal: ExportState = { state, version, logicBranch };
         const exportstring = JSON.stringify(exportVal, undefined, '\t');
@@ -34,9 +30,16 @@ export function ExportButton() {
         e.initEvent('click');
         a.dispatchEvent(e);
     };
+}
+
+export function ExportButton() {
+    const dispatch = useAppDispatch();
+    const onClick = useCallback(() => {
+        dispatch(doExport());
+    }, [dispatch]);
 
     return (
-        <Button onClick={doExport}>
+        <Button onClick={onClick}>
             Export
         </Button>
     );

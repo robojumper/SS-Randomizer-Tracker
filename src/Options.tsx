@@ -57,6 +57,7 @@ import { delay } from './utils/Promises';
 import React from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ImportButton } from './ImportExport';
+import { getStoredRemote } from './LocalStorage';
 
 /** The tracker will only show these options, and tracker logic code is only allowed to access these! */
 const optionCategorization_ = {
@@ -129,31 +130,11 @@ const defaultUpstream: RemoteReference = {
     repoName: undefined,
 };
 
-const logicMigrations: Record<string, string> = {
-    'robojumper/logic-dump': 'robojumper/logic-v2.1.1',
-    'robojumper/statuesanity': 'ssrando/main',
-    'YourAverageLink/random-pillar-statue': 'ssrando/main',
-};
-
 const wellKnownRemotes = [
     'Latest',
     'ssrando/main',
     'robojumper/logic-v2.1.1',
 ];
-
-function getStoredRemote() {
-    const storedRemote = localStorage.getItem('ssrTrackerRemoteLogic');
-    const theRemote =
-        storedRemote !== null
-            ? (JSON.parse(storedRemote) as RemoteReference)
-            : defaultUpstream;
-    const migration = logicMigrations[formatRemote(theRemote)];
-    if (migration) {
-        return parseRemote(migration)!;
-    } else {
-        return theRemote;
-    }
-}
 
 /**
  * The default landing page for the tracker. Allows choosing logic source, permalink, and settings,
@@ -164,7 +145,7 @@ function getStoredRemote() {
  */
 export default function Options() {
     const options = useSelector(optionsSelector);
-    const [desiredRemote, setDesiredRemote] = useState(() => getStoredRemote());
+    const [desiredRemote, setDesiredRemote] = useState(() => getStoredRemote() ?? defaultUpstream);
 
     return (
         <Container fluid>
@@ -223,7 +204,9 @@ function LaunchButtons({ setDesiredRemote }: { setDesiredRemote: (ref: RemoteRef
             >
                 <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
                     <span>Continue Tracker</span>
-                    <span style={{ fontSize: 14, justifySelf: 'flex-start', marginLeft: 4 }}><ProgressWrapper /></span>
+                    <span style={{ fontSize: 14, justifySelf: 'flex-start', marginLeft: 4 }}>
+                        {canResume && <ProgressWrapper />}
+                    </span>
                 </div>
             </Link>
             <Button disabled={!canStart} onClick={reset}>
@@ -239,7 +222,10 @@ function ProgressWrapper() {
 }
 
 function Fallback({ resetErrorBoundary }: FallbackProps) {
-    const completeState = useSelector((state: RootState) => state);
+    // Reset the error boundary whenever *anything* changes
+    const completeState = useSelector((state: RootState) => state, {
+        devModeChecks: { identityFunctionCheck: 'never' },
+    });
     const lastState = useRef<RootState>(completeState);
     useEffect(() => {
         if (lastState.current !== null && lastState.current !== completeState) {

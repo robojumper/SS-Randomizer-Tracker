@@ -1,6 +1,5 @@
 import {
     CSSProperties,
-    useEffect,
     useMemo,
     useState,
     useSyncExternalStore,
@@ -19,14 +18,14 @@ import ExtraLocationTracker from './locationTracker/ExtraLocationTracker';
 import { NewLocationTracker } from './locationTracker/LocationTracker';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
-import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector } from './customization/selectors';
+import { itemLayoutSelector, locationLayoutSelector } from './customization/selectors';
 import { ErrorBoundary } from 'react-error-boundary';
 import ErrorPage from './ErrorPage';
-import { RootState } from './store/store';
 import WorldMap from './locationTracker/mapTracker/WorldMap';
 import { Link, Navigate } from 'react-router-dom';
 import { isLogicLoadedSelector } from './logic/selectors';
 import { ExportButton } from './ImportExport';
+import { useSyncTrackerStateToLocalStorage } from './LocalStorage';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -79,28 +78,10 @@ function Tracker() {
     const [showEntranceDialog, setShowEntranceDialog] = useState(false);
     const [activeArea, setActiveArea] = useState<string | undefined>(undefined);
     const [activeSubmap, setActiveSubmap] = useState<string | undefined>(undefined);
-
-    const colorScheme = useSelector(colorSchemeSelector);
     const itemLayout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
-    const rawRemote = useSelector((state: RootState) => state.logic.remote!);
 
-    // TODO: Store observers
-    useEffect(() => {
-        localStorage.setItem('ssrTrackerColorScheme', JSON.stringify(colorScheme));
-    }, [colorScheme]);
-
-    useEffect(() => {
-        localStorage.setItem('ssrTrackerLayout', itemLayout);
-    }, [itemLayout]);
-
-    useEffect(() => {
-        localStorage.setItem('ssrTrackerLocationLayout', locationLayout);
-    }, [locationLayout]);
-
-    useEffect(() => {
-        localStorage.setItem('ssrTrackerRemoteLogic', JSON.stringify(rawRemote));
-    }, [rawRemote]);
+    useSyncTrackerStateToLocalStorage();
 
     const itemTrackerStyle: CSSProperties = {
         position: 'fixed',
@@ -235,7 +216,7 @@ function Tracker() {
             style={{
                 height: height * 0.95,
                 overflow: 'hidden',
-                background: colorScheme.background,
+                background: 'var(--scheme-background)',
             }}
         >
             <Container fluid style={{ height: '100%' }}>
