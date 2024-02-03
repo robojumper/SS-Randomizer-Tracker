@@ -167,7 +167,14 @@ const Submap = (props: SubmapProps) => {
         [show, title],
     );
 
-    const handleBack = useCallback(() => onSubmapChange(undefined), [onSubmapChange]);
+    const handleBack = (e: React.UIEvent) => {
+        if (e.type === 'contextmenu') {
+            e.preventDefault();
+            onSubmapChange(undefined);
+        } else {
+            onSubmapChange(undefined);
+        }
+    };
 
     const markerElement = (
         <Tippy content={tooltip} placement="bottom" followCursor plugins={[followCursor]} offset={[0, 20]} >
@@ -187,7 +194,7 @@ const Submap = (props: SubmapProps) => {
 
     const mapElement = (
         <div>
-            <img src={props.map} alt={`${title} Map`} width={mapWidth} style={{position: 'relative'}}/>
+            <img src={props.map} alt={`${title} Map`} width={mapWidth} style={{position: 'relative'}} onContextMenu={handleBack}/>
             {markers.map((marker) => (
                 <MapMarker
                     key={marker.region}
@@ -218,6 +225,7 @@ const Submap = (props: SubmapProps) => {
             <div
                 onKeyDown={keyDownWrapper(handleBack)}
                 onClick={handleBack}
+                onContextMenu={handleBack}
                 role="button"
                 tabIndex={0}
             >
