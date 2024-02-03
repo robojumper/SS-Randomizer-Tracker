@@ -997,27 +997,29 @@ export const inSemiLogicBitsSelector = createSelector(
             // The assumed number of loose gratitude crystals is the number of
             // loose crystal checks that are either checked or are in logic.
             for (const [checkId, checkDef] of Object.entries(logic.checks)) {
-                if (
-                    checkDef.type === 'loose_crystal' &&
-                    !assumedChecks.includes(checkId) &&
-                    semiLogicBits.test(logic.itemBits[checkId])
-                ) {
-                    assumedChecks.push(checkId);
-                    changed = true;
-                }
 
-                const hintedItem = checkHints[checkId];
-                if (
-                    hintedItem !== undefined &&
-                    isItem(hintedItem) &&
-                    !assumedChecks.includes(checkId)
-                ) {
-                    assumedChecks.push(checkId);
-                    assumedInventory[hintedItem] = Math.min(
-                        itemMaxes[hintedItem],
-                        assumedInventory[hintedItem] + 1,
-                    );
-                    changed = true;
+                if (semiLogicBits.test(logic.itemBits[checkId])) {
+                    if (
+                        checkDef.type === 'loose_crystal' &&
+                        !assumedChecks.includes(checkId)
+                    ) {
+                        assumedChecks.push(checkId);
+                        changed = true;
+                    }
+    
+                    const hintedItem = checkHints[checkId];
+                    if (
+                        hintedItem !== undefined &&
+                        isItem(hintedItem) &&
+                        !assumedChecks.includes(checkId)
+                    ) {
+                        assumedChecks.push(checkId);
+                        assumedInventory[hintedItem] = Math.min(
+                            itemMaxes[hintedItem],
+                            assumedInventory[hintedItem] + 1,
+                        );
+                        changed = true;
+                    }
                 }
             }
 
