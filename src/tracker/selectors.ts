@@ -56,7 +56,7 @@ import { LogicBuilder } from '../logic/LogicBuilder';
 import { exploreAreaGraph } from '../logic/Pathfinding';
 import { getSemiLogicKeys, keyData } from '../logic/KeyLogic';
 import { BitVector } from '../logic/bitlogic/BitVector';
-import { InventoryItem, itemMaxes } from '../logic/Inventory';
+import { InventoryItem, isItem, itemMaxes } from '../logic/Inventory';
 
 /**
  * Selects the hint for a given area.
@@ -64,6 +64,11 @@ import { InventoryItem, itemMaxes } from '../logic/Inventory';
 export const areaHintSelector = currySelector(
     (state: RootState, area: string) => state.tracker.hints[area],
 );
+
+/**
+ * All hinted items.
+ */
+export const checkHintsSelector = (state: RootState) => state.tracker.checkHints;
 
 /**
  * Selects the hinted item for a given check
@@ -969,6 +974,7 @@ export const inSemiLogicBitsSelector = createSelector(
         dungeonKeyLogicSelector,
         inLogicBitsSelector,
         checkedChecksSelector,
+        checkHintsSelector,
     ],
     (
         logic,
@@ -978,6 +984,7 @@ export const inSemiLogicBitsSelector = createSelector(
         dungeonKeyLogic,
         inLogicBits,
         checkedChecks,
+        checkHints,
     ) => {
         let semiLogicBits = inLogicBits;
         let changed = true;
@@ -996,6 +1003,20 @@ export const inSemiLogicBitsSelector = createSelector(
                     semiLogicBits.test(logic.itemBits[checkId])
                 ) {
                     assumedChecks.push(checkId);
+                    changed = true;
+                }
+
+                const hintedItem = checkHints[checkId];
+                if (
+                    hintedItem !== undefined &&
+                    isItem(hintedItem) &&
+                    !assumedChecks.includes(checkId)
+                ) {
+                    assumedChecks.push(checkId);
+                    assumedInventory[hintedItem] = Math.min(
+                        itemMaxes[hintedItem],
+                        assumedInventory[hintedItem] + 1,
+                    );
                     changed = true;
                 }
             }
