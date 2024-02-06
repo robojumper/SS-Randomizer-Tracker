@@ -124,10 +124,7 @@ const optionCategorization: Record<string, readonly LogicOption[]> = optionCateg
 // Older releases will be unsupported then.
 
 const defaultUpstream: RemoteReference = {
-    type: 'forkBranch',
-    author: 'robojumper',
-    branch: 'logic-v2.1.1',
-    repoName: undefined,
+    type: 'latestRelease',
 };
 
 const wellKnownRemotes = [
@@ -266,7 +263,7 @@ async function loadRemote(
 function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: RemoteReference, setDesiredRemote: (ref: RemoteReference) => void }) {
     const dispatch = useDispatch();
     const [loadingState, setLoadingState] = useState<LoadingState | undefined>(
-        undefined,
+        { type: 'loading' },
     );
     const inputRef = useRef<PlaintextRef>(null);
 
