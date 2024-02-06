@@ -299,6 +299,7 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
         const [cancelToken, cancel] = withCancel();
 
         if (_.isEqual(loadedRemote, desiredRemote)) {
+            setLoadingState(undefined);
             return undefined;
         }
 
