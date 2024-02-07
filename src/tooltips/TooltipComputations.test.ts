@@ -1,6 +1,6 @@
 import { BitVector } from '../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
-import { algebraicDivision, findKernels } from './TooltipComputations';
+import { algebraicDivision, findKernels } from './worker/Worker';
 
 test('algebraicDivision', () => {
     const f = ['h', 'ax', 'bx', 'cx', 'ay', 'by', 'cy'];
