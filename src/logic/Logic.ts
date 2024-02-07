@@ -14,7 +14,8 @@ import {
     dungeonCompletionItems,
 } from './TrackerModifications';
 import {
-    BitLogic,
+    Requirements,
+    mergeRequirements,
     removeDuplicates,
     shallowSimplify,
     unifyRequirements,
@@ -27,7 +28,8 @@ import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
 
 export interface Logic {
-    bitLogic: BitLogic;
+    numRequirements: number;
+    staticRequirements: Requirements;
 
     allItems: string[];
     /**
@@ -353,13 +355,7 @@ export function parseLogic(raw: RawLogic): Logic {
     }
 
     const numItems = rawItems.length;
-
-    const bitLogic: BitLogic = {
-        numBits: numItems,
-        requirements: new Array<LogicalExpression>(numItems).fill(
-            LogicalExpression.false(),
-        ),
-    };
+    const staticRequirements: Requirements = {};
 
     const itemBits: Logic['itemBits'] = {};
     const areasByExit: AreaGraph['areasByExit'] = {};
@@ -809,14 +805,14 @@ export function parseLogic(raw: RawLogic): Logic {
     };
 
     // Now map our area graph to BitLogic
-    const newBuilder = new LogicBuilder(bitLogic, rawItems, bitLogic.requirements);
+    const newBuilder = new LogicBuilder(rawItems, staticRequirements);
     mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems);
 
 
     // check for orphaned locations. This again should probably not be in here
     // but in the rando instead...
     const mentionedBits = new Set(
-        bitLogic.requirements.flatMap((expr) =>
+        Object.values(staticRequirements).flatMap((expr) =>
             expr.conjunctions.flatMap((vec) => [...vec.iter()]),
         ),
     );
@@ -844,14 +840,16 @@ export function parseLogic(raw: RawLogic): Logic {
         (area) => rawCheckOrder.indexOf(checksByHintRegion[area][0]),
     );
 
+    const bitLogic = mergeRequirements(numItems, staticRequirements);
+
     // Some cheap optimizations - these have opaque entrances,
     // so not much opportunity here.
     do {
-        removeDuplicates(bitLogic.requirements);
-        while (shallowSimplify(opaqueItems, bitLogic.requirements)) {
-            removeDuplicates(bitLogic.requirements);
+        removeDuplicates(bitLogic);
+        while (shallowSimplify(opaqueItems, bitLogic)) {
+            removeDuplicates(bitLogic);
         }
-    } while (unifyRequirements(opaqueItems, bitLogic.requirements));
+    } while (unifyRequirements(opaqueItems, bitLogic));
 
     // In theory, we could also do some more aggressive optimizations
     // with opaque entrances but we do have to be mindful of the size
@@ -862,10 +860,13 @@ export function parseLogic(raw: RawLogic): Logic {
     // entrances, every entrance has to be considered uniquely reachable with no way
     // to bound our exploration or to simplify these expressions as we go.
 
+    const updatedRequirements = _.mapValues(staticRequirements, (_value, idx) => bitLogic[parseInt(idx, 10)]);
+
     console.log('logic building took', performance.now() - start, 'ms'); 
 
     return {
-        bitLogic,
+        numRequirements: rawItems.length,
+        staticRequirements: updatedRequirements,
         allItems: rawItems,
         dominators,
         reverseDominators,
@@ -938,7 +939,7 @@ function mapAreaToBitLogic(
                     if (destArea.availability === TimeOfDay.Both) {
                         opaqueItems.clearBit(b.bit(b.day(destArea.id)));
                         opaqueItems.clearBit(b.bit(b.night(destArea.id)));
-        
+
                         if (location.areaAvailability === TimeOfDay.Both) {
                             b.addAlternative(
                                 b.day(destArea.id),
@@ -963,7 +964,7 @@ function mapAreaToBitLogic(
                         }
                     } else {
                         opaqueItems.clearBit(b.bit(destArea.id));
-        
+
                         if (location.areaAvailability === TimeOfDay.Both) {
                             const [timedReq, timedArea] =
                                 destArea.availability === TimeOfDay.DayOnly

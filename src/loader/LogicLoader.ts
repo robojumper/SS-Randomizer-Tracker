@@ -65,7 +65,6 @@ export function formatRemote(ref: RemoteReference) {
             } else {
                 return `${ref.author}/${ref.branch}`;
             }
-            
     }
 }
 

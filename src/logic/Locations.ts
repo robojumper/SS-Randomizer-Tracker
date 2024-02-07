@@ -1,4 +1,4 @@
-import { ExitRule } from '../tracker/selectors';
+import { ExitRule } from './Entrances';
 import { Logic, LogicalCheck } from './Logic';
 import { BitVector } from './bitlogic/BitVector';
 
@@ -23,7 +23,7 @@ export interface HintRegion<N extends string = string> {
     exits: string[];
 }
 
-export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic';
+export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic' | 'trickLogic';
 
 export interface Check {
     type: LogicalCheck['type'] | 'exit';

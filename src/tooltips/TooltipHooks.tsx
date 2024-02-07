@@ -18,13 +18,16 @@ import {
     optimisticPathfindingSelector,
     getRequirementLogicalStateSelector,
     settingSelector,
+    settingsSelector,
 } from '../tracker/selectors';
-import { logicSelector } from '../logic/selectors';
+import { logicSelector, optionsSelector } from '../logic/selectors';
 import {
     RootTooltipExpression,
     booleanExprToTooltipExpr,
 } from './TooltipExpression';
 import { ExplorationNode } from '../logic/Pathfinding';
+import { trickSemiLogicSelector } from '../customization/selectors';
+import { mergeRequirements } from '../logic/bitlogic/BitLogic';
 
 const TooltipsContext = createContext<TooltipComputer | null>(null);
 
@@ -35,17 +38,27 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
     const logic = useSelector(logicSelector);
+    const options = useSelector(optionsSelector);
+    const settings = useSelector(settingsSelector);
     const settingsRequirements = useSelector(settingsRequirementsSelector);
+    const expertMode = useSelector(trickSemiLogicSelector);
 
     useEffect(() => {
-        setAnalyzer(new TooltipComputer(logic, settingsRequirements));
+        const bitLogic = mergeRequirements(
+            logic.numRequirements,
+            logic.staticRequirements,
+            settingsRequirements,
+        );
+        setAnalyzer(
+            new TooltipComputer(logic, options, settings, expertMode, bitLogic),
+        );
         return () => {
             setAnalyzer((oldAnalyzer) => {
                 oldAnalyzer?.destroy();
                 return null;
             });
         };
-    }, [settingsRequirements, logic]);
+    }, [settingsRequirements, logic, options, expertMode, settings]);
 
     return (
         <TooltipsContext.Provider value={analyzer}>
@@ -68,11 +81,11 @@ export function useTooltipExpr(
 
     const subscribe = useCallback(
         (callback: () => void) =>
-            active && store?.subscribe(id, checkId, callback) || noop,
+            (active && store?.subscribe(id, checkId, callback)) || noop,
         [active, checkId, id, store],
     );
     const getSnapshot = useCallback(
-        () => active && store?.getSnapshot(checkId) || undefined,
+        () => (active && store?.getSnapshot(checkId)) || undefined,
         [active, checkId, store],
     );
     const booleanExpr = useSyncExternalStore(subscribe, getSnapshot);

@@ -110,6 +110,7 @@ export class BooleanExpression {
         for (let i = 0; i < iterations; i++) {
             updatedExpression = updatedExpression.removeDuplicateChildren(implies);
             updatedExpression = updatedExpression.removeDuplicateExpressions(implies);
+            updatedExpression = updatedExpression.shiftWeakerTermsUp(implies);
         }
 
         return updatedExpression;
@@ -353,6 +354,25 @@ export class BooleanExpression {
             }
         }
         return BooleanExpression.createFlatExpression(newItems, this.type);
+    }
+
+    shiftWeakerTermsUp(implies: BinOp<string>): BooleanExpression {
+        const parentExpression = this.removeDuplicateExpressionsInChildren(implies);
+        if (parentExpression.isOr() && parentExpression.items.every((i) => !BooleanExpression.isExpression(i) || i.isAnd())) {
+            for (const item of parentExpression.items) {
+                if (!BooleanExpression.isExpression(item)) {
+                    continue;
+                }
+                for (const subItem of item.items) {
+                    if (BooleanExpression.isExpression(subItem) && parentExpression.items.every((otherItem, index) => (otherItem as BooleanExpression).expressionIsSubsumed(subItem, index, implies))) {
+                        console.log('blub')
+                        return BooleanExpression.and(subItem, BooleanExpression.or(...parentExpression.items, ));
+                    }
+                }
+            }
+        }
+
+        return parentExpression;
     }
 }
 

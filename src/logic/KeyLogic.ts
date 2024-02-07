@@ -2,14 +2,13 @@ import { produce } from 'immer';
 import { InventoryItem, itemMaxes } from './Inventory';
 import { dungeonNames, isRegularDungeon } from './Locations';
 import { Logic, LogicalCheck, isRegularItemCheck } from './Logic';
-import { computeLeastFixedPoint } from './bitlogic/BitLogic';
+import { Requirements, computeLeastFixedPoint, mergeRequirements } from './bitlogic/BitLogic';
 import { BitVector } from './bitlogic/BitVector';
-import { LogicalExpression } from './bitlogic/LogicalExpression';
 import { mapInventory } from '../tracker/selectors';
 import _ from 'lodash';
 import { TypedOptions } from '../permalink/SettingsTypes';
 
-interface PotentialLocations {
+export interface PotentialLocations {
     item: InventoryItem;
     count: number;
     potentialChecks: string[];
@@ -23,8 +22,8 @@ export function keyData(
     logic: Logic,
     bossKeySetting: TypedOptions['boss-key-mode'],
     smallKeySetting: TypedOptions['small-key-mode'],
-    settingsRequirements: Record<string, LogicalExpression>,
-    checkRequirements: Record<string, LogicalExpression>,
+    settingsRequirements: Requirements,
+    checkRequirements: Requirements,
     isCheckBanned: (checkId: string, check: LogicalCheck) => boolean,
     optimisticLogicBits: BitVector,
 ) {
@@ -72,11 +71,15 @@ export function keyData(
     );
 
     // This baseline logic state can be re-used in later computations
-    const baselineLogicState = computeLeastFixedPoint(logic.bitLogic, [
-        settingsRequirements,
-        checkRequirements,
-        mapInventory(logic, fullInventoryNoKeys),
-    ]);
+    const baselineLogicState = computeLeastFixedPoint(
+        mergeRequirements(
+            logic.numRequirements,
+            logic.staticRequirements,
+            settingsRequirements,
+            checkRequirements,
+            mapInventory(logic, fullInventoryNoKeys),
+        ),
+    );
 
     for (const dungeon of dungeonNames.filter(isRegularDungeon)) {
         const dungeonChecks = regionChecks(dungeon);
@@ -136,11 +139,13 @@ export function keyData(
                     ),
                 });
                 inventory[smallKey] = i;
-                logicState = computeLeastFixedPoint(logic.bitLogic, [
+                logicState = computeLeastFixedPoint(mergeRequirements(
+                    logic.numRequirements,
+                    logic.staticRequirements,
                     settingsRequirements,
                     checkRequirements,
-                    mapInventory(logic, inventory),
-                ], logicState);
+                    mapInventory(logic, fullInventoryNoKeys),
+                ), logicState);
             }
         }
 
@@ -165,7 +170,7 @@ export function getSemiLogicKeys(
     inventory: Record<InventoryItem, number>,
     data: PotentialLocations[],
     inLogicBits: BitVector,
-    checkedChecks: string[],
+    checkedChecks: Set<string>,
 ): boolean {
     let changed = false;
     for (const entry of data) {
@@ -175,7 +180,7 @@ export function getSemiLogicKeys(
             entry.potentialChecks.every(
                 (c) =>
                     inLogicBits.test(logic.itemBits[c]) ||
-                    checkedChecks.includes(c),
+                    checkedChecks.has(c),
             )
         ) {
             inventory[entry.item] = entry.count;

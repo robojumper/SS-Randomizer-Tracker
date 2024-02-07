@@ -17,6 +17,7 @@ export const lightColorScheme: ColorScheme = {
     required: '#004FFF',
     unrequired: '#808080',
     checked: '#303030',
+    trickLogic: '#0E8803'
 };
 
 export const darkColorScheme: ColorScheme = {

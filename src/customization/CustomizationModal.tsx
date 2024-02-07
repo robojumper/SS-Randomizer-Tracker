@@ -1,9 +1,9 @@
-import { Modal, Button, Container, Row, Col, FormControl } from 'react-bootstrap';
+import { Modal, Button, Container, Row, Col, FormControl, FormCheck } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
 import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
-import { ItemLayout, LocationLayout, setColorScheme, setItemLayout, setLocationLayout } from './slice';
+import { ItemLayout, LocationLayout, setColorScheme, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector } from './selectors';
+import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector } from './selectors';
 import { useCallback } from 'react';
 
 const defaultColorSchemes = {
@@ -22,6 +22,7 @@ export default function CustomizationModal({
     const colorScheme = useSelector(colorSchemeSelector);
     const layout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
+    const trickSemiLogic = useSelector(trickSemiLogicSelector);
 
     const updateColorScheme = useCallback((scheme: ColorScheme) => dispatch(setColorScheme(scheme)), [dispatch]);
 
@@ -79,6 +80,16 @@ export default function CustomizationModal({
                             <option value="list">List Layout</option>
                             <option value="map">Map Layout</option>
                         </FormControl>
+                    </Row>
+                    <Row>
+                        <h4>Show Trick Logic</h4>
+                    </Row>
+                    <Row>
+                        <FormCheck
+                            type="switch"
+                            checked={trickSemiLogic}
+                            onChange={(e) => dispatch(setTrickSemiLogic(e.target.checked))}
+                        />
                     </Row>
                 </Container>
             </Modal.Body>

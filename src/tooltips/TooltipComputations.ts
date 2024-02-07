@@ -5,15 +5,17 @@ import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 import { getTooltipOpaqueBits } from '../logic/Inventory';
 import BooleanExpression, { Item } from '../logic/booleanlogic/BooleanExpression';
 import {
-    findNewSubgoals,
     computeGroundExpression,
     removeDuplicates,
     shallowSimplify,
     unifyRequirements,
+    BitLogic,
+    findNewSubgoals,
 } from '../logic/bitlogic/BitLogic';
 import _ from 'lodash';
 import { CancelToken, withCancel } from '../utils/CancelToken';
 import { createDeadlineKeeper } from '../utils/Promises';
+import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 
 /**
  * This module contains various strategies to turn the requirements into a more compact and readable
@@ -33,28 +35,32 @@ export class TooltipComputer {
     results: Record<string, BooleanExpression>;
 
     opaqueBits: BitVector;
-    requirements: LogicalExpression[];
+    requirements: BitLogic;
     learned: Set<number>;
 
     cancel: () => void;
     wakeupWorker: () => void;
 
-    constructor(logic: Logic, requirements: Record<number, LogicalExpression>) {
+    constructor(
+        logic: Logic,
+        options: OptionDefs,
+        settings: TypedOptions,
+        expertMode: boolean,
+        requirements: BitLogic,
+    ) {
         this.logic = logic;
         this.subscriptions = {};
         this.learned = new Set();
         this.wakeupWorker = noop;
         this.results = {};
-        this.opaqueBits = getTooltipOpaqueBits(logic);
-        
-        this.requirements = this.logic.bitLogic.requirements.map((val, idx) => {
-            const stateImp = requirements[idx];
-            if (stateImp) {
-                return val.or(stateImp);
-            } else {
-                return val;
-            }
-        });
+        this.opaqueBits = getTooltipOpaqueBits(
+            logic,
+            options,
+            settings,
+            expertMode,
+        );
+
+        this.requirements = requirements;
 
         const [cancelToken, cancel] = withCancel();
         this.cancel = cancel;
@@ -165,9 +171,9 @@ async function computationTask(
                 bit,
                 store.learned,
             );
-    
+
             await keepDeadline();
-    
+
             if (potentialPath && !potentialPath.isEmpty()) {
                 for (const precomputeBit of potentialPath.iter()) {
                     if (
@@ -243,6 +249,16 @@ function dnfToRequirementExpr(
     ) {
         return BooleanExpression.and();
     }
+
+    /*
+    return BooleanExpression.or(
+        ...sop.map((s) =>
+            BooleanExpression.and(
+                ...[...s.iter()].map((bit) => logic.allItems[bit]),
+            ),
+        ),
+    );
+    */
 
     if (sop.length === 1) {
         return BooleanExpression.and(

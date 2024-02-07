@@ -4,6 +4,7 @@ import {
     colorSchemeSelector,
     itemLayoutSelector,
     locationLayoutSelector,
+    trickSemiLogicSelector,
 } from './customization/selectors';
 import { RootState } from './store/store';
 import { TrackerState } from './tracker/slice';
@@ -15,6 +16,7 @@ const itemLayoutLocalStorageKey = 'ssrTrackerLayout';
 const colorSchemeLocalStorageKey = 'ssrTrackerColorScheme';
 const trackerStateLocalStorageKey = 'ssrTrackerState';
 const locationLayoutLocalStorageKey = 'ssrTrackerLocationLayout';
+const trickSemilogicLocalStorageKey = 'ssrTrackerTrickLogic';
 const remoteLogicLocalStorageKey = 'ssrTrackerRemoteLogic';
 
 
@@ -22,6 +24,7 @@ export function useSyncTrackerStateToLocalStorage() {
     const colorScheme = useSelector(colorSchemeSelector);
     const itemLayout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
+    const trickSemilogic = useSelector(trickSemiLogicSelector);
     const rawRemote = useSelector((state: RootState) => state.logic.remote!);
     const state = useSelector((state: RootState) => state.tracker);
 
@@ -44,6 +47,10 @@ export function useSyncTrackerStateToLocalStorage() {
     useEffect(() => {
         localStorage.setItem(locationLayoutLocalStorageKey, locationLayout);
     }, [locationLayout]);
+
+    useEffect(() => {
+        localStorage.setItem(trickSemilogicLocalStorageKey, JSON.stringify(trickSemilogic));
+    }, [trickSemilogic]);
 
     useEffect(() => {
         localStorage.setItem(
@@ -91,4 +98,9 @@ export function getStoredLocationLayout(): LocationLayout | undefined {
 export function getStoredColorScheme(): Partial<ColorScheme> | undefined {
     const schemeJson = localStorage.getItem(colorSchemeLocalStorageKey);
     return schemeJson ? (JSON.parse(schemeJson) as Partial<ColorScheme>) : undefined;
+}
+
+export function getStoredTrickSemiLogic(): boolean | undefined {
+    const schemeJson = localStorage.getItem(trickSemilogicLocalStorageKey);
+    return schemeJson ? (JSON.parse(schemeJson) as boolean) : undefined;
 }

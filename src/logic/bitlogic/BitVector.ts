@@ -67,7 +67,7 @@ export class BitVector {
         return this.numSetBits <= other.numSetBits && (this.data | other.data) === other.data;
     }
 
-    /** Returns true iff all the bits in `this` are also set in `other`. */
+    /** Returns true iff all the bits in `this` are also set in `other` and the other way around. */
     equals(other: BitVector) {
         return this.data === other.data;
     }
@@ -100,6 +100,11 @@ export class BitVector {
     /** Iterates over all set bits in this BitVector. */
     iter(): IterableIterator<number> {
         return this.intSet.values()
+    }
+
+    /** Assuming that this vector has a single set bit, returns it. */
+    getSingleSetBit(): number {
+        return this.intSet.values().next().value as number
     }
 
     /** Returns the number of bits set in this BitVector. */

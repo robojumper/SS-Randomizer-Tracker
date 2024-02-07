@@ -1,24 +1,26 @@
 import { LogicalExpression } from './LogicalExpression';
 import { BitVector } from './BitVector';
-import _ from 'lodash';
 
+export type Requirements = Record<number, LogicalExpression>;
 /**
  * A BitLogic models a least fixed-point logic (LFP).
  * Since every LogicalExpression can only mention terms positively
  * (no negation, no quantifiers) this least fixed-point always exists.
  */
-export interface BitLogic {
-    /**
-     * The number of bits in this logic.
-     */
-    numBits: number;
-    /**
-     * Array index is bit index. value at that index is a logical
-     * expression that, if evaluated to true, implies the given bit index.
-     * Always of length numBits.
-     */
-    requirements: LogicalExpression[];
+export type BitLogic = LogicalExpression[];
+
+export function mergeRequirements(numBits: number, ...reqs: Requirements[]): BitLogic {
+    const requirements: LogicalExpression[] = [];
+    const mergedRequirements: Requirements = {};
+    for (const req of reqs) {
+        Object.assign(mergedRequirements, req);
+    }
+    for (let i = 0; i < numBits; i++) {
+        requirements.push(mergedRequirements[i] ?? LogicalExpression.false());
+    }
+    return requirements;
 }
+
 
 /* 
  * Returns the least fixed-point of the given requirements,
@@ -26,32 +28,14 @@ export interface BitLogic {
  * This is a BitVector from which no new facts can be derived.
  */
 export function computeLeastFixedPoint(
-    /** The base BitLogic with its base requirements. */
+    /** The BitLogic describing the logic program (requirements). */
     logic: BitLogic,
-    /**
-     * Additional requirements from runtime conditions that aren't part of the base logic.
-     * Must not overwrite each other, and may only overwrite a base implication from `logic`
-     * if the BitLogic's expression is trivially false (an empty disjunction).
-     */
-    additionalRequirements: Record<number, LogicalExpression>[],
     /**
      * To resume computation from an earlier result after adding facts to `additionalRequirements`
      * (concretely: semilogic requirements), pass startingBits. Purely a performance optimization.
      */
     startingBits?: BitVector,
 ) {
-    const effectiveRequirements = logic.requirements.slice();
-    for (const [idx, expr] of logic.requirements.entries()) {
-        const reqs = _.compact([
-            expr.isTriviallyFalse() ? undefined : expr,
-            ...additionalRequirements.map((m) => m[idx]),
-        ]);
-        if (reqs.length > 1) {
-            console.warn('requirements overwriting', idx);
-        }
-        effectiveRequirements[idx] = _.last(reqs) ?? expr;
-    }
-
     // This is an extremely simple iterate-to-fixpoint solver in O(n^2).
     // There are better algorithms but this usually converges after
     // 40 rounds.
@@ -61,7 +45,7 @@ export function computeLeastFixedPoint(
     const start = performance.now();
     while (changed) {
         changed = false;
-        for (const [idx, expr] of effectiveRequirements.entries()) {
+        for (const [idx, expr] of logic.entries()) {
             const evaluate = (e: LogicalExpression) => {
                 const val = e.eval(bits);
                 if (val) {
@@ -213,10 +197,10 @@ export function computeGroundExpression(
     return result.removeDuplicates();
 }
 
-export function removeDuplicates(requirements: LogicalExpression[]) {
-    for (const [idx, expr] of requirements.entries()) {
+export function removeDuplicates(logic: BitLogic) {
+    for (const [idx, expr] of logic.entries()) {
         if (expr.conjunctions.length >= 2) {
-            requirements[idx] = expr.removeDuplicates();
+            logic[idx] = expr.removeDuplicates();
         }
     }
 }
@@ -233,15 +217,27 @@ export function unifyRequirements(
     opaqueBits: BitVector,
     requirements: LogicalExpression[],
 ) {
-    let simplified = false;
-    for (let a = 0; a < requirements.length; a++) {
-        if (opaqueBits.test(a)) {
+    // First, an O(n) scan to rule out expressions that are definitely not eligible
+    const unificationCandidates: number[][] = requirements.map(() => []);
+    for (const [idx, expr] of requirements.entries()) {
+        if (opaqueBits.test(idx)) {
             continue;
         }
-        for (let b = a + 1; b < requirements.length; b++) {
-            if (opaqueBits.test(b)) {
-                continue;
+        for (const conj of expr.conjunctions) {
+            if (conj.numSetBits === 1) {
+                const bit = conj.getSingleSetBit();
+                if (bit === idx || opaqueBits.test(bit)) {
+                    continue;
+                }
+                (unificationCandidates[bit]).push(idx);
             }
+        }
+    }
+
+    let simplified = false;
+    for (let a = 0; a < requirements.length; a++) {
+        const targetList = unificationCandidates[a];
+        for (const b of targetList) {
             if (tryUnifyEquivalent(requirements, a, b)) {
                 simplified = true;
             }
@@ -266,6 +262,10 @@ export function unifyRequirements(
 function tryUnifyEquivalent(requirements: LogicalExpression[], a: number, b: number) {
     const implA = requirements[a];
     const implB = requirements[b];
+
+    if (implA.conjunctions.length < 2 || implB.conjunctions.length < 2) {
+        return false;
+    }
 
     const bImpliesAIndex = implA.conjunctions.findIndex(
         (cA) => cA.numSetBits === 1 && cA.test(b),
@@ -314,7 +314,7 @@ function tryUnifyEquivalent(requirements: LogicalExpression[], a: number, b: num
  */
 export function shallowSimplify(
     opaqueBits: BitVector,
-    requirements: LogicalExpression[],
+    requirements: BitLogic,
 ) {
     const inliningCandidates = new BitVector();
 

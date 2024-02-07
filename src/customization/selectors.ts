@@ -8,3 +8,6 @@ export const itemLayoutSelector = (state: RootState) =>
 
 export const locationLayoutSelector = (state: RootState) =>
     state.customization.locationLayout;
+
+export const trickSemiLogicSelector = (state: RootState) =>
+    state.customization.trickSemilogic;

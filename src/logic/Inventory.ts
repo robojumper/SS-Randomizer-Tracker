@@ -1,3 +1,4 @@
+import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { BitVector } from './bitlogic/BitVector';
 import { itemName, Logic } from './Logic';
 import {
@@ -72,11 +73,8 @@ export function isItem(id: string): id is InventoryItem {
 /**
  * Returns a BitVector containing all the expressions that should be visible in the tooltips
  * and not recursively expanded (items and various item-like requirements).
- *
- * TODO: It could be neat to add *enabled* tricks here too so that the requirement tooltips
- * can show that some things are in logic because of tricks.
  */
-export function getTooltipOpaqueBits(logic: Logic) {
+export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings: TypedOptions, expertMode: boolean) {
     const items = new BitVector();
     const set = (id: string) => {
         const bit = logic.itemBits[id];
@@ -86,6 +84,25 @@ export function getTooltipOpaqueBits(logic: Logic) {
             console.error('unknown item', id);
         }
     };
+
+    for (const option of options) {
+        if (
+            option.type === 'multichoice' &&
+            (option.command === 'enabled-tricks-glitched' ||
+                option.command === 'enabled-tricks-bitless')
+        ) {
+            if (expertMode) {
+                const vals = option.choices;
+                for (const opt of vals) {
+                    set(`${opt} Trick`);
+                }
+            } else {
+                for (const opt of settings[option.command]) {
+                    set(`${opt} Trick`);
+                }
+            }
+        }
+    }
 
     // All actual inventory items are shown in the tooltips
     for (const [item, count] of Object.entries(itemMaxes)) {

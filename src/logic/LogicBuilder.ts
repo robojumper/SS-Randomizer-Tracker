@@ -1,4 +1,4 @@
-import { BitLogic } from './bitlogic/BitLogic';
+import { Requirements } from './bitlogic/BitLogic';
 import { BitVector } from './bitlogic/BitVector';
 import { LogicalExpression } from './bitlogic/LogicalExpression';
 
@@ -18,18 +18,15 @@ function makeNight(loc: string) {
  * Used when initially building logic and when mapping tracker state to logic.
  */
 export class LogicBuilder {
-    bitLogic: BitLogic;
     itemList: string[];
     itemLookup: Record<string, number>;
 
-    requirements: Record<number, LogicalExpression> | LogicalExpression[];
+    requirements: Requirements | LogicalExpression[];
 
     constructor(
-        bitLogic: BitLogic,
         allItems: string[],
-        requirements: Record<number, LogicalExpression> | LogicalExpression[],
+        requirements: Requirements | LogicalExpression[],
     ) {
-        this.bitLogic = bitLogic;
         this.itemList = allItems;
         this.itemLookup = Object.fromEntries(
             [...allItems.entries()].map(([idx, name]) => [name, idx]),
