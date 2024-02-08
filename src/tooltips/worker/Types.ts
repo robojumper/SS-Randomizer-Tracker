@@ -3,8 +3,10 @@
 
 import { Logic } from '../../logic/Logic';
 
+/** The part of Logic that we can send across to a web worker, only the parts we need for tooltips. */
 export type LeanLogic = Pick<Logic, 'allItems' | 'dominators' | 'itemBits'>;
 
+/** A message from our tooltips cache to its worker. */
 export type WorkerRequest =
     | {
           type: 'initialize';
@@ -24,6 +26,7 @@ export type SerializedBooleanExpression = {
     items: SerializedItem[];
 };
 
+/** A message from the worker. */
 export type WorkerResponse = {
     checkId: string;
     expression: SerializedBooleanExpression;

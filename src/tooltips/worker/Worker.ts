@@ -29,7 +29,7 @@ let g: GlobalState;
 console.log('Hello from worker!');
 
 onmessage = (ev: MessageEvent<WorkerRequest>) => {
-    console.log('message');
+    const start = performance.now();
     switch (ev.data.type) {
         case 'initialize': {
             const opaqueBits = new BitVector();
@@ -53,6 +53,7 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
                     removeDuplicates(g.requirements);
                 }
             } while (unifyRequirements(g.opaqueBits, g.requirements));
+            console.log('worker', 'initializing and pre-simplifying took', performance.now() - start, 'ms');
             break;
         }
         case 'analyze': {
@@ -60,13 +61,13 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
                 throw new Error('needs to be initialized first!!!!');
             }
             const expr = analyze(ev.data.checkId);
+            console.log('worker', 'total time for', ev.data.checkId, 'was', performance.now() - start, 'ms');
             postMessage({
                 checkId: ev.data.checkId,
                 expression: serializeBooleanExpression(expr),
             } satisfies WorkerResponse);
         }
     }
-    console.log('ok');
 };
 
 function analyze(checkId: string): BooleanExpression {
@@ -94,13 +95,15 @@ function analyze(checkId: string): BooleanExpression {
                 ) {
                     // And then precompute some non-opaque requirements. This persists between tooltips, so
                     // different checks can reuse these results.
-                    // Note that even though the result of `anyPath` is obviously path-dependent and depends on the check in question,
+                    // Note that even though the result of `findNewSubgoals` is obviously path-dependent and depends on the check in question,
                     // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
+                    const start = performance.now();
                     g.requirements[precomputeBit] = computeGroundExpression(
                         g.opaqueBits,
                         g.requirements,
                         precomputeBit,
                     );
+                    console.log('  ', 'worker', 'precomputing', g.logic.allItems[precomputeBit], 'took', performance.now() - start, 'ms');
                     g.learned.add(precomputeBit);
                     numLearnedInPrecomputation += 1;
                 }
@@ -111,14 +114,19 @@ function analyze(checkId: string): BooleanExpression {
         }
     }
 
+    const start = performance.now();
     const opaqueOnlyExpr = computeGroundExpression(
         g.opaqueBits,
         g.requirements,
         bit,
     );
+    console.log('  ', 'worker', 'computing', g.logic.allItems[bit], 'took', performance.now() - start, 'ms');
     g.requirements[bit] = opaqueOnlyExpr;
 
-    return dnfToRequirementExpr(g.logic, opaqueOnlyExpr.conjunctions);
+    const simplifyStart = performance.now();
+    const simplified = dnfToRequirementExpr(g.logic, opaqueOnlyExpr.conjunctions);
+    console.log('  ', 'worker', 'simplifying took', performance.now() - simplifyStart, 'ms');
+    return simplified;
 }
 
 function simplifier(logic: LeanLogic) {
@@ -141,7 +149,7 @@ function simplifier(logic: LeanLogic) {
  * Algebraic expressions don't know about special boolean rules (like a && !a = 0, a || !a = 1)
  * but since we don't have any don't cares and negations they will never be relevant.
  */
-function dnfToRequirementExpr(
+export function dnfToRequirementExpr(
     logic: LeanLogic,
     sop: BitVector[],
 ): BooleanExpression {
@@ -171,6 +179,20 @@ function dnfToRequirementExpr(
 
     const conjunctions = new LogicalExpression(sop).removeDuplicates()
         .conjunctions;
+
+    // After removing duplicates, remove dominated stuff from our terms so that
+    // simplification doesn't get funny ideas like pulling out irrelevant terms
+    // that we later can't easily simplify in a multi level form.
+    for (const conj of conjunctions) {
+        for (const bit of [...conj.iter()]) {
+            for (const dominator of logic.dominators[logic.allItems[bit]] ?? []) {
+                const dominatorBit = logic.itemBits[dominator];
+                if (dominatorBit !== bit && conj.test(dominatorBit)) {
+                    conj.clearBit(bit);
+                }
+            }
+        }
+    }
 
     // First, remove all common factors and from our SOP so that it's "cube-free".
     // This is a requirement for the algorithm to work, as per the presentation.
@@ -311,7 +333,11 @@ function genRectangles(
     matrix: (0 | 1)[][],
     callback: (rows: number[], cols: number[]) => boolean,
 ) {
-    // Trivial rectangles
+    // Trivial rectangles are rectangles of height 1 or width 1.
+    // A trivial row rectangle is *prime* if no other row
+    // has ones everywhere we have ones. Expressed differently:
+    // We're prime if there is no such other row that for every column,
+    // "our row has a 1" implies "other row has a 1" (and by A=>B <=> Bv!A)
     for (const row of allRows) {
         const ones = allCols.filter((col) => matrix[row][col]);
         if (
@@ -405,7 +431,7 @@ function genRectanglesRecursive(
     }
 }
 
-export function findKernels(
+function findKernels(
     cubes: BitVector[],
     variables: number[],
     coKernelPath: BitVector,
@@ -450,7 +476,7 @@ export function findKernels(
     return kernels;
 }
 
-export function algebraicDivision(
+function algebraicDivision(
     expr: BitVector[],
     divisor: BitVector[],
 ): { quotient: BitVector[]; remainder: BitVector[] } {
