@@ -320,9 +320,7 @@ function mapSettings(
         }
         return acc;
     }, new BitVector());
-    const dungeonsExpr = requiredDungeons.length
-        ? new LogicalExpression([allRequiredDungeonsBits])
-        : b.false();
+    const dungeonsExpr = new LogicalExpression([allRequiredDungeonsBits]);
 
     if (settings['got-dungeon-requirement'] === 'Required') {
         openGotExpr = openGotExpr.and(dungeonsExpr);

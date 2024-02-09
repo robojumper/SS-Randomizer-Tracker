@@ -1,4 +1,3 @@
-import { BitVector } from '../logic/bitlogic/BitVector';
 import { Logic } from '../logic/Logic';
 import { getTooltipOpaqueBits } from '../logic/Inventory';
 import BooleanExpression from '../logic/booleanlogic/BooleanExpression';
@@ -8,11 +7,7 @@ import {
 import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { WorkerRequest, WorkerResponse } from './worker/Types';
 import { deserializeBooleanExpression, serializeLogicalExpression } from './worker/Utils';
-
-/**
- * This module contains various strategies to turn the requirements into a more compact and readable
- * form, with the goal of creating readable and understandable requirements for tooltips.
- */
+import _ from 'lodash';
 
 /**
  * The TooltipComputer acts as:
@@ -21,17 +16,12 @@ import { deserializeBooleanExpression, serializeLogicalExpression } from './work
  * * A subscribeable store for tooltip components to request tooltip computations.
  */
 export class TooltipComputer {
-    logic: Logic;
     subscriptions: Record<string, { checkId: string; callback: () => void }>;
     results: Record<string, BooleanExpression>;
 
-    opaqueBits: BitVector;
-    requirements: BitLogic;
-    learned: Set<number>;
-
     isWorking: boolean;
     cleanup: () => void;
-    worker: Worker;
+    worker: Worker | undefined;
 
     constructor(
         logic: Logic,
@@ -40,19 +30,15 @@ export class TooltipComputer {
         expertMode: boolean,
         requirements: BitLogic,
     ) {
-        this.logic = logic;
         this.subscriptions = {};
-        this.learned = new Set();
         this.results = {};
         this.isWorking = false;
-        this.opaqueBits = getTooltipOpaqueBits(
+        const opaqueBits = getTooltipOpaqueBits(
             logic,
             options,
             settings,
             expertMode,
         );
-
-        this.requirements = requirements;
 
         const { worker, cleanup } = createWorker();
         this.worker = worker;
@@ -60,9 +46,9 @@ export class TooltipComputer {
 
         worker.postMessage({
             type: 'initialize',
-            opaqueBits: [...this.opaqueBits.iter()],
+            opaqueBits: [...opaqueBits.iter()],
             requirements: requirements.map(serializeLogicalExpression),
-            logic: logic
+            logic: _.pick(logic, 'allItems', 'itemBits', 'dominators')
         } satisfies WorkerRequest);
         worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
             this.acceptTaskResult(ev.data.checkId, deserializeBooleanExpression(ev.data.expression));
@@ -97,13 +83,10 @@ export class TooltipComputer {
 
     destroy() {
         this.cleanup();
+        this.worker = undefined;
     }
 
     getNextTask() {
-        if (!this.requirements) {
-            return undefined;
-        }
-
         const checkId = Object.values(this.subscriptions).find(
             (check) => !this.results[check.checkId],
         )?.checkId;
@@ -122,7 +105,7 @@ export class TooltipComputer {
     }
 
     checkForTask() {
-        if (this.isWorking) {
+        if (this.isWorking || !this.worker) {
             return;
         }
         const task = this.getNextTask();

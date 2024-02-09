@@ -17,6 +17,14 @@ import BooleanExpression, {
     Item,
 } from '../../logic/booleanlogic/BooleanExpression';
 
+/**
+ * This module contains various strategies to turn the requirements into a more compact and readable
+ * form, with the goal of creating readable and understandable requirements for tooltips.
+ */
+
+/**
+ * Global application state. Will be initialized with the first message.
+ */
 interface GlobalState {
     logic: LeanLogic;
     opaqueBits: BitVector;
