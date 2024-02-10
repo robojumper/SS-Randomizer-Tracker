@@ -27,7 +27,6 @@ import {
     Col,
     Container,
     FormCheck,
-    FormControl,
     FormLabel,
     Row,
     Tab,
@@ -559,18 +558,19 @@ function Setting({
                         <OptionLabel option={def} />
                     </Col>
                     <Col xs={6}>
-                        <FormControl
-                            as="select"
-                            id={def.name}
-                            onChange={(e) =>
-                                setValue(parseInt(e.target.value, 10))
-                            }
-                            value={(value as number).toString()}
-                        >
-                            {range(def.min, def.max + 1).map((val) => (
-                                <option key={val}>{val}</option>
+                        <Select
+                            styles={selectStyles<
+                                false,
+                                { label: string; value: number }
+                            >()}
+                            isSearchable={false}
+                            value={{ value: value as number, label: (value as number).toString() }}
+                            onChange={(e) => e && setValue(e.value)}
+                            options={range(def.min, def.max + 1).map((val) => (
+                                { value: val, label: val.toString() }
                             ))}
-                        </FormControl>
+                            name={def.name}
+                        />
                     </Col>
                 </>
             );
@@ -581,16 +581,19 @@ function Setting({
                         <OptionLabel option={def} />
                     </Col>
                     <Col xs={6}>
-                        <FormControl
-                            as="select"
-                            id={def.name}
-                            onChange={(e) => setValue(e.target.value)}
-                            value={value as string}
-                        >
-                            {def.choices.map((val, idx) => (
-                                <option key={`val-${idx}`}>{val}</option>
+                        <Select
+                            styles={selectStyles<
+                                false,
+                                { label: string; value: string }
+                            >()}
+                            isSearchable={false}
+                            value={{ value: value as string, label: value as string }}
+                            onChange={(e) => e && setValue(e.value)}
+                            options={def.choices.map((val) => (
+                                { value: val, label: val }
                             ))}
-                        </FormControl>
+                            name={def.name}
+                        />
                     </Col>
                 </>
             );

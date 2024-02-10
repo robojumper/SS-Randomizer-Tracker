@@ -1,15 +1,26 @@
-import { Modal, Button, Container, Row, Col, FormControl, FormCheck } from 'react-bootstrap';
+import { Modal, Button, Container, Row, Col, FormCheck } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
 import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
 import { ItemLayout, LocationLayout, setColorScheme, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
 import { useDispatch, useSelector } from 'react-redux';
 import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector } from './selectors';
 import { useCallback } from 'react';
+import { selectStyles } from './ComponentStyles';
+import Select from 'react-select';
 
 const defaultColorSchemes = {
     Light: lightColorScheme,
     Dark: darkColorScheme,
 };
+
+const locationLayouts = [
+    {value: 'list', label: 'List Layout'},
+    {value: 'map', label: 'Map Layout'}
+];
+const itemLayouts = [
+    {value: 'inventory', label: 'In-Game Inventory'},
+    {value: 'grid', label: 'Grid Layout'}
+];
 
 export default function CustomizationModal({
     onHide,
@@ -67,19 +78,33 @@ export default function CustomizationModal({
                         <h4>Item Tracker Settings</h4>
                     </Row>
                     <Row>
-                        <FormControl as="select" value={layout} onChange={(e) => dispatch(setItemLayout(e.target.value as ItemLayout))}>
-                            <option value="inventory">In-Game Inventory</option>
-                            <option value="grid">Grid Layout</option>
-                        </FormControl>
+                        <Select
+                            styles={selectStyles<
+                                false,
+                                { label: string; value: string }
+                            >()}
+                            isSearchable={false}
+                            value={itemLayouts.find((l) => l.value === layout)}
+                            onChange={(e) => e && dispatch(setItemLayout(e.value as ItemLayout))}
+                            options={itemLayouts}
+                            name="Item Layout"
+                        />
                     </Row>
                     <Row>
                         <h4>Location Tracker Settings</h4>
                     </Row>
                     <Row>
-                        <FormControl as="select" value={locationLayout} onChange={(e) => dispatch(setLocationLayout(e.target.value as LocationLayout))}>
-                            <option value="list">List Layout</option>
-                            <option value="map">Map Layout</option>
-                        </FormControl>
+                        <Select
+                            styles={selectStyles<
+                                false,
+                                { label: string; value: string }
+                            >()}
+                            isSearchable={false}
+                            value={locationLayouts.find((l) => l.value === locationLayout)}
+                            onChange={(e) => e && dispatch(setLocationLayout(e.value as LocationLayout))}
+                            options={locationLayouts}
+                            name="Location Layout"
+                        />
                     </Row>
                     <Row>
                         <h4>Show Trick Logic</h4>
