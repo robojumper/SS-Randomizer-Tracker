@@ -144,7 +144,7 @@ export function keyData(
                     logic.staticRequirements,
                     settingsRequirements,
                     checkRequirements,
-                    mapInventory(logic, fullInventoryNoKeys),
+                    mapInventory(logic, inventory),
                 ), logicState);
             }
         }
