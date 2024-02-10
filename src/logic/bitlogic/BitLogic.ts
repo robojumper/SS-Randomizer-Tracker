@@ -1,6 +1,10 @@
 import { LogicalExpression } from './LogicalExpression';
 import { BitVector } from './BitVector';
 
+/**
+ * Requirements are a partial logic that makes statements about the present bits
+ * and no statements about absent bits.
+ */
 export type Requirements = Record<number, LogicalExpression>;
 /**
  * A BitLogic models a least fixed-point logic (LFP).
@@ -12,9 +16,7 @@ export type BitLogic = LogicalExpression[];
 export function mergeRequirements(numBits: number, ...reqs: Requirements[]): BitLogic {
     const requirements: LogicalExpression[] = [];
     const mergedRequirements: Requirements = {};
-    for (const req of reqs) {
-        Object.assign(mergedRequirements, req);
-    }
+    Object.assign(mergedRequirements, ...reqs);
     for (let i = 0; i < numBits; i++) {
         requirements.push(mergedRequirements[i] ?? LogicalExpression.false());
     }
@@ -38,7 +40,7 @@ export function computeLeastFixedPoint(
 ) {
     // This is an extremely simple iterate-to-fixpoint solver in O(n^2).
     // There are better algorithms but this usually converges after
-    // 40 rounds.
+    // about 15 rounds.
     const bits = startingBits?.clone() ?? new BitVector();
     let changed = true;
     let iterations = 0;
@@ -335,7 +337,7 @@ export function shallowSimplify(
         }
         let newExpr = LogicalExpression.false();
         for (const conj of expr.conjunctions) {
-            if (!conj.and(inliningCandidates).isEmpty()) {
+            if (conj.intersects(inliningCandidates)) {
                 simplified = true;
                 let newItems = new BitVector();
                 let skip = false;

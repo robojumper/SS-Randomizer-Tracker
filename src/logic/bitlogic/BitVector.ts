@@ -97,6 +97,11 @@ export class BitVector {
         return this.numSetBits === 0;
     }
 
+    /** Returns true iff there is a bit that's set in both `this` and `other`. */
+    intersects(other: BitVector) {
+        return Boolean(this.data & other.data);
+    }
+
     /** Iterates over all set bits in this BitVector. */
     iter(): IterableIterator<number> {
         return this.intSet.values()

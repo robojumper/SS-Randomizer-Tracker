@@ -7,9 +7,7 @@ import {
     parseExpression,
 } from '../logic/booleanlogic/ExpressionParse';
 import { LeanLogic } from './worker/Types';
-import {
-    dnfToRequirementExpr,
-} from './worker/Worker';
+import { dnfToRequirementExpr } from './worker/Worker';
 
 function stringifyExpression(expr: Item): string {
     if (BooleanExpression.isExpression(expr)) {
@@ -49,6 +47,7 @@ function simplify(source: string): string {
     return stringifyExpression(simplified);
 }
 
+// Nice
 test('simplify1', () => {
     expect(
         simplify(
@@ -56,5 +55,36 @@ test('simplify1', () => {
         ),
     ).toMatchInlineSnapshot(
         `"((Mitts | Bomb) & (Bow | Clawshots | Slingshot | Beetle))"`,
+    );
+});
+
+// Slightly less nice: These are equivalent
+// * ((Mitts & (Bow | Clawshots | Slingshot | Beetle)) | (Bomb & (Bow | Slingshot)))
+// * (Bow | Clawshots | Slingshot | Beetle) & (Mitts | (Bomb & (Bow | Slingshot)))
+// * (((Bow | Slingshot) & (Mitts | Bomb)) | (Mitts & (Clawshots | Beetle)))
+// But the second one is the most readable because our tooltips turn a top-level AND into multiple
+// bullet points.
+// The co-kernel-cube matrix looks something like this:
+// |           | Mitts | Bow | Clawshots | Slingshot | Beetle | Bomb |
+// |-----------|-------|-----|-----------|-----------|--------|------|
+// | Bow       | 1     | 1   |           |           |        |      |
+// | Mitts     |       |     | 1         | 1         | 1      | 1    |
+// | Slingshot | 1     | 1   |           |           |        |      |
+// | Bomb      |       |     | 1         |           | 1      |      |
+//
+// The prime rectangles here are:
+// [Bow, Slingshot] x [Mitts, Bow]
+// [Mitts, Bomb] x [Clawshots, Beetle]
+// [Mitts] x [Clawshots, Slingshot, Beetle, Bomb]
+// Clawshots and Beetle don't have rows because they don't correspond to a co-kernel since
+// there's only one term that mentions them. So pulling `(Bow | Clawshots | Slingshot | Beetle)`
+// out first is not something our algorithm knows how to do.
+test('simplify2', () => {
+    expect(
+        simplify(
+            '(Mitts & Bow) | (Mitts & Clawshots) | (Mitts & Slingshot) | (Mitts & Beetle) | (Bomb & Bow) | (Bomb & Slingshot)',
+        ),
+    ).toMatchInlineSnapshot(
+        `"((Mitts & (Bow | Clawshots | Slingshot | Beetle)) | (Bomb & (Bow | Slingshot)))"`,
     );
 });
