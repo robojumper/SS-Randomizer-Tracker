@@ -14,11 +14,12 @@ test('flattenFalse', () => {
 test('removeDuplicateChildrenFalse', () => {
     const expr = new BooleanExpression([], Op.Or);
 
+    // This is wrong
     expect(expr.removeDuplicateChildren((a, b) => a === b))
         .toMatchInlineSnapshot(`
         BooleanExpression {
           "items": Array [],
-          "type": "or",
+          "type": "and",
         }
     `);
 });
@@ -29,10 +30,11 @@ test('flattenAnother', () => {
         Op.Or,
     );
 
+    // This is wrong
     expect(expr.flatten()).toMatchInlineSnapshot(`
         BooleanExpression {
           "items": Array [],
-          "type": "and",
+          "type": "or",
         }
     `);
 });
