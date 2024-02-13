@@ -21,11 +21,11 @@ export class LogicBuilder {
     itemList: string[];
     itemLookup: Record<string, number>;
 
-    requirements: Requirements | LogicalExpression[];
+    requirements: Requirements;
 
     constructor(
         allItems: string[],
-        requirements: Requirements | LogicalExpression[],
+        requirements: Requirements,
     ) {
         this.itemList = allItems;
         this.itemLookup = Object.fromEntries(
@@ -55,8 +55,7 @@ export class LogicBuilder {
     set(target: string, rhs: LogicalExpression) {
         const bit = this.bit(target);
         if (bit !== undefined) {
-            if (this.requirements[bit] && !this.requirements[bit].isTriviallyFalse()) {
-                // TODO: Should the logic builder keep a set of written exprs instead of the isTriviallyFalse check?
+            if (this.requirements[bit]) {
                 console.warn('overwriting item', target);
             }
             this.requirements[bit] = rhs;

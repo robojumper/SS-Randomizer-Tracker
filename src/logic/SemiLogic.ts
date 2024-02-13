@@ -107,6 +107,7 @@ function semiLogicStep(
     );
 
     state.semiLogicBits = computeLeastFixedPoint(
+        'Semilogic step',
         mergeRequirements(
             logic.numRequirements,
             logic.staticRequirements,

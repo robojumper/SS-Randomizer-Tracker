@@ -25,7 +25,7 @@ import { Col, Row } from 'react-bootstrap';
 import AreaCounters from '../locationTracker/AreaCounters';
 import HintMarker from '../hints/HintMarker';
 import { useSelector } from 'react-redux';
-import { areasSelector } from '../tracker/selectors';
+import { areasSelector, settingSelector } from '../tracker/selectors';
 import {
     HintRegion,
     DungeonName as DungeonNameType,
@@ -154,6 +154,8 @@ export default function DungeonTracker({
         top: '-2%',
     };
 
+    const hideEtKeyPieces = useSelector(settingSelector('open-et'));
+
     return (
         <Col
             // style={{ padding: 0 }}
@@ -165,23 +167,33 @@ export default function DungeonTracker({
                     <tr>
                         {dungeons.map((d) => (
                             <React.Fragment key={d.name}>
-                                <td>
-                                    <Item
-                                        itemName={
-                                            d.name !== 'Earth Temple'
-                                                ? `${d.name} Small Key`
-                                                : 'Key Piece'
-                                        }
-                                        images={
-                                            d.name !== 'Earth Temple'
-                                                ? smallKeyImages
-                                                : undefined
-                                        }
-                                        ignoreItemClass
-                                        imgWidth={colWidth}
-                                    />
-                                </td>
-                                <td>
+                                {(d.name !== 'Earth Temple' ||
+                                    !hideEtKeyPieces) && (
+                                    <td>
+                                        <Item
+                                            itemName={
+                                                d.name !== 'Earth Temple'
+                                                    ? `${d.name} Small Key`
+                                                    : 'Key Piece'
+                                            }
+                                            images={
+                                                d.name !== 'Earth Temple'
+                                                    ? smallKeyImages
+                                                    : undefined
+                                            }
+                                            ignoreItemClass
+                                            imgWidth={colWidth}
+                                        />
+                                    </td>
+                                )}
+                                <td
+                                    colSpan={
+                                        d.name === 'Earth Temple' &&
+                                        hideEtKeyPieces
+                                            ? 2
+                                            : 1
+                                    }
+                                >
                                     <Item
                                         itemName={
                                             d.name !== 'Sky Keep'

@@ -72,6 +72,7 @@ export function keyData(
 
     // This baseline logic state can be re-used in later computations
     const baselineLogicState = computeLeastFixedPoint(
+        'KeyLogic baseline',
         mergeRequirements(
             logic.numRequirements,
             logic.staticRequirements,
@@ -139,13 +140,17 @@ export function keyData(
                     ),
                 });
                 inventory[smallKey] = i;
-                logicState = computeLeastFixedPoint(mergeRequirements(
-                    logic.numRequirements,
-                    logic.staticRequirements,
-                    settingsRequirements,
-                    checkRequirements,
-                    mapInventory(logic, inventory),
-                ), logicState);
+                logicState = computeLeastFixedPoint(
+                    'KeyLogic step',
+                    mergeRequirements(
+                        logic.numRequirements,
+                        logic.staticRequirements,
+                        settingsRequirements,
+                        checkRequirements,
+                        mapInventory(logic, inventory),
+                    ),
+                    logicState,
+                );
             }
         }
 

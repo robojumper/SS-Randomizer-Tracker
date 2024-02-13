@@ -4,9 +4,10 @@ import './index.css';
 import 'tippy.js/dist/tippy.css';
 import App from './App';
 import { Provider } from 'react-redux';
-import { store } from './store/store';
+import { createStore } from './store/store';
 
 const root = createRoot(document.getElementById('root')!);
+const store = createStore();
 root.render(
     <React.StrictMode>
         <Provider store={store}>

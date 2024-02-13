@@ -253,9 +253,28 @@ export function itemName(item: string, amount: number) {
     return amount > 1 ? `${item} x ${amount}` : item;
 }
 
+const excludedItemPrefixes = [
+    'Blue Rupee #',
+    'Dusk Relic #',
+    'Eldin Ore #',
+    'Evil Crystal #',
+    'Gold Rupee #',
+    'Green Rupee #',
+    'Heart Container #',
+    'Heart Piece #',
+    'Rare Treasure #',
+    'Red Rupee #',
+    'Semi Rare Treasure #',
+    'Silver Rupee #',
+    'Hint #',
+]
+
 /**
  * Turns all "<Item> #<number>" requirements into "<Item> x <number+1>"
  * requirements - this works better with the tracker.
+ * 
+ * Also filters out items the tracker doesn't really interact with, such as
+ * hint items, treasures, ... which cuts about 400 bits from our logic.
  */
 function preprocessItems(raw: string[]): {
     newItems: string[];
@@ -264,25 +283,27 @@ function preprocessItems(raw: string[]): {
 } {
     const dominators: Logic['dominators'] = {};
     const reverseDominators: Logic['reverseDominators'] = {};
-    const newItems = raw.map((rawItem) => {
-        const [item, index] = splitItemIndex(rawItem);
-        if (index === undefined) {
-            return rawItem;
-        } else {
-            const amount = index + 1;
+    const newItems = raw
+        .filter((item) => !excludedItemPrefixes.some((p) => item.startsWith(p)))
+        .map((rawItem) => {
+            const [item, index] = splitItemIndex(rawItem);
+            if (index === undefined) {
+                return rawItem;
+            } else {
+                const amount = index + 1;
 
-            for (let i = 0; i <= amount; i++) {
-                (dominators[itemName(item, i)] ??= []).push(
-                    itemName(item, amount),
-                );
-                (reverseDominators[itemName(item, amount)] ??= []).push(
-                    itemName(item, i),
-                );
+                for (let i = 0; i <= amount; i++) {
+                    (dominators[itemName(item, i)] ??= []).push(
+                        itemName(item, amount),
+                    );
+                    (reverseDominators[itemName(item, amount)] ??= []).push(
+                        itemName(item, i),
+                    );
+                }
+
+                return itemName(item, amount);
             }
-
-            return itemName(item, amount);
-        }
-    });
+        });
 
     return { newItems, dominators, reverseDominators };
 }
@@ -903,8 +924,11 @@ function mapAreaToBitLogic(
                 {
                     const locName = location.id;
                     // Hack: We keep these virtual locations opaque...
-                    if (!locName.endsWith("Gratitude Crystals")) {
-                        opaqueItems.clearBit(b.bit(locName));   
+                    if (
+                        !locName.endsWith('Gratitude Crystals') &&
+                        !locName.includes("\\Gondo's Upgrades\\Upgrade to")
+                    ) {
+                        opaqueItems.clearBit(b.bit(locName));
                     }
 
                     if (location.areaAvailability === 'abstract') {

@@ -30,6 +30,8 @@ export function mergeRequirements(numBits: number, ...reqs: Requirements[]): Bit
  * This is a BitVector from which no new facts can be derived.
  */
 export function computeLeastFixedPoint(
+    /** Why is this being computed? For logging */
+    reason: string,
     /** The BitLogic describing the logic program (requirements). */
     logic: BitLogic,
     /**
@@ -67,6 +69,7 @@ export function computeLeastFixedPoint(
         iterations++;
     }
     console.log(
+        reason,
         'fixpoint iteration took',
         performance.now() - start,
         'ms for',

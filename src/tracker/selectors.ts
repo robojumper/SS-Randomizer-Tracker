@@ -52,7 +52,7 @@ import { keyData } from '../logic/KeyLogic';
 import { BitVector } from '../logic/bitlogic/BitVector';
 import { InventoryItem, itemMaxes } from '../logic/Inventory';
 import { getAllowedStartingEntrances, getEntrancePools, getExitRules, getExits, getUsedEntrances } from '../logic/Entrances';
-import { computeSemiLogic } from '../logic/SemiLogic';
+import { computeSemiLogic, getAllTricksEnabledRequirements } from '../logic/SemiLogic';
 import { trickSemiLogicSelector } from '../customization/selectors';
 
 const bitVectorMemoizeOptions = {
@@ -422,6 +422,7 @@ export const inLogicBitsSelector = createSelector(
     ],
     (logic, settingsRequirements, inventoryRequirements, checkRequirements) =>
         computeLeastFixedPoint(
+            'Logical state',
             mergeRequirements(
                 logic.numRequirements,
                 logic.staticRequirements,
@@ -464,6 +465,7 @@ export const optimisticLogicBitsSelector = createSelector(
         inLogicBits,
     ) =>
         computeLeastFixedPoint(
+            'Optimistic state',
             mergeRequirements(
                 logic.numRequirements,
                 logic.staticRequirements,
@@ -614,28 +616,7 @@ const dungeonKeyLogicSelector = createSelector(
 /** A selector for the requirements that assume every trick is enabled. */
 const allTricksRequirementsSelector = createSelector(
     [logicSelector, optionsSelector],
-    (logic, options) => {
-        const requirements: Requirements = {};
-        const b = new LogicBuilder(
-            logic.allItems,
-            requirements,
-        );
-
-        for (const option of options) {
-            if (
-                option.type === 'multichoice' &&
-                (option.command === 'enabled-tricks-glitched' ||
-                    option.command === 'enabled-tricks-bitless')
-            ) {
-                const vals = option.choices;
-                for (const option of vals) {
-                    b.set(`${option} Trick`, b.true());
-                }
-            }
-        }
-
-        return requirements;
-    },
+    getAllTricksEnabledRequirements,
 );
 
 export const inTrickLogicBitsSelector = createSelector(
@@ -656,6 +637,7 @@ export const inTrickLogicBitsSelector = createSelector(
         allTricksRequirements,
     ) =>
         computeLeastFixedPoint(
+            'TrickLogic state',
             mergeRequirements(
                 logic.numRequirements,
                 logic.staticRequirements,
