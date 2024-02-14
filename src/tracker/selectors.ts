@@ -588,7 +588,9 @@ const isCheckBannedSelector = createSelector(
         return (checkId: string, check: LogicalCheck) =>
             // Loose crystal checks can be banned to not require picking them up
             // in logic, but we want to allow marking them as collected.
-            (check.type !== 'loose_crystal' && bannedChecks.has(check.name)) ||
+            (check.type !== 'loose_crystal' &&
+                (bannedChecks.has(check.name) ||
+                    areaNonprogress(logic.checks[checkId].area!))) ||
             isExcessRelic(check) ||
             isBannedChestViaCube(checkId) ||
             isBannedCubeCheckViaChest(checkId, check) ||
