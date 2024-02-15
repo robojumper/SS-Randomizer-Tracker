@@ -1,4 +1,5 @@
 import { RemoteReference, loadRemoteLogic } from './loader/LogicLoader';
+import { LogicalState } from './logic/Locations';
 import { loadLogic } from './logic/slice';
 import { defaultSettings } from './permalink/Settings';
 import { AllTypedOptions, TypedOptions } from './permalink/SettingsTypes';
@@ -67,9 +68,13 @@ describe('full logic tests', () => {
         store.dispatch(acceptSettings({ settings }));
     }
 
+    function checkState(checkId: string): LogicalState {
+        return readSelector(checkSelector(checkId)).logicalState;
+    }
+
     it('has some checks in logic with default settings', () => {
-        const fledgeCheck = readSelector(checkSelector(findCheckId('Upper Skyloft', 'Fledge\'s Gift')));
-        expect(fledgeCheck.logicalState).toBe('inLogic');
+        const fledgesGiftId = findCheckId('Upper Skyloft', 'Fledge\'s Gift');
+        expect(checkState(fledgesGiftId)).toBe('inLogic');
     });
 
     it('supports hint item semilogic', () => {
@@ -77,15 +82,13 @@ describe('full logic tests', () => {
         const zeldaClosetGift = findCheckId('Upper Skyloft', 'Zelda\'s Closet');
 
         // Zelda's Closet is out of logic because it needs clawshots
-        const closetCheck = readSelector(checkSelector(zeldaClosetGift));
-        expect(closetCheck.logicalState).toBe('outLogic');
+        expect(checkState(zeldaClosetGift)).toBe('outLogic');
 
         // But if Fledge's Gift is hinted to be Clawshots...
         store.dispatch(setCheckHint({ checkId: fledgesGiftId, hint: 'Clawshots' }));
 
         // Then Zelda's Closet is semilogic
-        const newClosetCheck = readSelector(checkSelector(zeldaClosetGift));
-        expect(newClosetCheck.logicalState).toBe('semiLogic');
+        expect(checkState(zeldaClosetGift)).toBe('semiLogic');
     });
 
     it('supports goddess chests and semilogic', () => {
@@ -99,27 +102,23 @@ describe('full logic tests', () => {
         const goddessChest = findCheckId('Sky', chestName);
         const cubeCheck = findCheckId('Lanayru Mine', cubeName);
 
-        const chestCheck = readSelector(checkSelector(goddessChest));
-        expect(chestCheck.logicalState).toBe('outLogic');
+        expect(checkState(goddessChest)).toBe('outLogic');
 
         store.dispatch(clickItem({ item: 'Clawshots', take: false }));
         store.dispatch(clickItem({ item: 'Amber Tablet', take: false }));
 
         // Still out of logic since we still needs bombs to access the chest itself,
         // even if we can access the cube
-        const chestCheck2 = readSelector(checkSelector(goddessChest));
-        expect(chestCheck2.logicalState).toBe('outLogic');
+        expect(checkState(goddessChest)).toBe('outLogic');
 
         // With bombs, it's semilogic
         store.dispatch(clickItem({ item: 'Bomb Bag', take: false }));
-        const chestCheck3 = readSelector(checkSelector(goddessChest));
-        expect(chestCheck3.logicalState).toBe('semiLogic');
+        expect(checkState(goddessChest)).toBe('semiLogic');
 
         store.dispatch(clickCheck({ checkId: cubeCheck }));
 
         // And once we collect the cube, the chest is in logic
-        const chestCheck4 = readSelector(checkSelector(goddessChest));
-        expect(chestCheck4.logicalState).toBe('inLogic');
+        expect(checkState(goddessChest)).toBe('inLogic');;
     });
 
     it('bans goddess chest if cube is in EUD Skyview', () => {
@@ -159,5 +158,17 @@ describe('full logic tests', () => {
         expect(skyKeepHidden()).toBe(false);
         updateSettings('triforce-shuffle', 'Vanilla');
         expect(skyKeepHidden()).toBe(false);
+    });
+
+    it('handles countable items', () => {
+        const check = findCheckId('Eldin Volcano', 'Chest behind Bombable Wall near Volcano Ascent');
+        expect(checkState(check)).toBe('outLogic');
+
+        store.dispatch(clickItem({ item: 'Ruby Tablet', take: false }));
+        expect(checkState(check)).toBe('outLogic');
+        store.dispatch(clickItem({ item: 'Progressive Beetle', take: false }));
+        expect(checkState(check)).toBe('outLogic');
+        store.dispatch(clickItem({ item: 'Progressive Beetle', take: false }));
+        expect(checkState(check)).toBe('inLogic');
     });
 });
