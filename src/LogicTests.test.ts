@@ -142,4 +142,22 @@ describe('full logic tests', () => {
         findCheckId('Sky', chestName);
         findCheckId('Skyview', cubeName);
     });
+
+    it('shows or hides Sky Keep depending on settings', () => {
+        const skyKeepHidden = () => readSelector(areasSelector).find((a) => a.name === 'Sky Keep')!.hidden;
+        expect(skyKeepHidden()).toBe(true);
+
+        updateSettings('randomize-entrances', 'All Surface Dungeons + Sky Keep');
+        expect(skyKeepHidden()).toBe(false);
+
+        updateSettings('randomize-entrances', 'All Surface Dungeons');
+        expect(skyKeepHidden()).toBe(true);
+        updateSettings('randomize-entrances', 'Required Dungeons Separately');
+        expect(skyKeepHidden()).toBe(true);
+
+        updateSettings('triforce-shuffle', 'Sky Keep');
+        expect(skyKeepHidden()).toBe(false);
+        updateSettings('triforce-shuffle', 'Vanilla');
+        expect(skyKeepHidden()).toBe(false);
+    });
 });
