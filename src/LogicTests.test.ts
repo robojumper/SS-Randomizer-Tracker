@@ -1,4 +1,4 @@
-import { RemoteReference, loadRemoteLogic } from './loader/LogicLoader';
+import { RemoteReference, getAndPatchLogic } from './loader/LogicLoader';
 import { LogicalState } from './logic/Locations';
 import { loadLogic } from './logic/slice';
 import { defaultSettings } from './permalink/Settings';
@@ -6,6 +6,7 @@ import { AllTypedOptions, TypedOptions } from './permalink/SettingsTypes';
 import { RootState, Store, createStore } from './store/store';
 import { allSettingsSelector, areasSelector, checkSelector } from './tracker/selectors';
 import { acceptSettings, clickCheck, clickDungeonName, clickItem, reset, setCheckHint } from './tracker/slice';
+import fs from 'node:fs';
 
 const main: RemoteReference = {
     type: 'forkBranch',
@@ -20,7 +21,10 @@ describe('full logic tests', () => {
 
     beforeAll(async () => {
         store = createStore();
-        const [logic, options] = await loadRemoteLogic(main);
+
+        const loader = async (fileName: string) =>
+            await fs.promises.readFile(`./testData/${fileName}.yaml`, 'utf-8');
+        const [logic, options] = await getAndPatchLogic(loader);
         defaultSet = defaultSettings(options);
         store.dispatch(loadLogic({ logic, options, remote: main, remoteName: 'ssrando/main' }));
     });

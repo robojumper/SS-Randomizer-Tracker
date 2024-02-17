@@ -115,20 +115,32 @@ const loadFileFromUrl = async (url: string) => {
     }
 };
 
-const loadFile = async <T>(baseUrl: string, file: string) => {
+const loadFile = async (baseUrl: string, file: string) => {
     const fileUrl = baseFileUrl(baseUrl, file);
-    const data = await loadFileFromUrl(fileUrl);
-    return load(data) as T;
+    return await loadFileFromUrl(fileUrl);
 };
 
 export async function loadRemoteLogic(
     remote: RemoteReference,
 ): Promise<[RawLogic, OptionDefs, string]> {
     const [baseUrl, remoteName] = await resolveRemote(remote);
+    const loader = (file: string) => loadFile(baseUrl, file);
+
+    return [
+        ...(await getAndPatchLogic(loader)),
+        remoteName,
+    ];
+}
+
+export async function getAndPatchLogic(loader: (fileName: string) => Promise<string>) {
+    const parse = async <T, >(file: string) => {
+        const text = await loader(file);
+        return load(text) as T;
+    }
 
     const [logic, options] = await Promise.all([
-        loadFile<RawLogic>(baseUrl, 'dump'),
-        loadFile<OptionDefs>(baseUrl, 'options'),
+        parse<RawLogic>('dump'),
+        parse<OptionDefs>('options'),
     ]);
 
     // We need to patch the "excluded locations" option with the actual checks from logic.
@@ -147,6 +159,5 @@ export async function loadRemoteLogic(
     return [
         logic,
         patchedOptions,
-        remoteName,
-    ];
+    ] as const;
 }
