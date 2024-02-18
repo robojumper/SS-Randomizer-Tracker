@@ -119,7 +119,8 @@ const Submap = (props: SubmapProps) => {
     }
 
     const birdSanityOn = useSelector(settingSelector('random-start-statues'));
-    const showBirdStatueSanityHint = birdSanityOn && Boolean(logic.areaGraph.birdStatueSanity[title]);
+    const birdStatueSanityPool = birdSanityOn && logic.areaGraph.birdStatueSanity[title];
+    const needsBirdStatueSanityExit = birdStatueSanityPool && !exits.find((e) => e.exit.id === birdStatueSanityPool.exit && e.entrance);
 
     const markerStyle: CSSProperties = {
         position: 'absolute',
@@ -140,7 +141,7 @@ const Submap = (props: SubmapProps) => {
         <center>
             <div> {title} ({accessibleChecks}/{remainingChecks}) </div>
             <div> Click to Expand </div>
-            {showBirdStatueSanityHint && <div>Right-click to choose Statue</div>}
+            {needsBirdStatueSanityExit && <div>Right-click to choose Statue</div>}
             {subregionHints.map(({hint, area}) => <HintDescription key={area} hint={hint} area={area} />)}
         </center>
     )
@@ -186,7 +187,7 @@ const Submap = (props: SubmapProps) => {
                 onContextMenu={displayMenu}
             >
                 <span style={markerStyle} id="marker">
-                    {(accessibleChecks > 0) && accessibleChecks}
+                    {(accessibleChecks > 0) ? accessibleChecks : needsBirdStatueSanityExit ? '?' : ''}
                 </span>
             </div>
         </Tippy>
