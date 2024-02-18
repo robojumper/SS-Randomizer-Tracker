@@ -14,6 +14,7 @@ import { MapExitContextMenuProps } from './mapTracker/EntranceMarker';
 import { useDispatch, useSelector } from 'react-redux';
 import {
     areasSelector,
+    checkSelector,
     settingSelector,
     usedEntrancesSelector,
 } from '../tracker/selectors';
@@ -35,11 +36,18 @@ interface BossData {
     boss: number;
 }
 
-function checkOrUncheckAll(area: string, markChecked: boolean): ThunkResult {
+function checkOrUncheckAll(area: string, markChecked: boolean, onlyInLogic = false): ThunkResult {
     return (dispatch, getState) => {
-        const checks = areasSelector(getState()).find(
+        let checks = areasSelector(getState()).find(
             (a) => a.name === area,
         )?.checks;
+
+        if (onlyInLogic) {
+            checks = checks?.filter(
+                (c) => checkSelector(c)(getState()).logicalState === 'inLogic',
+            );
+        }
+
         if (checks?.length) {
             dispatch(bulkEditChecks({ checks, markChecked }));
         }
@@ -53,6 +61,14 @@ function useGroupContextMenuHandlers() {
         (params: AreaCtxProps | ExitCtxProps) => {
             params.props!.area &&
                 dispatch(checkOrUncheckAll(params.props!.area, true));
+        },
+        [dispatch],
+    );
+
+    const checkAllInLogic = useCallback(
+        (params: AreaCtxProps | ExitCtxProps) => {
+            params.props!.area &&
+                dispatch(checkOrUncheckAll(params.props!.area, true, /* onlyInLogic */ true));
         },
         [dispatch],
     );
@@ -115,6 +131,7 @@ function useGroupContextMenuHandlers() {
 
     return {
         checkAll,
+        checkAllInLogic,
         uncheckAll,
         handlePathClick,
         handleSotsClick,
@@ -137,6 +154,7 @@ function LocationGroupContextMenu() {
 
     const {
         checkAll,
+        checkAllInLogic,
         uncheckAll,
         handleBarrenClick,
         handleClearClick,
@@ -148,6 +166,7 @@ function LocationGroupContextMenu() {
         <>
             <Menu id="group-context">
                 <Item onClick={checkAll}>Check All</Item>
+                <Item onClick={checkAllInLogic}>Check All In Logic</Item>
                 <Item onClick={uncheckAll}>Uncheck All</Item>
                 <Separator />
                 <Submenu label="Set Path">
@@ -237,6 +256,7 @@ function BoundEntranceMenu({
 
     const {
         checkAll,
+        checkAllInLogic,
         uncheckAll,
         handleBarrenClick,
         handleClearClick,
@@ -258,6 +278,7 @@ function BoundEntranceMenu({
     return (
         <Menu id={id}>
             <Item onClick={checkAll}>Check All</Item>
+            <Item onClick={checkAllInLogic}>Check All In Logic</Item>
             <Item onClick={uncheckAll}>Uncheck All</Item>
             <Separator />
             <Submenu label="Set Path">
