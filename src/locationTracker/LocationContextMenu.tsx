@@ -77,7 +77,7 @@ export default function LocationContextMenu() {
     );
 }
 
-function HintItem({ itemName }: { itemName: string }) {
+export function HintItem({ itemName }: { itemName: string }) {
     const image = _.last(images[itemName]);
     return (<span style={{ display: 'flex', flexFlow: 'row nowrap' }}>
         <div style={{ width: '36px', height: '36px', paddingRight: '6px' }}>

@@ -178,7 +178,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
                     </div>
                     <div style={{ margin: '1%' }}>
                         <span>
-                            {hint && <img src={hint.image} alt={hint.description} />}
+                            {hint && <img style={{ height: '40px' }} src={hint.image} alt={hint.description} />}
                         </span>
                     </div>
                     <div style={{margin: '2%'}}>

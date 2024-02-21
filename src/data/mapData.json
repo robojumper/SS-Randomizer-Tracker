@@ -39,14 +39,12 @@
         ],
         "entranceMarkers": [
             {
-                "region": "Dungeon Entrance on Skyloft",
                 "exitPool": "dungeons",
                 "entryName": "Sky Keep",
                 "markerX": 50,
                 "markerY": 24
             },
             {
-                "region": "Trial Gate on Skyloft",
                 "exitPool": "silent_realms",
                 "entryName": "Skyloft Silent Realm",
                 "markerX": 45,
@@ -89,21 +87,18 @@
         ],
         "entranceMarkers": [
             {
-                "region": "Dungeon Entrance in Deep Woods",
                 "exitPool": "dungeons",
                 "entryName": "Skyview",
                 "markerX": 58.5,
                 "markerY": 14
             },
             {
-                "region": "Dungeon Entrance in Lake Floria",
                 "exitPool": "dungeons",
                 "entryName": "Ancient Cistern",
                 "markerX": 45,
                 "markerY": 72
             },
             {
-                "region": "Trial Gate in Faron Woods",
                 "exitPool": "silent_realms",
                 "entryName": "Faron Silent Realm",
                 "markerX": 58,
@@ -146,21 +141,18 @@
         ],
         "entranceMarkers": [
             {
-                "region": "Dungeon Entrance in Eldin Volcano",
                 "exitPool": "dungeons",
                 "entryName": "Earth Temple",
                 "markerX": 41.5,
                 "markerY": 57
             },
             {
-                "region": "Dungeon Entrance in Volcano Summit",
                 "exitPool": "dungeons",
                 "entryName": "Fire Sanctuary",
                 "markerX": 72,
                 "markerY": 30
             },
             {
-                "region": "Trial Gate in Eldin Volcano",
                 "exitPool": "silent_realms",
                 "entryName": "Eldin Silent Realm",
                 "markerX": 36,
@@ -208,21 +200,18 @@
         ],
         "entranceMarkers": [
             {
-                "region": "Dungeon Entrance in Lanayru Desert",
                 "exitPool": "dungeons",
                 "entryName": "Lanayru Mining Facility",
                 "markerX": 64,
                 "markerY": 26
             },
             {
-                "region": "Dungeon Entrance in Lanayru Sand Sea",
                 "exitPool": "dungeons",
                 "entryName": "Sandship",
                 "markerX": 27,
                 "markerY": 45
             },
             {
-                "region": "Trial Gate in Lanayru Desert",
                 "exitPool": "silent_realms",
                 "entryName": "Lanayru Silent Realm",
                 "markerX": 64,

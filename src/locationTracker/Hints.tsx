@@ -8,11 +8,14 @@ import koloktos from '../assets/hints/koloktos.png';
 import tentalus from '../assets/hints/tentalus.png';
 import g2 from '../assets/hints/g2.png';
 import ColorScheme from '../customization/ColorScheme';
+import images from '../itemTracker/Images';
+import placeholderImg from '../assets/slot test.png';
 
 export type Hint =
     | { type: 'barren' }
     | { type: 'sots' }
-    | { type: 'path'; index: number };
+    | { type: 'path'; index: number }
+    | { type: 'item'; item: string };
 
 export const pathImages = [
     g1,
@@ -48,6 +51,12 @@ export function decodeHint(hint: Hint): DecodedHint {
             return {
                 description: `Path to ${bosses[hint.index]}`,
                 image: pathImages[hint.index],
+                style: 'inLogic',
+            };
+        case 'item':
+            return {
+                description: hint.item,
+                image: images[hint.item]?.[images[hint.item].length - 1] || placeholderImg,
                 style: 'inLogic',
             };
     }

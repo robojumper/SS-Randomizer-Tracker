@@ -23,9 +23,15 @@ import { areaGraphSelector } from '../logic/selectors';
 import { bosses } from './Hints';
 import { ThunkResult, useAppDispatch } from '../store/store';
 import { BirdStatueContextMenuProps } from './mapTracker/Submap';
+import hintItems from '../data/hintItems.json';
+import { HintItem } from './LocationContextMenu';
 
 type AreaCtxProps<T = void> = ItemParams<LocationGroupContextMenuProps, T>;
 type ExitCtxProps<T = void> = ItemParams<MapExitContextMenuProps, T>;
+
+interface ItemData {
+    item: string;
+}
 
 type BirdStatueCtxProps<T = void> = ItemParams<BirdStatueContextMenuProps, T>;
 interface EntranceData {
@@ -93,6 +99,16 @@ function useGroupContextMenuHandlers() {
         [dispatch],
     );
 
+    const handleSetItemClick = useCallback(
+        (params: AreaCtxProps<ItemData> | ExitCtxProps<ItemData>) =>
+            params.props!.area && 
+            dispatch(setHint({
+                areaId: params.props!.area,
+                hint: { type: 'item', item: params.data!.item }
+            })),
+        [dispatch],
+    );
+
     const handleSotsClick = useCallback(
         (params: AreaCtxProps | ExitCtxProps) =>
             params.props!.area &&
@@ -133,6 +149,7 @@ function useGroupContextMenuHandlers() {
         checkAll,
         checkAllInLogic,
         uncheckAll,
+        handleSetItemClick,
         handlePathClick,
         handleSotsClick,
         handleBarrenClick,
@@ -156,6 +173,7 @@ function LocationGroupContextMenu() {
         checkAll,
         checkAllInLogic,
         uncheckAll,
+        handleSetItemClick,
         handleBarrenClick,
         handleClearClick,
         handlePathClick,
@@ -182,6 +200,21 @@ function LocationGroupContextMenu() {
                 </Submenu>
                 <Item onClick={handleSotsClick}>Set SotS</Item>
                 <Item onClick={handleBarrenClick}>Set Barren</Item>
+                <Submenu label="Set Item">
+                    {_.map(hintItems, (items, category) => (
+                        <Submenu key={category} label={category}>
+                            {_.map(items, (listItem) => (
+                                <Item
+                                    key={listItem}
+                                    onClick={handleSetItemClick}
+                                    data={{ item: listItem } satisfies ItemData}
+                                >
+                                    <HintItem itemName={listItem} />
+                                </Item>
+                            ))}
+                        </Submenu>
+                    ))}
+                </Submenu>
                 <Item onClick={handleClearClick}>Clear Hint</Item>
             </Menu>
             <BoundEntranceMenu
@@ -258,6 +291,7 @@ function BoundEntranceMenu({
         checkAll,
         checkAllInLogic,
         uncheckAll,
+        handleSetItemClick,
         handleBarrenClick,
         handleClearClick,
         handlePathClick,
@@ -294,6 +328,21 @@ function BoundEntranceMenu({
             </Submenu>
             <Item onClick={handleSotsClick}>Set SotS</Item>
             <Item onClick={handleBarrenClick}>Set Barren</Item>
+            <Submenu label="Set Item">
+                {_.map(hintItems, (items, category) => (
+                    <Submenu key={category} label={category}>
+                        {_.map(items, (listItem) => (
+                            <Item
+                                key={listItem}
+                                onClick={handleSetItemClick}
+                                data={{ item: listItem } satisfies ItemData}
+                            >
+                                <HintItem itemName={listItem} />
+                            </Item>
+                        ))}
+                    </Submenu>
+                ))}
+            </Submenu>
             <Item onClick={handleClearClick}>Clear Hint</Item>
             {createBindSubmenu(
                 areaGraph,

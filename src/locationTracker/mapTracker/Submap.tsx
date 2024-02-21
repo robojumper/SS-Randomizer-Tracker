@@ -58,12 +58,12 @@ type SubmapProps = {
     expandedGroup: string | undefined;
 };
 
-const images = new Map<string, string>([
-    ['leaveSkyloft', leaveSkyloft],
-    ['leaveFaron', leaveFaron],
-    ['leaveEldin', leaveEldin],
-    ['leaveLanayru', leaveLanayru],
-]);
+const images: Record<string, string> = {
+    leaveSkyloft,
+    leaveFaron,
+    leaveEldin,
+    leaveLanayru,
+};
 
 function getExit(logic: Logic, marker: EntranceMarkerParams) {
     const exitId = logic.areaGraph.linkedEntrancePools[marker.exitPool][marker.entryName].exits[0];
@@ -230,7 +230,7 @@ const Submap = (props: SubmapProps) => {
                 role="button"
                 tabIndex={0}
             >
-                <img alt="Back to Sky" src={images.get(exitParams.image)} width={exitParams.width * mapWidth / 100} style={{position: 'absolute', left: `${exitParams.left}%`, top: `${exitParams.top}%`}}/>
+                <img alt="Back to Sky" src={images[exitParams.image]} width={exitParams.width * mapWidth / 100} style={{position: 'absolute', left: `${exitParams.left}%`, top: `${exitParams.top}%`}}/>
             </div>
         </div>
     );
