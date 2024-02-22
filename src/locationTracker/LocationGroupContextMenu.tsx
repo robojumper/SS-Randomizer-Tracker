@@ -157,6 +157,59 @@ function useGroupContextMenuHandlers() {
     };
 }
 
+/**
+ * React-contexify breaks down if items are in fragments, so
+ * this is not a component!
+ */
+function useAreaContextMenuItems() {
+    const {
+        checkAll,
+        checkAllInLogic,
+        uncheckAll,
+        handleSetItemClick,
+        handleBarrenClick,
+        handleClearClick,
+        handlePathClick,
+        handleSotsClick,
+    } = useGroupContextMenuHandlers();
+
+    return [
+        <Item key="checkAll" onClick={checkAll}>Check All</Item>,
+        <Item key="checkAllLogic" onClick={checkAllInLogic}>Check All In Logic</Item>,
+        <Item key="uncheckAll" onClick={uncheckAll}>Uncheck All</Item>,
+        <Separator key="sep1" />,
+        <Submenu key="path"  label="Set Path">
+            {_.map(bosses, (bossName, bossIndex) => (
+                <Item
+                    key={bossName}
+                    onClick={handlePathClick}
+                    data={{ boss: bossIndex } satisfies BossData}
+                >
+                    {bossName}
+                </Item>
+            ))}
+        </Submenu>,
+        <Item key="sots" onClick={handleSotsClick}>Set SotS</Item>,
+        <Item key="barren" onClick={handleBarrenClick}>Set Barren</Item>,
+        <Submenu key="item" label="Set Item">
+            {_.map(hintItems, (items, category) => (
+                <Submenu key={category} label={category}>
+                    {_.map(items, (listItem) => (
+                        <Item
+                            key={listItem}
+                            onClick={handleSetItemClick}
+                            data={{ item: listItem } satisfies ItemData}
+                        >
+                            <HintItem itemName={listItem} />
+                        </Item>
+                    ))}
+                </Submenu>
+            ))}
+        </Submenu>,
+        <Item key="clearHint" onClick={handleClearClick}>Clear Hint</Item>,
+    ];
+}
+
 function LocationGroupContextMenu() {
     const randomEntrances = useSelector(settingSelector('randomize-entrances'));
     const randomDungeonEntrances = useSelector(
@@ -169,53 +222,12 @@ function LocationGroupContextMenu() {
 
     const birdSanityOn = useSelector(settingSelector('random-start-statues'));
 
-    const {
-        checkAll,
-        checkAllInLogic,
-        uncheckAll,
-        handleSetItemClick,
-        handleBarrenClick,
-        handleClearClick,
-        handlePathClick,
-        handleSotsClick,
-    } = useGroupContextMenuHandlers();
+    const areaMenuItems = useAreaContextMenuItems();
 
     return (
         <>
             <Menu id="group-context">
-                <Item onClick={checkAll}>Check All</Item>
-                <Item onClick={checkAllInLogic}>Check All In Logic</Item>
-                <Item onClick={uncheckAll}>Uncheck All</Item>
-                <Separator />
-                <Submenu label="Set Path">
-                    {_.map(bosses, (bossName, bossIndex) => (
-                        <Item
-                            key={bossName}
-                            onClick={handlePathClick}
-                            data={{ boss: bossIndex } satisfies BossData}
-                        >
-                            {bossName}
-                        </Item>
-                    ))}
-                </Submenu>
-                <Item onClick={handleSotsClick}>Set SotS</Item>
-                <Item onClick={handleBarrenClick}>Set Barren</Item>
-                <Submenu label="Set Item">
-                    {_.map(hintItems, (items, category) => (
-                        <Submenu key={category} label={category}>
-                            {_.map(items, (listItem) => (
-                                <Item
-                                    key={listItem}
-                                    onClick={handleSetItemClick}
-                                    data={{ item: listItem } satisfies ItemData}
-                                >
-                                    <HintItem itemName={listItem} />
-                                </Item>
-                            ))}
-                        </Submenu>
-                    ))}
-                </Submenu>
-                <Item onClick={handleClearClick}>Clear Hint</Item>
+                {areaMenuItems}
             </Menu>
             <BoundEntranceMenu
                 id="dungeon-context"
@@ -287,16 +299,7 @@ function BoundEntranceMenu({
     const areaGraph = useSelector(areaGraphSelector);
     const usedEntrances = useSelector(usedEntrancesSelector);
 
-    const {
-        checkAll,
-        checkAllInLogic,
-        uncheckAll,
-        handleSetItemClick,
-        handleBarrenClick,
-        handleClearClick,
-        handlePathClick,
-        handleSotsClick,
-    } = useGroupContextMenuHandlers();
+    const areaMenuItems = useAreaContextMenuItems();
 
     const handleMapEntrance = useCallback(
         (exit: string, entrance: string) =>
@@ -311,39 +314,7 @@ function BoundEntranceMenu({
 
     return (
         <Menu id={id}>
-            <Item onClick={checkAll}>Check All</Item>
-            <Item onClick={checkAllInLogic}>Check All In Logic</Item>
-            <Item onClick={uncheckAll}>Uncheck All</Item>
-            <Separator />
-            <Submenu label="Set Path">
-                {_.map(bosses, (bossName, bossIndex) => (
-                    <Item
-                        key={bossName}
-                        onClick={handlePathClick}
-                        data={{ boss: bossIndex } satisfies BossData}
-                    >
-                        {bossName}
-                    </Item>
-                ))}
-            </Submenu>
-            <Item onClick={handleSotsClick}>Set SotS</Item>
-            <Item onClick={handleBarrenClick}>Set Barren</Item>
-            <Submenu label="Set Item">
-                {_.map(hintItems, (items, category) => (
-                    <Submenu key={category} label={category}>
-                        {_.map(items, (listItem) => (
-                            <Item
-                                key={listItem}
-                                onClick={handleSetItemClick}
-                                data={{ item: listItem } satisfies ItemData}
-                            >
-                                <HintItem itemName={listItem} />
-                            </Item>
-                        ))}
-                    </Submenu>
-                ))}
-            </Submenu>
-            <Item onClick={handleClearClick}>Clear Hint</Item>
+            {areaMenuItems}
             {createBindSubmenu(
                 areaGraph,
                 new Set(usedEntrances[pool]),
