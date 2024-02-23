@@ -45,7 +45,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { RootState, ThunkResult, useAppDispatch } from './store/store';
 import { range } from 'lodash';
 import { loadLogic } from './logic/slice';
-import Tippy from '@tippyjs/react';
 import Select, { MultiValue, ActionMeta, SingleValue } from 'react-select';
 import { selectStyles } from './customization/ComponentStyles';
 import { withCancel } from './utils/CancelToken';
@@ -57,6 +56,7 @@ import React from 'react';
 import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ImportButton } from './ImportExport';
 import { getStoredRemote } from './LocalStorage';
+import Tooltip from './additionalComponents/Tooltip';
 
 /** The tracker will only show these options, and tracker logic code is only allowed to access these! */
 const optionCategorization_ = {
@@ -679,8 +679,8 @@ function OptionTooltip({ children }: { children: string }) {
 
 const OptionLabel = React.memo(function OptionLabel({ option }: { option: Option }) {
     return (
-        <Tippy content={<OptionTooltip>{option.help}</OptionTooltip>}>
+        <Tooltip content={<OptionTooltip>{option.help}</OptionTooltip>}>
             <FormLabel htmlFor={option.name}>{option.name}</FormLabel>
-        </Tippy>
+        </Tooltip>
     );
 });

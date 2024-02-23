@@ -1,6 +1,4 @@
 import { CSSProperties, useCallback } from 'react';
-import Tippy from '@tippyjs/react';
-import { followCursor } from 'tippy.js';
 import _ from 'lodash';
 import ColorScheme from '../../customization/ColorScheme';
 import MapMarker from './MapMarker';
@@ -18,6 +16,7 @@ import HintDescription, { DecodedHint, decodeHint } from '../Hints';
 import { RootState } from '../../store/store';
 import { useContextMenu } from '../context-menu';
 import { TriggerEvent } from 'react-contexify';
+import Tooltip from '../../additionalComponents/Tooltip';
 
 export type RegionMarkerParams = {
     region: string,
@@ -178,7 +177,7 @@ const Submap = (props: SubmapProps) => {
     };
 
     const markerElement = (
-        <Tippy content={tooltip} placement="bottom" followCursor plugins={[followCursor]} offset={[0, 20]} >
+        <Tooltip content={tooltip} placement="bottom" followCursor>
             <div
                 onClick={handleClick}
                 onKeyDown={keyDownWrapper(handleClick)}
@@ -190,7 +189,7 @@ const Submap = (props: SubmapProps) => {
                     {(accessibleChecks > 0) ? accessibleChecks : needsBirdStatueSanityExit ? '?' : ''}
                 </span>
             </div>
-        </Tippy>
+        </Tooltip>
     );
 
     const mapElement = (

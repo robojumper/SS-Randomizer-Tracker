@@ -6,13 +6,13 @@ import { TriggerEvent } from 'react-contexify';
 import images from '../itemTracker/Images';
 import placeholderImg from '../assets/slot test.png';
 import '../locationTracker/Location.css';
-import Tippy from '@tippyjs/react';
 import { useEntrancePath, useTooltipExpr } from '../tooltips/TooltipHooks';
 import RequirementsTooltip from './RequirementsTooltip';
 import { useDispatch, useSelector } from 'react-redux';
 import { checkHintSelector, checkSelector } from '../tracker/selectors';
 import { clickCheck } from '../tracker/slice';
 import PathTooltip from './PathTooltip';
+import Tooltip from '../additionalComponents/Tooltip';
 
 export interface LocationContextMenuProps {
     checkId: string;
@@ -55,7 +55,7 @@ export default function Location({
     const path = useEntrancePath(id);
 
     return (
-        <Tippy content={
+        <Tooltip content={
             <>
                 <RequirementsTooltip requirements={expr} />
                 {path && <><hr /><PathTooltip segments={path} /></>}
@@ -83,6 +83,6 @@ export default function Location({
                     )}
                 </Row>
             </div>
-        </Tippy>
+        </Tooltip>
     );
 }

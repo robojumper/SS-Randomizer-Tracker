@@ -1,6 +1,4 @@
 import { CSSProperties, MouseEvent, useCallback } from 'react';
-import Tippy from '@tippyjs/react';
-import { followCursor } from 'tippy.js';
 import 'react-contexify/dist/ReactContexify.css';
 import AreaCounters from '../AreaCounters';
 import ColorScheme from '../../customization/ColorScheme';
@@ -11,6 +9,7 @@ import { areaHintSelector, areasSelector } from '../../tracker/selectors';
 import HintDescription, { decodeHint } from '../Hints';
 import { useContextMenu } from '../context-menu';
 import { LocationGroupContextMenuProps } from '../LocationGroupHeader';
+import Tooltip from '../../additionalComponents/Tooltip';
 
 type MapMarkerProps = {
     markerX: number;
@@ -82,7 +81,7 @@ const MapMarker = (props: MapMarkerProps) => {
 
     return (
         <div>
-            <Tippy content={tooltip} placement="bottom" followCursor plugins={[followCursor]} offset={[0, 20]} >
+            <Tooltip content={tooltip} placement="bottom" followCursor>
                 <div
                     onClick={handleClick}
                     onKeyDown={keyDownWrapper(handleClick)}
@@ -94,7 +93,7 @@ const MapMarker = (props: MapMarkerProps) => {
                         {Boolean(accessibleChecks) && accessibleChecks}
                     </span>
                 </div>
-            </Tippy>
+            </Tooltip>
             {expandedGroup === title && area && (
                 <div
                     className="flex-container"

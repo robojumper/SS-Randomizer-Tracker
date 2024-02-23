@@ -1,6 +1,4 @@
 import { CSSProperties, useCallback } from 'react';
-import Tippy from '@tippyjs/react';
-import { followCursor } from 'tippy.js';
 import 'react-contexify/dist/ReactContexify.css';
 import AreaCounters from '../AreaCounters';
 import { useSelector } from 'react-redux';
@@ -14,6 +12,7 @@ import HintDescription, { decodeHint } from '../Hints';
 import { ExitMapping } from '../../logic/Locations';
 import { useTooltipExpr } from '../../tooltips/TooltipHooks';
 import RequirementsTooltip from '../RequirementsTooltip';
+import Tooltip from '../../additionalComponents/Tooltip';
 
 type EntranceMarkerProps = {
     markerX: number;
@@ -147,7 +146,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
 
     return (
         <div>
-            <Tippy content={tooltip} placement="bottom" followCursor plugins={[followCursor]} offset={[0, 20]} >
+            <Tooltip content={tooltip} placement="bottom" followCursor>
                 <div
                     onClick={handleClick}
                     onKeyDown={handleClick}
@@ -160,7 +159,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
                         {!hasConnection && '?'}
                     </span>
                 </div>
-            </Tippy>
+            </Tooltip>
             {expandedGroup === region && area && (
                 <div
                     className="flex-container"

@@ -139,8 +139,10 @@ export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings
         set(`\\${amt} Gratitude Crystals`);
     }
 
-    set('\\Skyloft\\Central Skyloft\\Bazaar\\Gondo\'s Upgrades\\Upgrade to Quick Beetle');
-    set('\\Skyloft\\Central Skyloft\\Bazaar\\Gondo\'s Upgrades\\Upgrade to Tough Beetle');
+    if (settings['gondo-upgrades'] === false) {
+        set('\\Skyloft\\Central Skyloft\\Bazaar\\Gondo\'s Upgrades\\Upgrade to Quick Beetle');
+        set('\\Skyloft\\Central Skyloft\\Bazaar\\Gondo\'s Upgrades\\Upgrade to Tough Beetle');
+    }
 
     return items;
 }
