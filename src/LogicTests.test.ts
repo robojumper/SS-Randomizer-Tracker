@@ -1,10 +1,11 @@
+import { setCounterBasis } from './customization/slice';
 import { RemoteReference, getAndPatchLogic } from './loader/LogicLoader';
 import { LogicalState } from './logic/Locations';
 import { loadLogic } from './logic/slice';
 import { defaultSettings } from './permalink/Settings';
 import { AllTypedOptions, TypedOptions } from './permalink/SettingsTypes';
 import { RootState, Store, createStore } from './store/store';
-import { allSettingsSelector, areasSelector, checkSelector } from './tracker/selectors';
+import { allSettingsSelector, areasSelector, checkSelector, totalCountersSelector } from './tracker/selectors';
 import { acceptSettings, clickCheck, clickDungeonName, clickItem, reset, setCheckHint } from './tracker/slice';
 import fs from 'node:fs';
 
@@ -46,11 +47,19 @@ describe('full logic tests', () => {
      * Check that a check of the given name exists in the area, and return its id.
      */
     function findCheckId(areaName: string, checkName: string) {
-        const area = readSelector(areasSelector).find((a) => a.name === areaName)!;
-        expect(area).toBeDefined();
+        const area = findArea(areaName);
         const check = area.checks.find((c) => c.includes(checkName)) ?? area.extraChecks.tr_cube?.find((c) => c.includes(checkName));
         expect(check).toBeDefined();
         return check!;
+    }
+
+    /**
+     * Finds an area by name and asserts that it exists.
+     */
+    function findArea(areaName: string) {
+        const area = readSelector(areasSelector).find((a) => a.name === areaName)!;
+        expect(area).toBeDefined();
+        return area;
     }
 
     /**
@@ -58,8 +67,7 @@ describe('full logic tests', () => {
      * To protect against typos, you should also verify that the check exists with different settings.
      */
     function expectCheckAbsent(areaName: string, checkName: string) {
-        const area = readSelector(areasSelector).find((a) => a.name === areaName)!;
-        expect(area).toBeDefined();
+        const area = findArea(areaName);
         const check = area.checks.find((c) => c.includes(checkName));
         expect(check).toBeUndefined();
         const maybeCube = area.extraChecks.tr_cube?.find((c) => c.includes(checkName));
@@ -174,5 +182,22 @@ describe('full logic tests', () => {
         expect(checkState(check)).toBe('outLogic');
         store.dispatch(clickItem({ item: 'Progressive Beetle', take: false }));
         expect(checkState(check)).toBe('inLogic');
+    });
+
+    it('handles semilogic counters', () => {
+        const area = findArea('Batreaux\'s House');
+        expect(area.numChecksRemaining).toBeGreaterThan(0);
+        expect(area.numChecksAccessible).toBe(0);
+        const totalCounter = readSelector(totalCountersSelector).numAccessible;
+
+        store.dispatch(setCounterBasis('semilogic'));
+
+        const areaWithSemilogic = findArea('Batreaux\'s House');
+        expect(areaWithSemilogic.numChecksRemaining).toBeGreaterThan(0);
+        expect(areaWithSemilogic.numChecksAccessible).toBe(2);
+
+        const totalCounterWithSemilogic = readSelector(totalCountersSelector).numAccessible;
+        expect(totalCounterWithSemilogic).toBeGreaterThan(totalCounter);
+
     });
 });
