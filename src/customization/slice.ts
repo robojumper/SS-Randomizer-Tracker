@@ -1,5 +1,6 @@
 import {
     getStoredColorScheme,
+    getStoredCounterBasis,
     getStoredItemLayout,
     getStoredLocationLayout,
     getStoredTrickSemiLogic,
@@ -9,12 +10,14 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
 export type ItemLayout = 'grid' | 'inventory';
 export type LocationLayout = 'list' | 'map';
+export type CounterBasis = 'logic' | 'semilogic';
 
 export interface CustomizationState {
     colorScheme: ColorScheme;
     itemLayout: ItemLayout;
     locationLayout: LocationLayout;
     trickSemilogic: boolean;
+    counterBasis: CounterBasis;
 }
 
 const initialState: CustomizationState = {
@@ -22,6 +25,7 @@ const initialState: CustomizationState = {
     itemLayout: 'inventory',
     locationLayout: 'map',
     trickSemilogic: false,
+    counterBasis: 'logic',
 };
 
 export function preloadedCustomizationState(): CustomizationState {
@@ -30,6 +34,7 @@ export function preloadedCustomizationState(): CustomizationState {
     const itemLayout = getStoredItemLayout();
     const locationLayout = getStoredLocationLayout();
     const trickSemilogic = getStoredTrickSemiLogic();
+    const counterBasis = getStoredCounterBasis();
 
     if (colorScheme) {
         state.colorScheme = colorScheme;
@@ -42,6 +47,9 @@ export function preloadedCustomizationState(): CustomizationState {
     }
     if (trickSemilogic !== undefined) {
         state.trickSemilogic = trickSemilogic;
+    }
+    if (counterBasis !== undefined) {
+        state.counterBasis = counterBasis;
     }
     return state;
 }
@@ -61,11 +69,14 @@ const customizationSlice = createSlice({
         },
         setTrickSemiLogic: (state, action: PayloadAction<boolean>) => {
             state.trickSemilogic = action.payload;
+        },
+        setCounterBasis: (state, action: PayloadAction<CounterBasis>) => {
+            state.counterBasis = action.payload;
         }
     },
 });
 
-export const { setColorScheme, setItemLayout, setLocationLayout, setTrickSemiLogic } =
+export const { setColorScheme, setItemLayout, setLocationLayout, setTrickSemiLogic, setCounterBasis } =
     customizationSlice.actions;
 
 export default customizationSlice.reducer;

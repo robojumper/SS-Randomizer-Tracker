@@ -11,3 +11,6 @@ export const locationLayoutSelector = (state: RootState) =>
 
 export const trickSemiLogicSelector = (state: RootState) =>
     state.customization.trickSemilogic;
+
+export const counterBasisSelector = (state: RootState) =>
+    state.customization.counterBasis;

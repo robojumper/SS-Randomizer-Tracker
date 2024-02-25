@@ -53,7 +53,7 @@ import { BitVector } from '../logic/bitlogic/BitVector';
 import { InventoryItem, itemMaxes } from '../logic/Inventory';
 import { getAllowedStartingEntrances, getEntrancePools, getExitRules, getExits, getUsedEntrances } from '../logic/Entrances';
 import { computeSemiLogic, getAllTricksEnabledRequirements } from '../logic/SemiLogic';
-import { trickSemiLogicSelector } from '../customization/selectors';
+import { counterBasisSelector, trickSemiLogicSelector } from '../customization/selectors';
 
 const bitVectorMemoizeOptions = {
     memoizeOptions: {
@@ -749,6 +749,7 @@ export const areasSelector = createSelector(
         areaNonprogressSelector,
         areaHiddenSelector,
         exitRulesSelector,
+        counterBasisSelector,
     ],
     (
         logic,
@@ -758,6 +759,7 @@ export const areasSelector = createSelector(
         isAreaNonprogress,
         isAreaHidden,
         exitRules,
+        counterBasis,
     ): HintRegion[] =>
         _.compact(
             logic.hintRegions.map((area): HintRegion | undefined => {
@@ -781,8 +783,14 @@ export const areasSelector = createSelector(
                 const remaining = regularChecks.filter(
                     (check) => !checkedChecks.has(check),
                 );
+
+                const shouldCount = (state: LogicalState) =>
+                    counterBasis === 'logic'
+                        ? state === 'inLogic'
+                        : state !== 'outLogic';
+
                 const inLogic = remaining.filter((check) =>
-                    getLogicalState(check) === 'inLogic',
+                    shouldCount(getLogicalState(check)),
                 );
 
                 const exits = logic.exitsByHintRegion[area].filter(

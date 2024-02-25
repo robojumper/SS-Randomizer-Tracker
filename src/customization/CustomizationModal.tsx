@@ -1,12 +1,13 @@
 import { Modal, Button, Container, Row, Col, FormCheck } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
 import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
-import { ItemLayout, LocationLayout, setColorScheme, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
+import { CounterBasis, ItemLayout, LocationLayout, setColorScheme, setCounterBasis, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector } from './selectors';
+import { colorSchemeSelector, counterBasisSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector } from './selectors';
 import { useCallback } from 'react';
 import { selectStyles } from './ComponentStyles';
 import Select from 'react-select';
+import Tooltip from '../additionalComponents/Tooltip';
 
 const defaultColorSchemes = {
     Light: lightColorScheme,
@@ -21,6 +22,10 @@ const itemLayouts = [
     {value: 'inventory', label: 'In-Game Inventory'},
     {value: 'grid', label: 'Grid Layout'}
 ];
+const counterBases = [
+    {value: 'logic', label: 'In Logic'},
+    {value: 'semilogic', label: 'Semilogic'}
+];
 
 export default function CustomizationModal({
     onHide,
@@ -34,6 +39,7 @@ export default function CustomizationModal({
     const layout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
     const trickSemiLogic = useSelector(trickSemiLogicSelector);
+    const counterBasis = useSelector(counterBasisSelector);
 
     const updateColorScheme = useCallback((scheme: ColorScheme) => dispatch(setColorScheme(scheme)), [dispatch]);
 
@@ -111,9 +117,27 @@ export default function CustomizationModal({
                     </Row>
                     <Row>
                         <FormCheck
+                            // hack
+                            style={{ height: '30px', paddingLeft: '3.5em' }}
                             type="switch"
                             checked={trickSemiLogic}
                             onChange={(e) => dispatch(setTrickSemiLogic(e.target.checked))}
+                        />
+                    </Row>
+                    <Row>
+                        <Tooltip content="Choose whether the Area/Total Locations Accessible counters should include items in semilogic."><h4>Counter Basis</h4></Tooltip>
+                    </Row>
+                    <Row>
+                        <Select
+                            styles={selectStyles<
+                                false,
+                                { label: string; value: string }
+                            >()}
+                            isSearchable={false}
+                            value={counterBases.find((l) => l.value === counterBasis)}
+                            onChange={(e) => e && dispatch(setCounterBasis(e.value as CounterBasis))}
+                            options={counterBases}
+                            name="Counter Basis"
                         />
                     </Row>
                 </Container>

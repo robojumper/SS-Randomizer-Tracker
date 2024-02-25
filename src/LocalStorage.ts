@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import {
     colorSchemeSelector,
+    counterBasisSelector,
     itemLayoutSelector,
     locationLayoutSelector,
     trickSemiLogicSelector,
@@ -9,7 +10,7 @@ import {
 import { RootState } from './store/store';
 import { TrackerState } from './tracker/slice';
 import { RemoteReference, formatRemote, parseRemote } from './loader/LogicLoader';
-import { ItemLayout, LocationLayout } from './customization/slice';
+import { CounterBasis, ItemLayout, LocationLayout } from './customization/slice';
 import ColorScheme from './customization/ColorScheme';
 
 const itemLayoutLocalStorageKey = 'ssrTrackerLayout';
@@ -18,13 +19,14 @@ const trackerStateLocalStorageKey = 'ssrTrackerState';
 const locationLayoutLocalStorageKey = 'ssrTrackerLocationLayout';
 const trickSemilogicLocalStorageKey = 'ssrTrackerTrickLogic';
 const remoteLogicLocalStorageKey = 'ssrTrackerRemoteLogic';
-
+const counterBasisLocalStorageKey = 'ssrTrackerCounterBasis';
 
 export function useSyncTrackerStateToLocalStorage() {
     const colorScheme = useSelector(colorSchemeSelector);
     const itemLayout = useSelector(itemLayoutSelector);
     const locationLayout = useSelector(locationLayoutSelector);
     const trickSemilogic = useSelector(trickSemiLogicSelector);
+    const counterBasis = useSelector(counterBasisSelector);
     const rawRemote = useSelector((state: RootState) => state.logic.remote!);
     const state = useSelector((state: RootState) => state.tracker);
 
@@ -51,6 +53,10 @@ export function useSyncTrackerStateToLocalStorage() {
     useEffect(() => {
         localStorage.setItem(trickSemilogicLocalStorageKey, JSON.stringify(trickSemilogic));
     }, [trickSemilogic]);
+
+    useEffect(() => {
+        localStorage.setItem(counterBasisLocalStorageKey, JSON.stringify(counterBasis));
+    }, [counterBasis]);
 
     useEffect(() => {
         localStorage.setItem(
@@ -103,4 +109,9 @@ export function getStoredColorScheme(): Partial<ColorScheme> | undefined {
 export function getStoredTrickSemiLogic(): boolean | undefined {
     const schemeJson = localStorage.getItem(trickSemilogicLocalStorageKey);
     return schemeJson ? (JSON.parse(schemeJson) as boolean) : undefined;
+}
+
+export function getStoredCounterBasis(): CounterBasis | undefined {
+    const schemeJson = localStorage.getItem(counterBasisLocalStorageKey);
+    return schemeJson ? (JSON.parse(schemeJson) as CounterBasis) : undefined;
 }
