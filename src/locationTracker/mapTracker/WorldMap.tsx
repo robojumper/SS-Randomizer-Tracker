@@ -12,6 +12,7 @@ import LocationContextMenu from '../LocationContextMenu';
 import LocationGroupContextMenu from '../LocationGroupContextMenu';
 import { areasSelector } from '../../tracker/selectors';
 import { useSelector } from 'react-redux';
+import StartingEntranceMarker from './StartingEntranceMarker';
 
 type WorldMapProps = {
     imgWidth: number,
@@ -60,11 +61,15 @@ const WorldMap = (props: WorldMapProps) => {
         sky,
     ];
 
+
     const worldMap = (
         <div style={{position:'absolute', width:imgWidth, height:imgWidth / aspectRatio}}>
             <div>
                 {!activeSubmap &&
-                    <img src={skyMap} alt="World Map" width={imgWidth}/>
+                    <>
+                        <img src={skyMap} alt="World Map" width={imgWidth}/>
+                        <StartingEntranceMarker mapWidth={imgWidth} />
+                    </>
                 }
                 {markers.map((marker) => (
                     <div key={marker.region} style={{display:(!activeSubmap ? '' : 'none')}}>
