@@ -238,11 +238,10 @@ function Tracker() {
                         <ExportButton />
                     </Col>
                     <Col>
-                        <Link
-                            className={`btn btn-primary`}
-                            to="/"
-                        >
-                            Options
+                        <Link to="/">
+                            <Button>
+                                Options
+                            </Button>
                         </Link>
                     </Col>
                     <Col>

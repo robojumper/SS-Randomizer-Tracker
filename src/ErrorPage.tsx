@@ -1,3 +1,4 @@
+import { Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 export default function ErrorPage({
@@ -13,11 +14,8 @@ export default function ErrorPage({
         <div>
             <p>Something went wrong. Try reloading the page, reset the tracker, or load a different logic version:</p>
             <pre style={{ color: 'red' }}>{errorMsg}</pre>
-            <Link
-                className={`btn btn-primary`}
-                to="/"
-            >
-                Return to Options
+            <Link to="/">
+                <Button>Return to Options</Button>
             </Link>
         </div>
     );

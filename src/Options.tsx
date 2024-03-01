@@ -192,25 +192,38 @@ function LaunchButtons({ setDesiredRemote }: { setDesiredRemote: (ref: RemoteRef
 
     return (
         <div className="launchButtons">
-            <Link
-                className={`btn btn-primary ${
-                    canResume ? '' : 'disabledLink disabled'
-                }`}
-                to="/tracker"
-            >
-                <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-                    <span>Continue Tracker</span>
-                    <span style={{ fontSize: 14, justifySelf: 'flex-start', marginLeft: 4 }}>
-                        {canResume && <ProgressWrapper />}
-                    </span>
-                </div>
-            </Link>
+            <ConditionalLink to="/tracker" disabled={!canResume}>
+                <Button disabled={!canResume}>
+                    <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
+                        <span>Continue Tracker</span>
+                        <span style={{ fontSize: 14, justifySelf: 'flex-start', marginLeft: 4 }}>
+                            {canResume && <ProgressWrapper />}
+                        </span>
+                    </div>
+                </Button>
+            </ConditionalLink>
             <Button disabled={!canStart} onClick={reset}>
                 Launch New Tracker
             </Button>
             <ImportButton setLogicBranch={setDesiredRemote} />
         </div>
     );
+}
+
+function ConditionalLink({
+    to,
+    disabled,
+    children,
+}: {
+    to: string;
+    disabled: boolean;
+    children: React.ReactNode;
+}) {
+    if (disabled) {
+        return (<>{children}</>);
+    } else {
+        return (<Link to={to}>{children}</Link>);
+    }
 }
 
 function ProgressWrapper() {
