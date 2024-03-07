@@ -9,7 +9,7 @@ import leaveFaron from '../../assets/maps/leaveFaron.png';
 import leaveEldin from '../../assets/maps/leaveEldin.png';
 import leaveLanayru from '../../assets/maps/leaveLanayru.png';
 import { useSelector } from 'react-redux';
-import { areasSelector, exitsSelector, settingSelector } from '../../tracker/selectors';
+import { areasSelector, checkSelector, exitsSelector, settingSelector } from '../../tracker/selectors';
 import { AreaGraph, Logic } from '../../logic/Logic';
 import { logicSelector } from '../../logic/selectors';
 import HintDescription, { DecodedHint, decodeHint } from '../Hints';
@@ -117,9 +117,19 @@ const Submap = (props: SubmapProps) => {
         markerColor = 'checked';
     }
 
+    // TODO create a generic Marker component and separate some of this code
     const birdSanityOn = useSelector(settingSelector('random-start-statues'));
     const birdStatueSanityPool = birdSanityOn && logic.areaGraph.birdStatueSanity[title];
     const needsBirdStatueSanityExit = birdStatueSanityPool && !exits.find((e) => e.exit.id === birdStatueSanityPool.exit && e.entrance);
+    const exitCheck = useSelector(
+        (state: RootState) =>
+            needsBirdStatueSanityExit &&
+            checkSelector(birdStatueSanityPool.exit)(state),
+    );
+
+    if (exitCheck && exitCheck.logicalState !== 'outLogic' && accessibleChecks === 0) {
+        markerColor = exitCheck.logicalState;
+    }
 
     const markerStyle: CSSProperties = {
         position: 'absolute',
