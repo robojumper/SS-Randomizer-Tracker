@@ -5,8 +5,21 @@ import { loadLogic } from './logic/slice';
 import { defaultSettings } from './permalink/Settings';
 import { AllTypedOptions, TypedOptions } from './permalink/SettingsTypes';
 import { RootState, Store, createStore } from './store/store';
-import { allSettingsSelector, areasSelector, checkSelector, totalCountersSelector } from './tracker/selectors';
-import { acceptSettings, clickCheck, clickDungeonName, clickItem, reset, setCheckHint } from './tracker/slice';
+import {
+    allSettingsSelector,
+    areasSelector,
+    checkSelector,
+    rawItemCountSelector,
+    totalCountersSelector,
+} from './tracker/selectors';
+import {
+    acceptSettings,
+    clickCheck,
+    clickDungeonName,
+    clickItem,
+    reset,
+    setCheckHint,
+} from './tracker/slice';
 import fs from 'node:fs';
 
 const main: RemoteReference = {
@@ -78,6 +91,12 @@ describe('full logic tests', () => {
     function updateSettings<K extends keyof TypedOptions>(option: K, value: TypedOptions[K]) {
         const settings = { ...readSelector(allSettingsSelector), [option]: value };
         store.dispatch(acceptSettings({ settings }));
+    }
+
+    /** Set a particular settings value. */
+    function updateSettingsWithReset<K extends keyof TypedOptions>(option: K, value: TypedOptions[K]) {
+        const settings = { ...readSelector(allSettingsSelector), [option]: value };
+        store.dispatch(reset({ settings }));
     }
 
     function checkState(checkId: string): LogicalState {
@@ -198,6 +217,39 @@ describe('full logic tests', () => {
 
         const totalCounterWithSemilogic = readSelector(totalCountersSelector).numAccessible;
         expect(totalCounterWithSemilogic).toBeGreaterThan(totalCounter);
+
+    });
+
+    it('handles starting items', () => {
+        expect(readSelector(rawItemCountSelector('Progressive Slingshot'))).toBe(0);
+        updateSettingsWithReset('starting-items', ['Progressive Slingshot']);
+
+        expect(readSelector(rawItemCountSelector('Progressive Slingshot'))).toBe(1);
+        expect(readSelector(rawItemCountSelector('Progressive Bow'))).toBe(0);
+        updateSettingsWithReset('starting-items', ['Progressive Bow']);
+        expect(readSelector(rawItemCountSelector('Progressive Slingshot'))).toBe(0);
+        expect(readSelector(rawItemCountSelector('Progressive Bow'))).toBe(1);
+    });
+
+    it('handles clicking items', () => {
+        const click = (take: boolean) => store.dispatch(clickItem({ item: 'Progressive Bow', take }));
+        const count = () => readSelector(rawItemCountSelector('Progressive Bow'));
+        expect(count()).toBe(0);
+        for (let i = 1; i <= 3; i++) {
+            click(false);
+            expect(count()).toBe(i);
+        }
+
+        // Decrement
+        click(true);
+        expect(count()).toBe(2);
+        click(false);
+        // Wrap around
+        click(false);
+        expect(count()).toBe(0);
+        // Wrap around
+        click(true);
+        expect(count()).toBe(3);
 
     });
 });
