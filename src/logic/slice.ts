@@ -3,18 +3,26 @@ import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 import { RawLogic } from './UpstreamTypes';
 import { RemoteReference } from '../loader/LogicLoader';
 
+/**
+ * Relevant data loaded from an ssrando upstream.
+ */
+export interface LogicBundle {
+    /** dump.yaml */
+    logic: RawLogic;
+    /** options.yaml */
+    options: OptionDefs;
+    /** the remote we loaded from */
+    remote: RemoteReference;
+    /** the human-readable data (for Latest version, this is the latest) */
+    remoteName: string;
+}
+
 export interface LogicState {
-    logic: RawLogic | undefined;
-    options: OptionDefs | undefined;
-    remote: RemoteReference | undefined;
-    remoteName: string | undefined;
+    loaded: LogicBundle | undefined,
 }
 
 const initialState: LogicState = {
-    logic: undefined,
-    options: undefined,
-    remote: undefined,
-    remoteName: undefined,
+    loaded: undefined,
 };
 
 const logicSlice = createSlice({
@@ -23,18 +31,9 @@ const logicSlice = createSlice({
     reducers: {
         loadLogic: (
             state,
-            action: PayloadAction<{
-                logic: RawLogic;
-                options: OptionDefs;
-                remote: RemoteReference;
-                remoteName: string;
-            }>,
+            action: PayloadAction<LogicBundle>,
         ) => {
-            const { logic, options, remote, remoteName } = action.payload;
-            state.logic = logic;
-            state.options = options;
-            state.remote = remote;
-            state.remoteName = remoteName;
+            state.loaded = action.payload;
         },
     },
 });

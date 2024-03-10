@@ -1,11 +1,9 @@
-import { useDispatch, useSelector } from 'react-redux';
 import './options.css';
-import { optionsSelector } from './logic/selectors';
 import {
+    AllTypedOptions,
     OptionDefs,
     OptionValue,
     OptionsCommand,
-    TypedOptions,
 } from './permalink/SettingsTypes';
 import {
     forwardRef,
@@ -16,11 +14,7 @@ import {
     useRef,
     useState,
 } from 'react';
-import {
-    decodePermalink,
-    encodePermalink,
-    validateSettings,
-} from './permalink/Settings';
+import { decodePermalink, encodePermalink } from './permalink/Settings';
 import { Option } from './permalink/SettingsTypes';
 import {
     Button,
@@ -35,28 +29,22 @@ import {
 import {
     RemoteReference,
     formatRemote,
-    loadRemoteLogic,
     parseRemote,
 } from './loader/LogicLoader';
-import { allSettingsSelector, totalCountersSelector } from './tracker/selectors';
 import { acceptSettings, reset } from './tracker/slice';
 import Acknowledgement from './Acknowledgment';
-import { Link, useNavigate } from 'react-router-dom';
-import { RootState, ThunkResult, useAppDispatch } from './store/store';
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch } from './store/store';
 import { range } from 'lodash';
 import { loadLogic } from './logic/slice';
 import Select, { MultiValue, ActionMeta, SingleValue } from 'react-select';
 import { selectStyles } from './customization/ComponentStyles';
-import { withCancel } from './utils/CancelToken';
-import { RawLogic } from './logic/UpstreamTypes';
 import _ from 'lodash';
 import DiscordButton from './additionalComponents/DiscordButton';
-import { delay } from './utils/Promises';
 import React from 'react';
-import { ErrorBoundary, FallbackProps } from 'react-error-boundary';
 import { ImportButton } from './ImportExport';
-import { getStoredRemote } from './LocalStorage';
 import Tooltip from './additionalComponents/Tooltip';
+import { LoadingState, OptionsAction, useOptionsState } from './OptionsReducer';
 
 /** The tracker will only show these options, and tracker logic code is only allowed to access these! */
 const optionCategorization_ = {
@@ -114,23 +102,16 @@ const optionCategorization_ = {
     ],
 } as const satisfies Record<string, readonly OptionsCommand[]>;
 
-export type LogicOption = (typeof optionCategorization_)[keyof typeof optionCategorization_][number];
-const optionCategorization: Record<string, readonly LogicOption[]> = optionCategorization_;
+export type LogicOption =
+    (typeof optionCategorization_)[keyof typeof optionCategorization_][number];
+const optionCategorization: Record<string, readonly LogicOption[]> =
+    optionCategorization_;
 
 // logic-v2.1.1 is a temporary branch that's permalink-compatible with the v2.1.1 release,
 // but uses the logic dump from main.
 // That branch will be removed once we get a stable release with the logic dump.
 // Older releases will be unsupported then.
-
-const defaultUpstream: RemoteReference = {
-    type: 'latestRelease',
-};
-
-const wellKnownRemotes = [
-    'Latest',
-    'ssrando/main',
-    'robojumper/logic-v2.1.1',
-];
+const wellKnownRemotes = ['Latest', 'ssrando/main', 'robojumper/logic-v2.1.1'];
 
 /**
  * The default landing page for the tracker. Allows choosing logic source, permalink, and settings,
@@ -140,152 +121,146 @@ const wellKnownRemotes = [
  * As a result, it does not access any selectors that assume logic has already loaded unless we know it's loaded.
  */
 export default function Options() {
-    const options = useSelector(optionsSelector);
-    const [desiredRemote, setDesiredRemote] = useState(() => getStoredRemote() ?? defaultUpstream);
+    const {
+        counters,
+        dispatch,
+        hasChanges,
+        loaded,
+        loadingState,
+        settings,
+        selectedRemote,
+    } = useOptionsState();
+    const appDispatch = useAppDispatch();
+    const navigate = useNavigate();
+
+    const launch = useCallback(
+        (shouldReset?: boolean) => {
+            if (!loaded) {
+                return;
+            }
+            appDispatch(loadLogic(loaded));
+            if (shouldReset) {
+                appDispatch(reset({ settings: settings! }));
+            } else {
+                appDispatch(acceptSettings({ settings: settings! }));
+            }
+            navigate('/tracker');
+        },
+        [appDispatch, loaded, navigate, settings],
+    );
 
     return (
         <Container fluid>
             <div className="optionsPage">
                 <div className="logicAndPermalink">
-                    <LogicChooser desiredRemote={desiredRemote} setDesiredRemote={setDesiredRemote} />
-                    <PermalinkChooser />
+                    <LogicChooser
+                        selectedRemote={selectedRemote}
+                        dispatch={dispatch}
+                        loadingState={loadingState}
+                        loadedRemoteName={loaded?.remoteName}
+                    />
+                    <PermalinkChooser dispatch={dispatch} options={loaded?.options} settings={settings} />
                 </div>
-                <LaunchButtons setDesiredRemote={setDesiredRemote} />
-                {options && <OptionsList />}
+                <LaunchButtons
+                    hasChanges={hasChanges}
+                    counters={counters}
+                    loaded={Boolean(loaded)}
+                    launch={launch}
+                    dispatch={dispatch}
+                />
+                {loaded && (
+                    <OptionsList
+                        options={loaded.options}
+                        settings={settings!}
+                        dispatch={dispatch}
+                    />
+                )}
             </div>
             <Acknowledgement />
         </Container>
     );
 }
 
-function resetTracker(): ThunkResult {
-    return (dispatch, getState) => {
-        if (optionsSelector(getState())) {
-            dispatch(reset({ settings: allSettingsSelector(getState()) }));
-        }
-    };
-}
-
-function LaunchButtons({ setDesiredRemote }: { setDesiredRemote: (ref: RemoteReference) => void }) {
-    const dispatch = useAppDispatch();
-    const options = useSelector(optionsSelector);
-    const loaded = Boolean(options);
-    const modified = Boolean(
-        useSelector((state: RootState) => state.tracker.hasBeenModified),
-    );
-
+function LaunchButtons({
+    loaded,
+    hasChanges,
+    counters,
+    launch,
+    dispatch,
+}: {
+    loaded: boolean;
+    hasChanges: boolean;
+    counters:
+        | { numChecked: number; numAccessible: number; numRemaining: number }
+        | undefined;
+    launch: (shouldReset?: boolean) => void;
+    dispatch: React.Dispatch<OptionsAction>;
+}) {
     const canStart = loaded;
-    const canResume = loaded && modified;
+    const canResume = loaded && Boolean(counters);
 
-    const navigate = useNavigate();
-
-    const reset = useCallback(() => {
-        if (
-            canStart &&
-            (!canResume ||
-                window.confirm('Reset your tracker and start a new run?'))
-        ) {
-            dispatch(resetTracker());
-            navigate('/tracker');
-        }
-    }, [canResume, canStart, dispatch, navigate]);
+    const confirmLaunch = useCallback(
+        (shouldReset?: boolean) => {
+            const allow =
+                !shouldReset ||
+                (canStart &&
+                    (!canResume ||
+                        window.confirm(
+                            'Reset your tracker and start a new run?',
+                        )));
+            if (allow) {
+                launch(shouldReset);
+            }
+        },
+        [canResume, canStart, launch],
+    );
 
     return (
         <div className="launchButtons">
-            <ConditionalLink to="/tracker" disabled={!canResume}>
-                <Button disabled={!canResume}>
-                    <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
-                        <span>Continue Tracker</span>
-                        <span style={{ fontSize: 14, justifySelf: 'flex-start', marginLeft: 4 }}>
-                            {canResume && <ProgressWrapper />}
-                        </span>
-                    </div>
-                </Button>
-            </ConditionalLink>
-            <Button disabled={!canStart} onClick={reset}>
+            <Button disabled={!canResume} onClick={() => confirmLaunch()}>
+                <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
+                    <span>Continue Tracker</span>
+                    <span
+                        style={{
+                            fontSize: 14,
+                            justifySelf: 'flex-start',
+                            marginLeft: 4,
+                        }}
+                    >
+                        {counters && (
+                            <>{`${counters.numChecked}/${counters.numRemaining}`}</>
+                        )}
+                    </span>
+                </div>
+            </Button>
+            <Button disabled={!canStart} onClick={() => confirmLaunch(true)}>
                 Launch New Tracker
             </Button>
-            <ImportButton setLogicBranch={setDesiredRemote} />
+            <ImportButton setLogicBranch={(remote) => dispatch({ type: 'selectRemote', remote, viaImport: true })} />
+            <Button
+                disabled={!hasChanges}
+                onClick={() => dispatch({ type: 'revertChanges' })}
+            >
+                Undo Changes
+            </Button>
         </div>
     );
 }
 
-function ConditionalLink({
-    to,
-    disabled,
-    children,
-}: {
-    to: string;
-    disabled: boolean;
-    children: React.ReactNode;
-}) {
-    if (disabled) {
-        return (<>{children}</>);
-    } else {
-        return (<Link to={to}>{children}</Link>);
-    }
-}
-
-function ProgressWrapper() {
-    return <ErrorBoundary FallbackComponent={Fallback} ><Progress /></ErrorBoundary>
-}
-
-function Fallback({ resetErrorBoundary }: FallbackProps) {
-    // Reset the error boundary whenever *anything* changes
-    const completeState = useSelector((state: RootState) => state, {
-        devModeChecks: { identityFunctionCheck: 'never' },
-    });
-    const lastState = useRef<RootState>(completeState);
-    useEffect(() => {
-        if (lastState.current !== null && lastState.current !== completeState) {
-            resetErrorBoundary();
-        }
-    }, [completeState, resetErrorBoundary]);
-  
-    return null;
-}
-
-function Progress() {
-    const counts = useSelector(totalCountersSelector);
-    return <>{`${counts.numChecked}/${counts.numRemaining}`}</>
-}
-
-type LoadingState =
-    | { type: 'loading' }
-    | {
-          type: 'downloadError';
-          error: string;
-      };
-
-async function loadRemote(
-    remote: RemoteReference,
-): Promise<[RawLogic, OptionDefs, string] | string> {
-    try {
-        return await loadRemoteLogic(remote);
-    } catch (e) {
-        return e
-            ? typeof e === 'object' && 'message' in e
-                ? (e.message as string)
-                : JSON.stringify(e)
-            : 'Unknown error';
-    }
-}
 
 /** A component to choose your logic release. */
-function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: RemoteReference, setDesiredRemote: (ref: RemoteReference) => void }) {
-    const dispatch = useDispatch();
-    const [loadingState, setLoadingState] = useState<LoadingState | undefined>(
-        { type: 'loading' },
-    );
+function LogicChooser({
+    selectedRemote,
+    dispatch,
+    loadingState,
+    loadedRemoteName,
+}: {
+    selectedRemote: RemoteReference;
+    dispatch: React.Dispatch<OptionsAction>;
+    loadingState: LoadingState | undefined;
+    loadedRemoteName: string | undefined;
+}) {
     const inputRef = useRef<PlaintextRef>(null);
-
-    const loadedRemote = useSelector(
-        (state: RootState) => state.logic.remote,
-    );
-
-    const loadedRemoteName = useSelector(
-        (state: RootState) => state.logic.remoteName,
-    );
 
     const wellKnownSelectOptions = useMemo(() => {
         return wellKnownRemotes.map((remote) => ({
@@ -295,7 +270,12 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
     }, []);
 
     const activeOption = wellKnownSelectOptions.find((option) =>
-        _.isEqual(option.value, desiredRemote),
+        _.isEqual(option.value, selectedRemote),
+    );
+
+    const setSelectedRemote = useCallback(
+        (remote: RemoteReference) => dispatch({ type: 'selectRemote', remote }),
+        [dispatch],
     );
 
     const onRemoteChange = (
@@ -303,47 +283,9 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
         meta: ActionMeta<{ label: string; value: RemoteReference }>,
     ) => {
         if (meta.action === 'select-option' && selectedOption) {
-            setDesiredRemote(selectedOption.value);
+            setSelectedRemote(selectedOption.value);
         }
     };
-
-    useEffect(() => {
-        const [cancelToken, cancel] = withCancel();
-
-        if (_.isEqual(loadedRemote, desiredRemote)) {
-            setLoadingState(undefined);
-            return undefined;
-        }
-
-        (async () => {
-            await delay(500);
-            if (!cancelToken.canceled) {
-                setLoadingState({ type: 'loading' });
-                const result = await loadRemote(desiredRemote);
-                if (!cancelToken.canceled) {
-                    if (typeof result === 'string') {
-                        setLoadingState({
-                            type: 'downloadError',
-                            error: result,
-                        });
-                    } else {
-                        const [logic, options, remoteName] = result;
-                        setLoadingState(undefined);
-                        dispatch(
-                            loadLogic({
-                                logic,
-                                options,
-                                remote: desiredRemote,
-                                remoteName,
-                            }),
-                        );
-                    }
-                }
-            }
-        })();
-
-        return cancel;
-    }, [desiredRemote, dispatch, loadedRemote]);
 
     return (
         <div className="optionsCategory logicChooser">
@@ -355,7 +297,7 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
                 defaultActiveKey="wellKnown"
                 onSelect={(e) => {
                     if (e === 'raw') {
-                        inputRef.current?.setInput(formatRemote(desiredRemote));
+                        inputRef.current?.setInput(formatRemote(selectedRemote));
                     }
                 }}
             >
@@ -373,13 +315,12 @@ function LogicChooser({ desiredRemote, setDesiredRemote }: { desiredRemote: Remo
                 </Tab>
                 <Tab key="raw" eventKey="raw" title="Beta Feature">
                     <span>
-                        Find cool beta features on the Discord{' '}
-                        <DiscordButton />
+                        Find cool beta features on the Discord <DiscordButton />
                     </span>
                     <PlaintextLogicInput
                         ref={inputRef}
-                        desiredRemote={desiredRemote}
-                        setDesiredRemote={setDesiredRemote}
+                        selectedRemote={selectedRemote}
+                        setSelectedRemote={setSelectedRemote}
                     />
                 </Tab>
             </Tabs>
@@ -394,22 +335,22 @@ export interface PlaintextRef {
 
 const PlaintextLogicInput = forwardRef(function PlaintextLogicInput(
     {
-        desiredRemote,
-        setDesiredRemote,
+        selectedRemote,
+        setSelectedRemote,
     }: {
-        desiredRemote: RemoteReference;
-        setDesiredRemote: (ref: RemoteReference) => void;
+        selectedRemote: RemoteReference;
+        setSelectedRemote: (ref: RemoteReference) => void;
     },
     ref: React.ForwardedRef<PlaintextRef>,
 ) {
-    const [input, setInput] = useState(() => formatRemote(desiredRemote));
+    const [input, setInput] = useState(() => formatRemote(selectedRemote));
     const parsed = useMemo(() => parseRemote(input), [input]);
     const badFormat = !parsed;
     useEffect(() => {
         if (parsed) {
-            setDesiredRemote(parsed);
+            setSelectedRemote(parsed);
         }
-    }, [parsed, setDesiredRemote]);
+    }, [parsed, setSelectedRemote]);
 
     useImperativeHandle(ref, () => ({ setInput }), []);
 
@@ -417,7 +358,9 @@ const PlaintextLogicInput = forwardRef(function PlaintextLogicInput(
         <div>
             <input
                 type="text"
-                className={(badFormat ? 'optionsBadRemote' : '') + ' form-control'}
+                className={
+                    (badFormat ? 'optionsBadRemote' : '') + ' form-control'
+                }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
             />
@@ -444,14 +387,17 @@ function LoadingStateIndicator({
 }
 
 /** A component to choose your logic release. */
-function PermalinkChooser() {
-    const dispatch = useDispatch();
-    const options = useSelector(optionsSelector);
-    const settings = useSelector((state: RootState) => state.tracker.settings);
+function PermalinkChooser({
+    options,
+    settings,
+    dispatch,
+}: {
+    options: OptionDefs | undefined;
+    settings: AllTypedOptions | undefined;
+    dispatch: React.Dispatch<OptionsAction>;
+}) {
     const permalink = useMemo(
-        () =>
-            options &&
-            encodePermalink(options, validateSettings(options, settings)),
+        () => options && encodePermalink(options, settings!),
         [options, settings],
     );
 
@@ -460,7 +406,7 @@ function PermalinkChooser() {
             try {
                 if (options) {
                     const settings = decodePermalink(options, link);
-                    dispatch(acceptSettings({ settings }));
+                    dispatch({ type: 'changeSettings', settings });
                 }
             } catch (e) {
                 console.error('invalid permalink', link, e);
@@ -485,20 +431,15 @@ function PermalinkChooser() {
 }
 
 /** A list of all options categories. */
-function OptionsList() {
-    const optionDefs = useSelector(optionsSelector);
-    const settings = useSelector(allSettingsSelector);
-    const dispatch = useDispatch();
-
-    const changeSetting = useCallback(
-        <K extends LogicOption>(key: K, value: TypedOptions[K]) => {
-            dispatch(
-                acceptSettings({ settings: { ...settings, [key]: value } }),
-            );
-        },
-        [dispatch, settings],
-    );
-
+function OptionsList({
+    options,
+    settings,
+    dispatch,
+}: {
+    options: OptionDefs;
+    settings: AllTypedOptions;
+    dispatch: React.Dispatch<OptionsAction>;
+}) {
     return (
         <div className="optionsCategory">
             <Tabs defaultActiveKey="Shuffles">
@@ -508,7 +449,7 @@ function OptionsList() {
                             <Tab eventKey={title} key={title} title={title}>
                                 <div className="optionsTab">
                                     {categoryOptions.map((command) => {
-                                        const entry = optionDefs.find(
+                                        const entry = options.find(
                                             (o) => o.command === command,
                                         );
                                         if (!entry) {
@@ -519,11 +460,12 @@ function OptionsList() {
                                                 <Setting
                                                     def={entry}
                                                     value={settings[command]!}
-                                                    setValue={(val) =>
-                                                        changeSetting(
+                                                    setValue={(value) =>
+                                                        dispatch({
+                                                            type: 'changeSetting',
                                                             command,
-                                                            val as TypedOptions[typeof command],
-                                                        )
+                                                            value,
+                                                        })
                                                     }
                                                 />
                                             </Row>
@@ -577,11 +519,15 @@ function Setting({
                                 { label: string; value: number }
                             >()}
                             isSearchable={false}
-                            value={{ value: value as number, label: (value as number).toString() }}
+                            value={{
+                                value: value as number,
+                                label: (value as number).toString(),
+                            }}
                             onChange={(e) => e && setValue(e.value)}
-                            options={range(def.min, def.max + 1).map((val) => (
-                                { value: val, label: val.toString() }
-                            ))}
+                            options={range(def.min, def.max + 1).map((val) => ({
+                                value: val,
+                                label: val.toString(),
+                            }))}
                             name={def.name}
                         />
                     </Col>
@@ -600,11 +546,15 @@ function Setting({
                                 { label: string; value: string }
                             >()}
                             isSearchable={false}
-                            value={{ value: value as string, label: value as string }}
+                            value={{
+                                value: value as string,
+                                label: value as string,
+                            }}
                             onChange={(e) => e && setValue(e.value)}
-                            options={def.choices.map((val) => (
-                                { value: val, label: val }
-                            ))}
+                            options={def.choices.map((val) => ({
+                                value: val,
+                                label: val,
+                            }))}
                             name={def.name}
                         />
                     </Col>
@@ -690,7 +640,11 @@ function OptionTooltip({ children }: { children: string }) {
     );
 }
 
-const OptionLabel = React.memo(function OptionLabel({ option }: { option: Option }) {
+const OptionLabel = React.memo(function OptionLabel({
+    option,
+}: {
+    option: Option;
+}) {
     return (
         <Tooltip content={<OptionTooltip>{option.help}</OptionTooltip>}>
             <FormLabel htmlFor={option.name}>{option.name}</FormLabel>

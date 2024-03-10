@@ -20,7 +20,7 @@ export function getAllTricksEnabledRequirements(
     options: OptionDefs,
 ): Requirements {
     const requirements: Requirements = {};
-    const b = new LogicBuilder(logic.allItems, requirements);
+    const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
     for (const option of options) {
         if (

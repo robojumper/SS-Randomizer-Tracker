@@ -16,7 +16,7 @@ export interface ExportState {
 function doExport(): ThunkResult {
     return (_dispatch, getState) => {
         const state = getState().tracker;
-        const logicBranch = getState().logic.remote!;
+        const logicBranch = getState().logic.loaded!.remote;
 
         const filename = `SS-Rando-Tracker${new Date().toISOString()}`;
         const exportVal: ExportState = { state, version, logicBranch };

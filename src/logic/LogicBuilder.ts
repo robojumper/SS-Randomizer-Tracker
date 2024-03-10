@@ -25,12 +25,11 @@ export class LogicBuilder {
 
     constructor(
         allItems: string[],
+        itemLookup: Record<string, number>,
         requirements: Requirements,
     ) {
         this.itemList = allItems;
-        this.itemLookup = Object.fromEntries(
-            [...allItems.entries()].map(([idx, name]) => [name, idx]),
-        );
+        this.itemLookup = itemLookup;
         this.requirements = requirements;
     }
 

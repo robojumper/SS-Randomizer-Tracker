@@ -277,7 +277,7 @@ function mapSettings(
     requiredDungeons: string[],
 ) {
     const requirements: Requirements = {};
-    const b = new LogicBuilder(logic.allItems, requirements);
+    const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
     for (const option of runtimeOptions) {
         const [item, command, expect] = option;
@@ -384,7 +384,7 @@ export const inventoryRequirementsSelector = createSelector(
 
 export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const requirements: Requirements = {};
-    const b = new LogicBuilder(logic.allItems, requirements);
+    const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
     for (const [item, count] of Object.entries(itemCounts)) {
         if (count === undefined || item === 'Sailcloth') {

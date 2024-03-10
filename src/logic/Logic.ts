@@ -32,6 +32,7 @@ export interface Logic {
     staticRequirements: Requirements;
 
     allItems: string[];
+    itemLookup: Record<string, number>;
     /**
      * Requirements that will always imply each other by construction. Progressive Sword x 2 will always
      * imply Progressive Sword x 1.
@@ -825,8 +826,13 @@ export function parseLogic(raw: RawLogic): Logic {
         birdStatueSanity,
     };
 
+    const itemLookup = rawItems.reduce<Logic['itemLookup']>((acc, val, idx) => {
+        acc[val] = idx;
+        return acc;
+    }, {});
+
     // Now map our area graph to BitLogic
-    const newBuilder = new LogicBuilder(rawItems, staticRequirements);
+    const newBuilder = new LogicBuilder(rawItems, itemLookup, staticRequirements);
     mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems);
 
 
@@ -889,6 +895,7 @@ export function parseLogic(raw: RawLogic): Logic {
         numRequirements: rawItems.length,
         staticRequirements: updatedRequirements,
         allItems: rawItems,
+        itemLookup,
         dominators,
         reverseDominators,
         itemBits,

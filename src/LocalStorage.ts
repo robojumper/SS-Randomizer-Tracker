@@ -27,7 +27,7 @@ export function useSyncTrackerStateToLocalStorage() {
     const locationLayout = useSelector(locationLayoutSelector);
     const trickSemilogic = useSelector(trickSemiLogicSelector);
     const counterBasis = useSelector(counterBasisSelector);
-    const rawRemote = useSelector((state: RootState) => state.logic.remote!);
+    const rawRemote = useSelector((state: RootState) => state.logic.loaded!.remote);
     const state = useSelector((state: RootState) => state.tracker);
 
     useEffect(() => {
