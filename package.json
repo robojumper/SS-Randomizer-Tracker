@@ -25,6 +25,7 @@
     "react-scripts": "^5.0.1",
     "react-select": "^5.7.0",
     "react-window": "^1.8.8",
+    "semver": "^7.6.0",
     "tippy.js": "^6.3.7"
   },
   "scripts": {

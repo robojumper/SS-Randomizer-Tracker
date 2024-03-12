@@ -1,6 +1,7 @@
 import { load } from 'js-yaml';
 import { RawLogic } from '../logic/UpstreamTypes';
 import { MultiChoiceOption, OptionDefs } from '../permalink/SettingsTypes';
+import { getLatestRelease } from './ReleasesLoader';
 
 export type RemoteReference =
     | {
@@ -17,19 +18,11 @@ export type RemoteReference =
           branch: string;
       };
 
-async function fetchLatestGithubRelease() {
-    const releaseData = await fetch(
-        'https://api.github.com/repos/ssrando/ssrando/releases',
-    );
-    const release = (await releaseData.json()) as { tag_name: string }[];
-    return release[0].tag_name;
-}
-
 async function resolveRemote(ref: RemoteReference): Promise<[url: string, name: string]> {
     switch (ref.type) {
         case 'latestRelease':
             try {
-                const latest = await fetchLatestGithubRelease();
+                const latest = await getLatestRelease();
                 return [`https://raw.githubusercontent.com/ssrando/ssrando/${latest}`, latest];
             } catch (e) {
                 throw new Error(
@@ -42,6 +35,10 @@ async function resolveRemote(ref: RemoteReference): Promise<[url: string, name: 
                 );
             }
         case 'releaseVersion':
+            // Hack: This is a custom logic dump backported to 2.1.1
+            if (ref.versionTag === 'v2.1.1') {
+                return [`https://raw.githubusercontent.com/robojumper/ssrando/logic-v2.1.1`, formatRemote(ref)];
+            }
             return [`https://raw.githubusercontent.com/ssrando/ssrando/${ref.versionTag}`, formatRemote(ref)];
         case 'forkBranch':
             return [

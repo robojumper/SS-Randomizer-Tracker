@@ -71,7 +71,6 @@ function initialOptionsState({
 
 function optionsReducer(storedSettings: Partial<AllTypedOptions>) {
     return (state: OptionsState, action: OptionsAction): OptionsState => {
-        console.log(action);
         switch (action.type) {
             case 'changeSetting': {
                 const { command, value } = action;

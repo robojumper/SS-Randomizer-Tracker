@@ -45,6 +45,8 @@ import React from 'react';
 import { ImportButton } from './ImportExport';
 import Tooltip from './additionalComponents/Tooltip';
 import { LoadingState, OptionsAction, useOptionsState } from './OptionsReducer';
+import { useReleases } from './loader/ReleasesLoader';
+import { satisfies as semverSatisfies } from 'semver';
 
 /** The tracker will only show these options, and tracker logic code is only allowed to access these! */
 const optionCategorization_ = {
@@ -107,11 +109,7 @@ export type LogicOption =
 const optionCategorization: Record<string, readonly LogicOption[]> =
     optionCategorization_;
 
-// logic-v2.1.1 is a temporary branch that's permalink-compatible with the v2.1.1 release,
-// but uses the logic dump from main.
-// That branch will be removed once we get a stable release with the logic dump.
-// Older releases will be unsupported then.
-const wellKnownRemotes = ['Latest', 'ssrando/main', 'robojumper/logic-v2.1.1'];
+const wellKnownRemotes = ['Latest', 'ssrando/main'];
 
 /**
  * The default landing page for the tracker. Allows choosing logic source, permalink, and settings,
@@ -247,6 +245,32 @@ function LaunchButtons({
     );
 }
 
+const leastSupportedRelease = ">=2.1.1";
+
+function useRemoteOptions() {
+    const githubReleases = useReleases();
+
+    return useMemo(() => {
+        const remotes = wellKnownRemotes
+            .map((remote) => ({
+                value: parseRemote(remote)!,
+                label:
+                    remote === 'Latest' && githubReleases
+                        ? `Latest (${githubReleases.latest})`
+                        : remote,
+            }));
+
+        if (githubReleases) {
+            const supportedReleases = githubReleases.releases.filter((r) => semverSatisfies(r, leastSupportedRelease));
+            remotes.push(...supportedReleases.filter((r) => r !== githubReleases.latest).map((r) => ({
+                value: { type: 'releaseVersion', versionTag: r } as const,
+                label: r,
+            })));
+        }
+        return remotes;
+    }, [githubReleases]);
+}
+
 
 /** A component to choose your logic release. */
 function LogicChooser({
@@ -261,13 +285,7 @@ function LogicChooser({
     loadedRemoteName: string | undefined;
 }) {
     const inputRef = useRef<PlaintextRef>(null);
-
-    const wellKnownSelectOptions = useMemo(() => {
-        return wellKnownRemotes.map((remote) => ({
-            value: parseRemote(remote)!,
-            label: remote,
-        }));
-    }, []);
+    const wellKnownSelectOptions = useRemoteOptions();
 
     const activeOption = wellKnownSelectOptions.find((option) =>
         _.isEqual(option.value, selectedRemote),
