@@ -5,8 +5,10 @@ import { dedupePromise } from '../utils/Promises';
 /*
  * This module implements a small GitHub releases API caching layer.
  * GitHub's REST API has a very low rate limit (60/hour/IP address),
- * shared across all requests behind this IP. As a result, we try
- * very hard to make as few requests as possible:
+ * if unauthenticated, which is shared across all requests behind that
+ * IP address. This is not hugely problematic for a single app in isolation,
+ * but If Everybody Did This nobody could reliably get GH release information.
+ * As a result, we try very hard to make as few requests as possible:
  *   * Not make more than 1 request/hour
  *   * Store response in localstorage
  */
@@ -17,6 +19,8 @@ const listeners: { [id: string]: () => void } = {};
 
 function subscribe(id: string, callback: () => void) {
     listeners[id] = callback;
+    // Intentionally dangling promise here - ideally
+    // we would regularly re-check but that seems overkill
     void checkForUpdates();
     return () => delete listeners[id];
 }
@@ -27,6 +31,10 @@ function notify() {
     }
 }
 
+/**
+ * Asynchronously fetch the latest GitHub releases, in a convenient
+ * hook that returns undefined or cached results until results are ready.
+ */
 export function useReleases() {
     const id = useId();
     const doSubscribe = useCallback(
