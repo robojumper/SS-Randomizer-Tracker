@@ -72,7 +72,7 @@ export default function FullAcknowledgement() {
             <Row>
                 <Col>
                     <span style={{ padding: '1%' }}>
-                        <a href="https://github.com/cjs8487/SS-Randomizer-Tracker">
+                        <a href="https://github.com/robojumper/SS-Randomizer-Tracker/tree/new-logic-tracker">
                             View the Source Code
                             <i
                                 style={{ paddingLeft: '0.3%' }}
