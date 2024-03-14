@@ -1,10 +1,4 @@
-import {
-    getStoredColorScheme,
-    getStoredCounterBasis,
-    getStoredItemLayout,
-    getStoredLocationLayout,
-    getStoredTrickSemiLogic,
-} from '../LocalStorage';
+import { getStoredCustomization } from '../LocalStorage';
 import ColorScheme, { lightColorScheme } from './ColorScheme';
 import { PayloadAction, createSlice } from '@reduxjs/toolkit';
 
@@ -29,29 +23,13 @@ const initialState: CustomizationState = {
 };
 
 export function preloadedCustomizationState(): CustomizationState {
-    const state = initialState;
-    const colorScheme = { ...lightColorScheme, ...getStoredColorScheme() };
-    const itemLayout = getStoredItemLayout();
-    const locationLayout = getStoredLocationLayout();
-    const trickSemilogic = getStoredTrickSemiLogic();
-    const counterBasis = getStoredCounterBasis();
+    const loadedState = getStoredCustomization();
 
-    if (colorScheme) {
-        state.colorScheme = colorScheme;
-    }
-    if (itemLayout) {
-        state.itemLayout = itemLayout;
-    }
-    if (locationLayout) {
-        state.locationLayout = locationLayout;
-    }
-    if (trickSemilogic !== undefined) {
-        state.trickSemilogic = trickSemilogic;
-    }
-    if (counterBasis !== undefined) {
-        state.counterBasis = counterBasis;
-    }
-    return state;
+    return {
+        ...initialState,
+        ...loadedState,
+        colorScheme: { ...lightColorScheme, ...loadedState.colorScheme },
+    };
 }
 
 const customizationSlice = createSlice({
@@ -72,11 +50,16 @@ const customizationSlice = createSlice({
         },
         setCounterBasis: (state, action: PayloadAction<CounterBasis>) => {
             state.counterBasis = action.payload;
-        }
+        },
     },
 });
 
-export const { setColorScheme, setItemLayout, setLocationLayout, setTrickSemiLogic, setCounterBasis } =
-    customizationSlice.actions;
+export const {
+    setColorScheme,
+    setItemLayout,
+    setLocationLayout,
+    setTrickSemiLogic,
+    setCounterBasis,
+} = customizationSlice.actions;
 
 export default customizationSlice.reducer;

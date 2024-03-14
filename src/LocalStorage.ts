@@ -1,62 +1,30 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import {
-    colorSchemeSelector,
-    counterBasisSelector,
-    itemLayoutSelector,
-    locationLayoutSelector,
-    trickSemiLogicSelector,
-} from './customization/selectors';
 import { RootState } from './store/store';
 import { TrackerState } from './tracker/slice';
 import { RemoteReference, formatRemote, parseRemote } from './loader/LogicLoader';
-import { CounterBasis, ItemLayout, LocationLayout } from './customization/slice';
+import { CounterBasis, CustomizationState, ItemLayout, LocationLayout } from './customization/slice';
 import ColorScheme from './customization/ColorScheme';
 
+const trackerStateLocalStorageKey = 'ssrTrackerState';
+const customizationStateLocalStorageKey = 'ssrTrackerCustomization';
+const remoteLogicLocalStorageKey = 'ssrTrackerRemoteLogic';
+
+// Legacy
 const itemLayoutLocalStorageKey = 'ssrTrackerLayout';
 const colorSchemeLocalStorageKey = 'ssrTrackerColorScheme';
-const trackerStateLocalStorageKey = 'ssrTrackerState';
 const locationLayoutLocalStorageKey = 'ssrTrackerLocationLayout';
 const trickSemilogicLocalStorageKey = 'ssrTrackerTrickLogic';
-const remoteLogicLocalStorageKey = 'ssrTrackerRemoteLogic';
 const counterBasisLocalStorageKey = 'ssrTrackerCounterBasis';
 
 export function useSyncTrackerStateToLocalStorage() {
-    const colorScheme = useSelector(colorSchemeSelector);
-    const itemLayout = useSelector(itemLayoutSelector);
-    const locationLayout = useSelector(locationLayoutSelector);
-    const trickSemilogic = useSelector(trickSemiLogicSelector);
-    const counterBasis = useSelector(counterBasisSelector);
     const rawRemote = useSelector((state: RootState) => state.logic.loaded!.remote);
-    const state = useSelector((state: RootState) => state.tracker);
+    const trackerState = useSelector((state: RootState) => state.tracker);
+    const customizationState = useSelector((state: RootState) => state.customization);
 
     useEffect(() => {
-        localStorage.setItem(trackerStateLocalStorageKey, JSON.stringify(state));
-    }, [state]);
-
-
-    useEffect(() => {
-        localStorage.setItem(
-            colorSchemeLocalStorageKey,
-            JSON.stringify(colorScheme),
-        );
-    }, [colorScheme]);
-
-    useEffect(() => {
-        localStorage.setItem(itemLayoutLocalStorageKey, itemLayout);
-    }, [itemLayout]);
-
-    useEffect(() => {
-        localStorage.setItem(locationLayoutLocalStorageKey, locationLayout);
-    }, [locationLayout]);
-
-    useEffect(() => {
-        localStorage.setItem(trickSemilogicLocalStorageKey, JSON.stringify(trickSemilogic));
-    }, [trickSemilogic]);
-
-    useEffect(() => {
-        localStorage.setItem(counterBasisLocalStorageKey, JSON.stringify(counterBasis));
-    }, [counterBasis]);
+        localStorage.setItem(trackerStateLocalStorageKey, JSON.stringify(trackerState));
+    }, [trackerState]);
 
     useEffect(() => {
         localStorage.setItem(
@@ -64,6 +32,10 @@ export function useSyncTrackerStateToLocalStorage() {
             JSON.stringify(rawRemote),
         );
     }, [rawRemote]);
+
+    useEffect(() => {
+        localStorage.setItem(customizationStateLocalStorageKey, JSON.stringify(customizationState))
+    }, [customizationState])
 }
 
 export function getStoredTrackerState(): Partial<TrackerState> | undefined {
@@ -76,6 +48,37 @@ const logicMigrations: Record<string, string> = {
     'robojumper/statuesanity': 'ssrando/main',
     'YourAverageLink/random-pillar-statue': 'ssrando/main',
 };
+
+export function getStoredCustomization(): Partial<
+    Omit<CustomizationState, 'colorScheme'> & {
+        colorScheme: Partial<ColorScheme>;
+    }
+    > {
+    const entireCustomization = localStorage.getItem(
+        customizationStateLocalStorageKey,
+    );
+    let state: ReturnType<typeof getStoredCustomization> = {};
+    if (entireCustomization) {
+        state = JSON.parse(entireCustomization) as Partial<CustomizationState>;
+    } else {
+        state = {
+            itemLayout: getStoredItemLayout(),
+            locationLayout: getStoredLocationLayout(),
+            colorScheme: getStoredColorScheme(),
+            trickSemilogic: getStoredTrickSemiLogic(),
+            counterBasis: getStoredCounterBasis(),
+        };
+    }
+
+    // Remove undefined properties so that merging works in users of this
+    for (const [key, value] of Object.entries(state)) {
+        if (value === undefined) {
+            delete state[key as keyof typeof state];
+        }
+    }
+
+    return state;
+}
 
 export function getStoredRemote(): RemoteReference | undefined {
     const storedRemote = localStorage.getItem(remoteLogicLocalStorageKey);
@@ -91,27 +94,29 @@ export function getStoredRemote(): RemoteReference | undefined {
     }
 }
 
-export function getStoredItemLayout(): ItemLayout | undefined {
+// Legacy
+
+function getStoredItemLayout(): ItemLayout | undefined {
     const itemLayout = (localStorage.getItem(itemLayoutLocalStorageKey) as ItemLayout | null);
     return itemLayout ?? undefined;
 }
 
-export function getStoredLocationLayout(): LocationLayout | undefined {
+function getStoredLocationLayout(): LocationLayout | undefined {
     const locationLayout = (localStorage.getItem(locationLayoutLocalStorageKey) as LocationLayout | null);
     return locationLayout ?? undefined;
 }
 
-export function getStoredColorScheme(): Partial<ColorScheme> | undefined {
+function getStoredColorScheme(): Partial<ColorScheme> | undefined {
     const schemeJson = localStorage.getItem(colorSchemeLocalStorageKey);
     return schemeJson ? (JSON.parse(schemeJson) as Partial<ColorScheme>) : undefined;
 }
 
-export function getStoredTrickSemiLogic(): boolean | undefined {
+function getStoredTrickSemiLogic(): boolean | undefined {
     const schemeJson = localStorage.getItem(trickSemilogicLocalStorageKey);
     return schemeJson ? (JSON.parse(schemeJson) as boolean) : undefined;
 }
 
-export function getStoredCounterBasis(): CounterBasis | undefined {
+function getStoredCounterBasis(): CounterBasis | undefined {
     const schemeJson = localStorage.getItem(counterBasisLocalStorageKey);
     return schemeJson ? (JSON.parse(schemeJson) as CounterBasis) : undefined;
 }
