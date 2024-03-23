@@ -37,7 +37,7 @@ function simplify(source: string): string {
 
     const logic: LeanLogic = {
         allItems: items,
-        dominators: {},
+        impliedBy: {},
         itemBits: Object.fromEntries(items.map((i, idx) => [i, idx])),
     };
 

@@ -4,7 +4,7 @@
 import { Logic } from '../../logic/Logic';
 
 /** The part of Logic that we can send across to a web worker, only the parts we need for tooltips. */
-export type LeanLogic = Pick<Logic, 'allItems' | 'dominators' | 'itemBits'>;
+export type LeanLogic = Pick<Logic, 'allItems' | 'impliedBy' | 'itemBits'>;
 
 /** A message from our tooltips cache to its worker. */
 export type WorkerRequest =

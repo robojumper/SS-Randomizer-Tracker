@@ -48,7 +48,7 @@ export class TooltipComputer {
             type: 'initialize',
             opaqueBits: [...opaqueBits.iter()],
             requirements: requirements.map(serializeLogicalExpression),
-            logic: _.pick(logic, 'allItems', 'itemBits', 'dominators')
+            logic: _.pick(logic, 'allItems', 'itemBits', 'impliedBy')
         } satisfies WorkerRequest);
         worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
             this.acceptTaskResult(ev.data.checkId, deserializeBooleanExpression(ev.data.expression));

@@ -38,9 +38,9 @@ export interface Logic {
      * imply Progressive Sword x 1.
      * A map from item K to other items V such that for every V: V -> K
      */
-    dominators: Record<string, string[]>;
+    impliedBy: Record<string, string[]>;
     /** Maps from items K to items V such that for every V: K -> V */
-    reverseDominators: Record<string, string[]>;
+    implies: Record<string, string[]>;
     itemBits: Record<string, number>,
     areaGraph: AreaGraph;
     checks: Record<string, LogicalCheck>;
@@ -279,11 +279,11 @@ const excludedItemPrefixes = [
  */
 function preprocessItems(raw: string[]): {
     newItems: string[];
-    dominators: Logic['dominators'];
-    reverseDominators: Logic['reverseDominators'];
+    impliedBy: Logic['impliedBy'];
+    implies: Logic['implies'];
 } {
-    const dominators: Logic['dominators'] = {};
-    const reverseDominators: Logic['reverseDominators'] = {};
+    const impliedBy: Logic['impliedBy'] = {};
+    const implies: Logic['implies'] = {};
     const newItems = raw
         .filter((item) => !excludedItemPrefixes.some((p) => item.startsWith(p)))
         .map((rawItem) => {
@@ -294,10 +294,10 @@ function preprocessItems(raw: string[]): {
                 const amount = index + 1;
 
                 for (let i = 0; i <= amount; i++) {
-                    (dominators[itemName(item, i)] ??= []).push(
+                    (impliedBy[itemName(item, i)] ??= []).push(
                         itemName(item, amount),
                     );
-                    (reverseDominators[itemName(item, amount)] ??= []).push(
+                    (implies[itemName(item, amount)] ??= []).push(
                         itemName(item, i),
                     );
                 }
@@ -306,7 +306,7 @@ function preprocessItems(raw: string[]): {
             }
         });
 
-    return { newItems, dominators, reverseDominators };
+    return { newItems, impliedBy, implies };
 }
 
 const checkAreaPlaceholder = 'filled-in-later';
@@ -314,7 +314,7 @@ const checkAreaPlaceholder = 'filled-in-later';
 export function parseLogic(raw: RawLogic): Logic {
     const start = performance.now();
 
-    const { newItems, dominators, reverseDominators } = preprocessItems(
+    const { newItems, impliedBy, implies } = preprocessItems(
         raw.items,
     );
     const rawItems = [
@@ -423,7 +423,7 @@ export function parseLogic(raw: RawLogic): Logic {
         // can turn this into (Progressive Sword and Progressive Sword x 2) since it's easier to satisfy.
         for (const conj of terms) {
             for (const bit of conj.iter()) {
-                const alsoRequired = reverseDominators[rawItems[bit]];
+                const alsoRequired = implies[rawItems[bit]];
                 if (alsoRequired?.length) {
                     for (const otherTerm of alsoRequired) {
                         conj.setBit(itemBits[otherTerm]);
@@ -896,8 +896,8 @@ export function parseLogic(raw: RawLogic): Logic {
         staticRequirements: updatedRequirements,
         allItems: rawItems,
         itemLookup,
-        dominators,
-        reverseDominators,
+        impliedBy,
+        implies,
         itemBits,
         checks,
         hintRegions: areas,
