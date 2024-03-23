@@ -66,7 +66,7 @@ export function formatRemote(ref: RemoteReference) {
 }
 
 const prBranchPattern = /^https:\/\/github.com\/([^/]+)\/ssrando\/tree\/([^/]+)$/;
-const extendedPrBranchPattern = /^https:\/\/github.com\/([^/]+)\/([^/]+)\/tree\/([^/]+)$/;
+const extendedPrBranchPattern = /^https:\/\/github.com\/([^/]+)\/([^/]+)\/(?:tree|releases\/tag)\/([^/]+)$/;
 const branchPattern = /^([^/]+)(?:[/|:])([^/]+)$/;
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
