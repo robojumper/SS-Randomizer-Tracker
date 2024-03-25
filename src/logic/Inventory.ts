@@ -74,7 +74,7 @@ export function isItem(id: string): id is InventoryItem {
  * Returns a BitVector containing all the expressions that should be visible in the tooltips
  * and not recursively expanded (items and various item-like requirements).
  */
-export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings: TypedOptions, expertMode: boolean) {
+export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings: TypedOptions, expertMode: boolean, consideredTricks: Set<string>) {
     const items = new BitVector();
     const set = (id: string) => {
         const bit = logic.itemBits[id];
@@ -91,13 +91,13 @@ export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings
             (option.command === 'enabled-tricks-glitched' ||
                 option.command === 'enabled-tricks-bitless')
         ) {
-            if (expertMode) {
-                const vals = option.choices;
-                for (const opt of vals) {
-                    set(`${opt} Trick`);
-                }
-            } else {
-                for (const opt of settings[option.command]) {
+            const vals = option.choices;
+            for (const opt of vals) {
+                const considered =
+                    settings[option.command].includes(opt) ||
+                    (expertMode &&
+                        (!consideredTricks.size || consideredTricks.has(opt)));
+                if (considered) {
                     set(`${opt} Trick`);
                 }
             }

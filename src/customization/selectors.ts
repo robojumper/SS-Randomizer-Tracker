@@ -1,3 +1,4 @@
+import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '../store/store';
 
 export const colorSchemeSelector = (state: RootState) =>
@@ -11,6 +12,11 @@ export const locationLayoutSelector = (state: RootState) =>
 
 export const trickSemiLogicSelector = (state: RootState) =>
     state.customization.trickSemilogic;
+
+export const trickSemiLogicTrickListSelector = createSelector(
+    [(state: RootState) => state.customization.enabledTrickLogicTricks],
+    (tricks) => new Set(tricks),
+);
 
 export const counterBasisSelector = (state: RootState) =>
     state.customization.counterBasis;

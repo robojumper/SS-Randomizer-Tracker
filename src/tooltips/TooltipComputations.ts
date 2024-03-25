@@ -28,6 +28,7 @@ export class TooltipComputer {
         options: OptionDefs,
         settings: TypedOptions,
         expertMode: boolean,
+        trickLogicTricks: Set<string>,
         requirements: BitLogic,
     ) {
         this.subscriptions = {};
@@ -38,6 +39,7 @@ export class TooltipComputer {
             options,
             settings,
             expertMode,
+            trickLogicTricks,
         );
 
         const { worker, cleanup } = createWorker();

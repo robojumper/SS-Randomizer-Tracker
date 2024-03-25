@@ -11,6 +11,7 @@ export interface CustomizationState {
     itemLayout: ItemLayout;
     locationLayout: LocationLayout;
     trickSemilogic: boolean;
+    enabledTrickLogicTricks: string[];
     counterBasis: CounterBasis;
 }
 
@@ -19,6 +20,7 @@ const initialState: CustomizationState = {
     itemLayout: 'inventory',
     locationLayout: 'map',
     trickSemilogic: false,
+    enabledTrickLogicTricks: [],
     counterBasis: 'logic',
 };
 
@@ -51,6 +53,9 @@ const customizationSlice = createSlice({
         setCounterBasis: (state, action: PayloadAction<CounterBasis>) => {
             state.counterBasis = action.payload;
         },
+        setEnabledSemilogicTricks: (state, action: PayloadAction<string[]>) => {
+            state.enabledTrickLogicTricks = action.payload;
+        },
     },
 });
 
@@ -60,6 +65,7 @@ export const {
     setLocationLayout,
     setTrickSemiLogic,
     setCounterBasis,
+    setEnabledSemilogicTricks,
 } = customizationSlice.actions;
 
 export default customizationSlice.reducer;

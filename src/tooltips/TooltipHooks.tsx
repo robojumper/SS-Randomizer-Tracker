@@ -26,7 +26,7 @@ import {
     booleanExprToTooltipExpr,
 } from './TooltipExpression';
 import { ExplorationNode } from '../logic/Pathfinding';
-import { trickSemiLogicSelector } from '../customization/selectors';
+import { trickSemiLogicSelector, trickSemiLogicTrickListSelector } from '../customization/selectors';
 import { mergeRequirements } from '../logic/bitlogic/BitLogic';
 
 const TooltipsContext = createContext<TooltipComputer | null>(null);
@@ -42,6 +42,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
     const settings = useSelector(settingsSelector);
     const settingsRequirements = useSelector(settingsRequirementsSelector);
     const expertMode = useSelector(trickSemiLogicSelector);
+    const consideredTricks = useSelector(trickSemiLogicTrickListSelector);
 
     useEffect(() => {
         const bitLogic = mergeRequirements(
@@ -50,7 +51,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
             settingsRequirements,
         );
         setAnalyzer(
-            new TooltipComputer(logic, options, settings, expertMode, bitLogic),
+            new TooltipComputer(logic, options, settings, expertMode, consideredTricks, bitLogic),
         );
         return () => {
             setAnalyzer((oldAnalyzer) => {
@@ -58,7 +59,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
                 return null;
             });
         };
-    }, [settingsRequirements, logic, options, expertMode, settings]);
+    }, [settingsRequirements, logic, options, expertMode, consideredTricks, settings]);
 
     return (
         <TooltipsContext.Provider value={analyzer}>

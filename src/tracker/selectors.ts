@@ -53,7 +53,7 @@ import { BitVector } from '../logic/bitlogic/BitVector';
 import { InventoryItem, itemMaxes } from '../logic/Inventory';
 import { getAllowedStartingEntrances, getEntrancePools, getExitRules, getExits, getUsedEntrances } from '../logic/Entrances';
 import { computeSemiLogic, getAllTricksEnabledRequirements } from '../logic/SemiLogic';
-import { counterBasisSelector, trickSemiLogicSelector } from '../customization/selectors';
+import { counterBasisSelector, trickSemiLogicSelector, trickSemiLogicTrickListSelector } from '../customization/selectors';
 
 const bitVectorMemoizeOptions = {
     memoizeOptions: {
@@ -615,9 +615,14 @@ const dungeonKeyLogicSelector = createSelector(
     keyData,
 );
 
-/** A selector for the requirements that assume every trick is enabled. */
+/** A selector for the requirements that assume every trick enabled in customization is enabled. */
 const allTricksRequirementsSelector = createSelector(
-    [logicSelector, optionsSelector],
+    [
+        logicSelector,
+        optionsSelector,
+        settingsSelector,
+        trickSemiLogicTrickListSelector,
+    ],
     getAllTricksEnabledRequirements,
 );
 

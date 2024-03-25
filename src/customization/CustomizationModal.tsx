@@ -1,13 +1,14 @@
 import { Modal, Button, Container, Row, Col, FormCheck } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
 import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
-import { CounterBasis, ItemLayout, LocationLayout, setColorScheme, setCounterBasis, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
+import { CounterBasis, ItemLayout, LocationLayout, setColorScheme, setCounterBasis, setEnabledSemilogicTricks, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector, counterBasisSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector } from './selectors';
-import { useCallback } from 'react';
+import { colorSchemeSelector, counterBasisSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector, trickSemiLogicTrickListSelector } from './selectors';
+import { useCallback, useMemo } from 'react';
 import { selectStyles } from './ComponentStyles';
-import Select from 'react-select';
+import Select, { ActionMeta, MultiValue } from 'react-select';
 import Tooltip from '../additionalComponents/Tooltip';
+import { optionsSelector } from '../logic/selectors';
 
 const defaultColorSchemes = {
     Light: lightColorScheme,
@@ -113,7 +114,7 @@ export default function CustomizationModal({
                         />
                     </Row>
                     <Row>
-                        <h4>Show Trick Logic</h4>
+                        <Tooltip content="Choose whether checks reachable only with tricks should be highlighted in a separate color."><h4>Show Trick Logic</h4></Tooltip>
                     </Row>
                     <Row>
                         <FormCheck
@@ -124,6 +125,7 @@ export default function CustomizationModal({
                             onChange={(e) => dispatch(setTrickSemiLogic(e.target.checked))}
                         />
                     </Row>
+                    <TricksChooser enabled={trickSemiLogic} />
                     <Row>
                         <Tooltip content="Choose whether the Area/Total Locations Accessible counters should include items in semilogic."><h4>Counter Basis</h4></Tooltip>
                     </Row>
@@ -149,3 +151,69 @@ export default function CustomizationModal({
     );
 }
 
+interface Option {
+    label: string;
+    value: string;
+}
+
+function TricksChooser({ enabled }: { enabled: boolean }) {
+    const dispatch = useDispatch();
+    const options = useSelector(optionsSelector);
+    const enabledTricks = useSelector(trickSemiLogicTrickListSelector);
+
+    const onChange = useCallback((
+        selectedOption: MultiValue<Option>,
+        meta: ActionMeta<Option>,
+    ) => {
+        if (
+            meta.action === 'select-option' ||
+            meta.action === 'remove-value'
+        ) {
+            dispatch(
+                setEnabledSemilogicTricks(selectedOption.map((o) => o.value)),
+            );
+        } else if (meta.action === 'clear') {
+            // do not allow accidentally clearing everything until we have an undo
+        }
+    }, [dispatch]);
+
+    const choices = useMemo(
+        () =>
+            options
+                .filter(
+                    (o) =>
+                        o.command === 'enabled-tricks-bitless' ||
+                        o.command === 'enabled-tricks-glitched',
+                )
+                .flatMap((o) => (o.type === 'multichoice' ? o.choices : []))
+                .map((o) => ({ value: o, label: o })),
+        [options],
+    );
+
+    const value = useMemo(
+        () => [...enabledTricks].map((o) => ({ value: o, label: o })),
+        [enabledTricks],
+    );
+
+    return (
+        <>
+            <Row>
+                <Tooltip content="Enable tricks to be considered in trick logic. If no tricks are chosen, all tricks will be enabled."><h4>Enabled Tricks</h4></Tooltip>
+            </Row>
+            <Row>
+                <Select
+                    styles={selectStyles<
+                        true,
+                        Option
+                    >()}
+                    isMulti
+                    isDisabled={!enabled}
+                    value={value}
+                    onChange={onChange}
+                    options={choices}
+                    name="Enabled Tricks"
+                />
+            </Row>
+        </>
+    );
+}

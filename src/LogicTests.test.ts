@@ -1,4 +1,4 @@
-import { setCounterBasis } from './customization/slice';
+import { setCounterBasis, setEnabledSemilogicTricks, setTrickSemiLogic } from './customization/slice';
 import { RemoteReference, getAndPatchLogic } from './loader/LogicLoader';
 import { LogicalState } from './logic/Locations';
 import { loadLogic } from './logic/slice';
@@ -251,5 +251,33 @@ describe('full logic tests', () => {
         click(true);
         expect(count()).toBe(3);
 
+    });
+
+    it('handles trick logic', () => {
+        updateSettingsWithReset('starting-items', ['Amber Tablet']);
+        const cagedRobotCheck = findCheckId('Lanayru Desert', 'Rescue Caged Robot');
+        expect(checkState(cagedRobotCheck)).toBe('outLogic');
+
+        // You can get this check with Brakeslide and Ampilus Bomb Toss tricks
+        store.dispatch(setTrickSemiLogic(true));
+        expect(checkState(cagedRobotCheck)).toBe('trickLogic');
+
+        // Adding a single trick means we no longer consider all tricks by default,
+        // so Ampilus Bomb Toss will be missing
+        store.dispatch(setEnabledSemilogicTricks(['Brakeslide']))
+        expect(checkState(cagedRobotCheck)).toBe('outLogic');
+
+        
+        // If one trick is in logic and one is customized for tricklogic, still tricklogic
+        updateSettings('enabled-tricks-bitless', ['Lanayru Desert - Ampilus Bomb Toss']);
+        expect(checkState(cagedRobotCheck)).toBe('trickLogic');
+
+        // Make sure considered tricks are not considered if the toggle is off
+        store.dispatch(setTrickSemiLogic(false));
+        expect(checkState(cagedRobotCheck)).toBe('outLogic');
+
+        // If both tricks are in logic, the check is in logic
+        updateSettings('enabled-tricks-bitless', ['Lanayru Desert - Ampilus Bomb Toss', 'Brakeslide']);
+        expect(checkState(cagedRobotCheck)).toBe('inLogic');
     });
 });

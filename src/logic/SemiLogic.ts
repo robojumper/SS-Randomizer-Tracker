@@ -1,4 +1,4 @@
-import { OptionDefs } from '../permalink/SettingsTypes';
+import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { mapInventory, getAdditionalItems } from '../tracker/selectors';
 import { InventoryItem, isItem, itemMaxes } from './Inventory';
 import { PotentialLocations, getSemiLogicKeys } from './KeyLogic';
@@ -18,6 +18,8 @@ export interface SemiLogicState {
 export function getAllTricksEnabledRequirements(
     logic: Logic,
     options: OptionDefs,
+    settings: TypedOptions,
+    consideredTricks: Set<string>,
 ): Requirements {
     const requirements: Requirements = {};
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
@@ -29,8 +31,14 @@ export function getAllTricksEnabledRequirements(
                 option.command === 'enabled-tricks-bitless')
         ) {
             const vals = option.choices;
-            for (const option of vals) {
-                b.set(`${option} Trick`, b.true());
+            for (const opt of vals) {
+                const considered =
+                    settings[option.command].includes(opt) ||
+                    !consideredTricks.size ||
+                    consideredTricks.has(opt);
+                if (considered) {
+                    b.set(`${opt} Trick`, b.true());
+                }
             }
         }
     }
