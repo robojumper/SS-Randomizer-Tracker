@@ -27,6 +27,7 @@ import {
     Tabs,
 } from 'react-bootstrap';
 import {
+    LATEST_STRING,
     RemoteReference,
     formatRemote,
     parseRemote,
@@ -109,7 +110,7 @@ export type LogicOption =
 const optionCategorization: Record<string, readonly LogicOption[]> =
     optionCategorization_;
 
-const wellKnownRemotes = ['Latest', 'ssrando/main'];
+const wellKnownRemotes = [LATEST_STRING, 'ssrando/main'];
 
 /**
  * The default landing page for the tracker. Allows choosing logic source, permalink, and settings,
@@ -255,7 +256,7 @@ function useRemoteOptions() {
             .map((remote) => ({
                 value: parseRemote(remote)!,
                 label:
-                    remote === 'Latest' && githubReleases
+                    remote === LATEST_STRING && githubReleases
                         ? `Latest (${githubReleases.latest})`
                         : remote,
             }));

@@ -3,6 +3,8 @@ import { RawLogic } from '../logic/UpstreamTypes';
 import { MultiChoiceOption, OptionDefs } from '../permalink/SettingsTypes';
 import { getLatestRelease } from './ReleasesLoader';
 
+export const LATEST_STRING = 'Latest';
+
 export type RemoteReference =
     | {
           type: 'latestRelease';
@@ -53,7 +55,7 @@ async function resolveRemote(ref: RemoteReference): Promise<[url: string, name: 
 export function formatRemote(ref: RemoteReference) {
     switch (ref.type) {
         case 'latestRelease':
-            return 'Latest';
+            return LATEST_STRING;
         case 'releaseVersion':
             return ref.versionTag;
         case 'forkBranch':
@@ -71,7 +73,9 @@ const branchPattern = /^([^/]+)(?:[/|:])([^/]+)$/;
 const versionPattern = /^v[0-9]+\.[0-9]+\.[0-9]+$/;
 
 export function parseRemote(remote: string): RemoteReference | undefined {
-    if (remote === 'Latest') {
+    // eslint-disable-next-line no-param-reassign
+    remote = remote.trim();
+    if (remote === LATEST_STRING) {
         return { type: 'latestRelease' };
     }
     if (remote.match(versionPattern)) {
