@@ -17,6 +17,27 @@ export interface PotentialLocations {
 /**
  * Figures out how many keys you need for each check in a dungeon.
  * This is a bit complex unfortunately :(
+ * 
+ * The way this works is for every dungeon:
+ * - Assuming you have all items (including small and boss keys), you can reach all dungeon checks
+ * - If the small keys are known to be in the dungeon, then at least one key must be in the first
+ *   checks that are reachable with all items but no keys
+ * - The next key must be in all checks that are reachable assuming you got the first small key
+ * - Repeat until we know which checks you must access to be guaranteed to find X small keys
+ * - Then all checks that are reachable with all small keys can contain the boss key, if it's known
+ *   to be in the dungeon.
+ * 
+ * The reason this is not universally true is that this is not how keys are restricted in rando:
+ * - Rando instead says "all small keys and all boss keys must be in the Dungeon Name\Main area",
+ *   which excludes boss checks. But theoretically there could be a future option that allows
+ *   small keys behind the boss door. In that case the function would need to be tweaked to
+ *   assume you have the boss key too when figuring out small key logic, but this can't be done
+ *   right now as it would cause key logic to assume small keys can be behind the boss door.
+ * 
+ * The correct thing to do here when rando logic becomes more complex is:
+ * - Find a way to put the placement restrictions in the logic dump
+ * - Assume you have the boss key when figuring out small key logic
+ * - Use the placement restrictions to know that there aren't small keys behind the boss door.
  */
 export function keyData(
     logic: Logic,
@@ -155,6 +176,8 @@ export function keyData(
         }
 
         // NB this uses the results from small key logic
+        // This will need to be changed when taking (rando-sourced)
+        // placement restrictions into account, but not before then
         if (checksThatCanContainBossKey && canDoBossKeyLogic) {
             locations.push({
                 item: bossKey,
