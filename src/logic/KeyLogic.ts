@@ -37,7 +37,14 @@ export interface PotentialLocations {
  * The correct thing to do here when rando logic becomes more complex is:
  * - Find a way to put the placement restrictions in the logic dump
  * - Assume you have the boss key when figuring out small key logic
- * - Use the placement restrictions to know that there aren't small keys behind the boss door.
+ * - Use the placement restrictions to know whether there are small keys behind the boss door.
+ * 
+ * Update: This still won't work in the interesting cases. E.g. Ancient Cistern, boss door
+ * reachable with 0 small keys, but Chest in Key Locked Room needs 2 keys. Semilogic figures out
+ * that the small keys could be behind the boss door, which means that it can't assume that you
+ * can open Chest in Key Locked Room, which could contain the boss key, so it can't assume that
+ * you can get the small keys.
+ * So you just don't get key semilogic and this needs a new form of reasoning.
  */
 export function keyData(
     logic: Logic,
