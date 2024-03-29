@@ -40,7 +40,7 @@ const DungeonName = (props: DungeonNameProps) => {
             tabIndex={0}
             onContextMenu={onRightClick}
         >
-            <span className={completedState} style={currentStyle}>
+            <span className={`${completedState} dungeonName`} style={currentStyle}>
                 {dungeonAbbr}
             </span>
         </div>

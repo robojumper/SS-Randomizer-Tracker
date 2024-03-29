@@ -2,7 +2,7 @@
     text-decoration: line-through;
 }
 
-#dungeonTracker span {
+#dungeonTracker .dungeonName {
     font-family: HyliaSerif;
     font-size: 2.3vw;
     cursor: pointer;
