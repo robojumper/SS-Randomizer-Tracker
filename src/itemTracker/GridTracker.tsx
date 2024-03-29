@@ -8,6 +8,7 @@ import CounterItem from './items/CounterItem';
 import { useDispatch, useSelector } from 'react-redux';
 import { rawItemCountSelector, totalGratitudeCrystalsSelector } from '../tracker/selectors';
 import { clickItem } from '../tracker/slice';
+import { tumbleweedSelector } from '../customization/selectors';
 
 type GridTrackerProps = {
     styleProps: CSSProperties;
@@ -57,6 +58,7 @@ const GridTracker = ({ styleProps, mapMode: map }: GridTrackerProps) => {
 
     const walletCount = useSelector(rawItemCountSelector('Extra Wallet')) ?? 0;
     const crystalCount = useSelector(totalGratitudeCrystalsSelector);
+    const tumbleweed = useSelector(tumbleweedSelector);
 
     return (
         <table style={tableStyle}>
@@ -369,6 +371,15 @@ const GridTracker = ({ styleProps, mapMode: map }: GridTrackerProps) => {
                             ignoreItemClass
                         />
                     </td>
+                    {tumbleweed && (
+                        <td>
+                            <Item
+                                itemName="Tumbleweed"
+                                imgWidth={imgWidth}
+                                ignoreItemClass
+                            />
+                        </td>
+                    )}
                 </tr>
             </tbody>
         </table>

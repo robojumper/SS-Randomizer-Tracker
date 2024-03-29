@@ -20,3 +20,6 @@ export const trickSemiLogicTrickListSelector = createSelector(
 
 export const counterBasisSelector = (state: RootState) =>
     state.customization.counterBasis;
+
+export const tumbleweedSelector = (state: RootState) =>
+    state.customization.tumbleweed;

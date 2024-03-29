@@ -387,7 +387,7 @@ export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
     for (const [item, count] of Object.entries(itemCounts)) {
-        if (count === undefined || item === 'Sailcloth') {
+        if (count === undefined || item === 'Sailcloth' || item === 'Tumbleweed') {
             continue;
         }
         if (item === sothItemReplacement) {

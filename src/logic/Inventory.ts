@@ -62,6 +62,7 @@ export const itemMaxes = {
     'Sandship Small Key': 2,
     'Fire Sanctuary Small Key': 3,
     'Sky Keep Small Key': 1,
+    Tumbleweed: 1,
 };
 
 export type InventoryItem = keyof typeof itemMaxes;
@@ -106,7 +107,7 @@ export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings
 
     // All actual inventory items are shown in the tooltips
     for (const [item, count] of Object.entries(itemMaxes)) {
-        if (count === undefined || item === 'Sailcloth') {
+        if (count === undefined || item === 'Sailcloth' || item === 'Tumbleweed') {
             continue;
         }
         if (item === sothItemReplacement) {

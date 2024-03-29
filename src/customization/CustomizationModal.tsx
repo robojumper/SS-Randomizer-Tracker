@@ -1,9 +1,9 @@
 import { Modal, Button, Container, Row, Col, FormCheck } from 'react-bootstrap';
 import ColorBlock from './ColorBlock';
 import ColorScheme, { darkColorScheme, lightColorScheme } from './ColorScheme';
-import { CounterBasis, ItemLayout, LocationLayout, setColorScheme, setCounterBasis, setEnabledSemilogicTricks, setItemLayout, setLocationLayout, setTrickSemiLogic } from './slice';
+import { CounterBasis, ItemLayout, LocationLayout, setColorScheme, setCounterBasis, setEnabledSemilogicTricks, setItemLayout, setLocationLayout, setTrackTumbleweed, setTrickSemiLogic } from './slice';
 import { useDispatch, useSelector } from 'react-redux';
-import { colorSchemeSelector, counterBasisSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector, trickSemiLogicTrickListSelector } from './selectors';
+import { colorSchemeSelector, counterBasisSelector, itemLayoutSelector, locationLayoutSelector, trickSemiLogicSelector, trickSemiLogicTrickListSelector, tumbleweedSelector } from './selectors';
 import { useCallback, useMemo } from 'react';
 import { selectStyles } from './ComponentStyles';
 import Select, { ActionMeta, MultiValue } from 'react-select';
@@ -41,6 +41,7 @@ export default function CustomizationModal({
     const locationLayout = useSelector(locationLayoutSelector);
     const trickSemiLogic = useSelector(trickSemiLogicSelector);
     const counterBasis = useSelector(counterBasisSelector);
+    const tumbleweed = useSelector(tumbleweedSelector);
 
     const updateColorScheme = useCallback((scheme: ColorScheme) => dispatch(setColorScheme(scheme)), [dispatch]);
 
@@ -140,6 +141,18 @@ export default function CustomizationModal({
                             onChange={(e) => e && dispatch(setCounterBasis(e.value as CounterBasis))}
                             options={counterBases}
                             name="Counter Basis"
+                        />
+                    </Row>
+                    <Row>
+                        <h4>Track Tim</h4>
+                    </Row>
+                    <Row>
+                        <FormCheck
+                            // hack
+                            style={{ height: '30px', paddingLeft: '3.5em' }}
+                            type="switch"
+                            checked={tumbleweed}
+                            onChange={(e) => dispatch(setTrackTumbleweed(e.target.checked))}
                         />
                     </Row>
                 </Container>

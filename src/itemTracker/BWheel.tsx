@@ -1,6 +1,8 @@
 import { CSSProperties } from 'react';
 import Item from './Item';
 import wheel from '../assets/b wheel.png';
+import { useSelector } from 'react-redux';
+import { tumbleweedSelector } from '../customization/selectors';
 
 type BWheelProps = {
     styleProps: CSSProperties;
@@ -17,6 +19,9 @@ const BWheel = ({ styleProps }: BWheelProps) => {
     const clawshotsWidth = wid / 4.6;
     const whipWidth = wid / 5.5;
     const bellowsWidth = wid / 5.2;
+    const tumbleweedWidth = wid / 6;
+
+    const tumbleWeed = useSelector(tumbleweedSelector);
 
     return (
         <div id="BWheel">
@@ -104,6 +109,16 @@ const BWheel = ({ styleProps }: BWheelProps) => {
             >
                 <Item itemName="Gust Bellows" imgWidth={bellowsWidth} />
             </div>
+            {tumbleWeed && <div
+                id="gustBellows"
+                style={{
+                    position: 'relative',
+                    bottom: wid / 1.75 + 600 / wid,
+                    left: wid / 2.4,
+                }}
+            >
+                <Item itemName="Tumbleweed" imgWidth={tumbleweedWidth} />
+            </div>}
         </div>
     );
 };

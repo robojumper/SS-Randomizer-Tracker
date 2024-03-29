@@ -134,6 +134,7 @@ import extraWallet from '../assets/wallets/extraWallet.png';
 import woodenShield from '../assets/junk/woodenShield.png';
 import hylianShield from '../assets/junk/hylianShield.png';
 import tumbleweed from '../assets/junk/tumbleweed.png';
+import notumbleweed from '../assets/junk/no_tumbleweed.png';
 import rareTreasure from '../assets/junk/rareTreasure.png';
 import semiRareTreasure from '../assets/junk/semiRareTreasure.png';
 import rupees from '../assets/junk/rupees.png';
@@ -384,6 +385,10 @@ const images: Images = {
         tadtones,
         tadtones,
     ],
+    Tumbleweed: [
+        notumbleweed,
+        tumbleweed,
+    ],
     Scrapper: [
         noScrapper,
         scrapper,
@@ -461,9 +466,6 @@ const images: Images = {
     ],
     'Hylian Shield': [
         hylianShield,
-    ],
-    Tumbleweed: [
-        tumbleweed,
     ],
     'Rare Treasure': [
         rareTreasure,
