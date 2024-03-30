@@ -1,5 +1,5 @@
 diff --git a/package.json b/package.json
-index 8861f13..0e85c95 100644
+index d35d1d1..a8d4915 100644
 --- a/package.json
 +++ b/package.json
 @@ -4,6 +4,7 @@
@@ -10,6 +10,19 @@ index 8861f13..0e85c95 100644
    "dependencies": {
      "@react-hook/resize-observer": "^1.2.6",
      "@reduxjs/toolkit": "^2.0.0",
+diff --git a/public/manifest.json b/public/manifest.json
+index a85de5f..a12910d 100644
+--- a/public/manifest.json
++++ b/public/manifest.json
+@@ -18,7 +18,7 @@
+       "sizes": "512x512"
+     }
+   ],
+-  "start_url": "/",
++  "start_url": "/SS-Randomizer-Tracker",
+   "display": "standalone",
+   "theme_color": "#000000",
+   "background_color": "#ffffff"
 diff --git a/src/App.tsx b/src/App.tsx
 index 73cbf10..9889455 100644
 --- a/src/App.tsx
