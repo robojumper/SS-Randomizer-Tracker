@@ -19,8 +19,6 @@ import { NewLocationTracker } from './locationTracker/LocationTracker';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import CustomizationModal from './customization/CustomizationModal';
 import { itemLayoutSelector, locationLayoutSelector } from './customization/selectors';
-import { ErrorBoundary } from 'react-error-boundary';
-import ErrorPage from './ErrorPage';
 import WorldMap from './locationTracker/mapTracker/WorldMap';
 import { Link, Navigate } from 'react-router-dom';
 import { isLogicLoadedSelector } from './logic/selectors';
@@ -63,11 +61,9 @@ export default function TrackerContainer() {
     }
 
     return (
-        <ErrorBoundary FallbackComponent={ErrorPage}>
-            <MakeTooltipsAvailable>
-                <Tracker />
-            </MakeTooltipsAvailable>
-        </ErrorBoundary>
+        <MakeTooltipsAvailable>
+            <Tracker />
+        </MakeTooltipsAvailable>
     );
 }
 

@@ -5,6 +5,8 @@ import Tracker from './Tracker';
 import { useSelector } from 'react-redux';
 import { colorSchemeSelector } from './customization/selectors';
 import { useLayoutEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
+import ErrorPage from './ErrorPage';
 
 function App() {
     const colorScheme = useSelector(colorSchemeSelector);
@@ -16,13 +18,18 @@ function App() {
     }, [colorScheme]);
 
     return (
-        <Router>
-            <Routes>
-                <Route path="/" element={<Options />} />
-                <Route path="/tracker" element={<Tracker />} />
-                <Route path="/acknowledgement" element={<FullAcknowledgement />} />
-            </Routes>
-        </Router>
+        <ErrorBoundary FallbackComponent={ErrorPage}>
+            <Router>
+                <Routes>
+                    <Route path="/" element={<Options />} />
+                    <Route path="/tracker" element={<Tracker />} />
+                    <Route
+                        path="/acknowledgement"
+                        element={<FullAcknowledgement />}
+                    />
+                </Routes>
+            </Router>
+        </ErrorBoundary>
     );
 }
 
