@@ -94,6 +94,10 @@ export function getStoredRemote(): RemoteReference | undefined {
     }
 }
 
+export function clearStoredRemote() {
+    localStorage.removeItem(remoteLogicLocalStorageKey);
+}
+
 // Legacy
 
 function getStoredItemLayout(): ItemLayout | undefined {

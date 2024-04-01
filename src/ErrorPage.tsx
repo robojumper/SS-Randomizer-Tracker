@@ -1,6 +1,7 @@
 import { Button } from 'react-bootstrap';
 import { ExportButton } from './ImportExport';
 import DiscordButton from './additionalComponents/DiscordButton';
+import { clearStoredRemote } from './LocalStorage';
 
 export default function ErrorPage({
     error,
@@ -20,6 +21,10 @@ export default function ErrorPage({
             <div style={{ display: 'flex', gap: 4 }}>
                 <ExportButton />
                 <Button onClick={() => window.location.reload()}>Reload Page</Button>
+                <Button onClick={() => {
+                    clearStoredRemote();
+                    window.location.reload();
+                }}>Choose a different release</Button>
             </div>
             <p>If the error persists, you may try clearing all cookies and site data. <strong>This will reset the tracker and revert all customization.</strong></p>
         </div>
