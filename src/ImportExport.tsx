@@ -10,13 +10,13 @@ const version = 'SSRANDO-TRACKER-NG-V2';
 export interface ExportState {
     version: string;
     state: TrackerState;
-    logicBranch: RemoteReference;
+    logicBranch: RemoteReference | undefined;
 }
 
 function doExport(): ThunkResult {
     return (_dispatch, getState) => {
         const state = getState().tracker;
-        const logicBranch = getState().logic.loaded!.remote;
+        const logicBranch = getState().logic.loaded?.remote;
 
         const filename = `SS-Rando-Tracker${new Date().toISOString()}`;
         const exportVal: ExportState = { state, version, logicBranch };
@@ -54,7 +54,9 @@ export function ImportButton({ setLogicBranch }: { setLogicBranch: (branch: Remo
             alert('This export was made with an incompatible version of the Tracker and cannot be imported here.');
         }
         dispatch(loadTracker(importVal.state));
-        setLogicBranch(importVal.logicBranch);
+        if (importVal.logicBranch) {
+            setLogicBranch(importVal.logicBranch);
+        }
     };
 
     const readFile = (event: ChangeEvent<HTMLInputElement>) => {

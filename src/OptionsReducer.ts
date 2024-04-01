@@ -117,7 +117,20 @@ export type LoadingState =
     | {
           type: 'downloadError';
           error: string;
-      };
+      }
+    | {
+        type: 'corruptDump';
+        error: string;
+    };
+
+function convertError(e: any) {
+    return e
+        ? (typeof e === 'object' && 'message' in e)
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            ? (e.message as string)
+            : JSON.stringify(e)
+        : 'Unknown error';
+}
 
 async function loadRemote(
     remote: RemoteReference,
@@ -125,14 +138,9 @@ async function loadRemote(
     try {
         return await loadRemoteLogic(remote);
     } catch (e) {
-        return e
-            ? typeof e === 'object' && 'message' in e
-                ? (e.message as string)
-                : JSON.stringify(e)
-            : 'Unknown error';
+        return convertError(e);
     }
 }
-
 
 export function useOptionsState() {
     const reduxLoaded = useSelector(
@@ -196,9 +204,13 @@ export function useOptionsState() {
         [loadedBundle, state.settings],
     );
 
-    const continueCounters = useMemo(() => {
-        if (!loadedBundle || !completeState.tracker.hasBeenModified) {
-            return undefined;
+    // Here we "speculatively" run the tracker algorithms to output total counters.
+    // This is used to show a "Continue (numChecked/numRemaining)" button in the options
+    // menu, and if a dump turns out to be bad, we can catch that here, show an error
+    // message, and prevent the user from clicking "start" and just getting an error page.
+    const [continueCounters, evaluationError] = useMemo(() => {
+        if (!loadedBundle) {
+            return [undefined, undefined];
         }
         const mergedState: RootState = {
             customization: completeState.customization,
@@ -207,16 +219,31 @@ export function useOptionsState() {
                 loaded: loadedBundle,
             },
         };
-        return totalCountersSelector(mergedState);
+        let counters: ReturnType<typeof totalCountersSelector> | undefined;
+        let evalError: string | undefined;
+        try {
+            counters = totalCountersSelector(mergedState);
+        } catch (e) {
+            evalError = convertError(e);
+        }
+
+        return [completeState.tracker.hasBeenModified ? counters : undefined, evalError] as const;
     }, [completeState.customization, completeState.tracker, loadedBundle, state.settings]);
+
+    const returnedLoadingState: LoadingState | undefined =
+        loadingState ??
+        (evaluationError
+            ? { type: 'corruptDump', error: evaluationError }
+            : undefined);
+    const returnedBundle = evaluationError ? undefined : loadedBundle;
 
     return {
         dispatch,
-        loadingState,
+        loadingState: returnedLoadingState,
         hasChanges: state.hasChanges,
         counters: continueCounters,
         settings: validatedSettings,
         selectedRemote: state.selectedRemote,
-        loaded: loadedBundle,
+        loaded: returnedBundle,
     };
 }
