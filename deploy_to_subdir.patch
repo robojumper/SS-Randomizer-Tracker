@@ -24,15 +24,15 @@ index a85de5f..a12910d 100644
    "theme_color": "#000000",
    "background_color": "#ffffff"
 diff --git a/src/App.tsx b/src/App.tsx
-index 73cbf10..9889455 100644
+index 8924a38..146117f 100644
 --- a/src/App.tsx
 +++ b/src/App.tsx
-@@ -16,7 +16,7 @@ function App() {
-     }, [colorScheme]);
+@@ -19,7 +19,7 @@ function App() {
  
      return (
--        <Router>
-+        <Router basename="/SS-Randomizer-Tracker">
-             <Routes>
-                 <Route path="/" element={<Options />} />
-                 <Route path="/tracker" element={<Tracker />} />
+         <ErrorBoundary FallbackComponent={ErrorPage}>
+-            <Router>
++            <Router basename="/SS-Randomizer-Tracker">
+                 <Routes>
+                     <Route path="/" element={<Options />} />
+                     <Route path="/tracker" element={<Tracker />} />
