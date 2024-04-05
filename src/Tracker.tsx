@@ -1,5 +1,4 @@
 import {
-    CSSProperties,
     useMemo,
     useState,
     useSyncExternalStore,
@@ -79,35 +78,21 @@ function Tracker() {
 
     useSyncTrackerStateToLocalStorage();
 
-    const itemTrackerStyle: CSSProperties = {
-        position: 'fixed',
-        width: (12 * width) / 30, // this is supposed to be *a bit* more than 1/3. Min keeps it visible when the window is short
-        height: height * (locationLayout === 'map' ? 0.9 : 1),
-        left: '1%',
-        top: 0,
-        margin: '1%',
-    };
-    const gridTrackerStyle: CSSProperties = {
-        position: 'relative',
-        width: (2 * width) / 5,
-        height,
-        left: 0,
-        top: 0,
-        margin: '1%',
-    };
-
     let itemTracker;
     if (itemLayout === 'inventory') {
         itemTracker = (
             <ItemTracker
-                styleProps={itemTrackerStyle}
+                maxHeight={height * (locationLayout === 'map' ? 0.9 : 1)}
+                /* this is supposed to be *a bit* more than 1/3. Min keeps it visible when the window is short */
+                maxWidth={(12 * width) / 30}
                 mapMode={locationLayout === 'map'}
             />
         );
     } else if (itemLayout === 'grid') {
         itemTracker = (
             <GridTracker
-                styleProps={gridTrackerStyle}
+                width={2 * width / 5}
+                maxHeight={height}
                 mapMode={locationLayout === 'map'}
             />
         );

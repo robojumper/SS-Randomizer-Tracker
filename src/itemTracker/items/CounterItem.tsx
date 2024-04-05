@@ -1,17 +1,16 @@
-import { CSSProperties } from 'react';
 import allImages from '../Images';
 import keyDownWrapper from '../../KeyDownWrapper';
 import { InventoryItem } from '../../logic/Inventory';
 import { useDispatch, useSelector } from 'react-redux';
 import { clickItem } from '../../tracker/slice';
 import { rawItemCountSelector } from '../../tracker/selectors';
+import { CSSProperties } from 'react';
 
 type CounterItemProps = {
     images?: string[];
     itemName: InventoryItem;
     imgWidth: number;
     ignoreItemClass: boolean;
-    styleProps?: CSSProperties;
     grid?: boolean;
     asSpan?: boolean;
     fontSize: number;
@@ -29,8 +28,6 @@ const CounterItem = (props: CounterItemProps) => {
     } = props;
 
     const dispatch = useDispatch();
-
-    const styleProps = props.styleProps || {};
 
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
@@ -54,15 +51,16 @@ const CounterItem = (props: CounterItemProps) => {
         itemImages = images;
     }
     const image = current === 0 ? itemImages[0] : itemImages[1];
-    styleProps.position = 'relative';
-    styleProps.textAlign = 'center';
     const className = ignoreItemClass ? '' : 'item';
+
+    const style: CSSProperties = { position: 'relative', textAlign: 'center' };
+    
 
     if (asSpan) {
         return (
             <span
                 className={`item-container ${className}`}
-                style={styleProps}
+                style={style}
                 onClick={handleClick}
                 onContextMenu={handleClick}
                 onKeyDown={keyDownWrapper(handleClick)}
@@ -102,7 +100,7 @@ const CounterItem = (props: CounterItemProps) => {
     return (
         <div
             className={`item-container ${className}`}
-            style={styleProps}
+            style={style}
             onClick={handleClick}
             onContextMenu={handleClick}
             onKeyDown={keyDownWrapper(handleClick)}

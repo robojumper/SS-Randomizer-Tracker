@@ -1,4 +1,3 @@
-import { CSSProperties } from 'react';
 import allImages from './Images';
 import keyDownWrapper from '../KeyDownWrapper';
 import { InventoryItem } from '../logic/Inventory';
@@ -11,7 +10,6 @@ type ItemProps = {
     itemName: InventoryItem;
     imgWidth?: number | string;
     ignoreItemClass?: boolean;
-    styleProps?: CSSProperties;
     grid?: boolean;
 };
 
@@ -20,7 +18,6 @@ const Item = (props: ItemProps) => {
         itemName,
         ignoreItemClass,
         images,
-        styleProps,
         grid,
         imgWidth,
     } = props;
@@ -40,8 +37,6 @@ const Item = (props: ItemProps) => {
         itemImages = images;
     }
 
-    const style = styleProps;
-
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
             dispatch(clickItem({ item: itemName, take: true }));
@@ -54,7 +49,6 @@ const Item = (props: ItemProps) => {
     return (
         <div
             className={`item-container ${className}`}
-            style={style}
             onClick={handleClick}
             onContextMenu={handleClick}
             onKeyDown={keyDownWrapper(handleClick)}

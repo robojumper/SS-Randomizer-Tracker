@@ -4,11 +4,10 @@ import songBlock from '../assets/Song_Block.png';
 import Item from './Item';
 
 type SongBlockProps = {
-    styleProps: CSSProperties;
+    width: number;
 };
 
-const SongBlock = ({ styleProps }: SongBlockProps) => {
-    const wid = Number(styleProps.width || 0);
+const SongBlock = ({ width: wid }: SongBlockProps) => {
 
     const sailclothStyle: CSSProperties = {
         position: 'relative',

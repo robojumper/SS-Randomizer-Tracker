@@ -9,11 +9,11 @@ import { useSelector } from 'react-redux';
 import { totalGratitudeCrystalsSelector } from '../tracker/selectors';
 
 type QuestItemProps = {
-    styleProps: CSSProperties;
+    width: number;
 };
 
 const QuestItems = (props: QuestItemProps) => {
-    const width = Number(props.styleProps.width || 0);
+    const width = props.width;
 
     const letterWidth = width / 6.5;
     const cBeetleWidth = width / 6.5;

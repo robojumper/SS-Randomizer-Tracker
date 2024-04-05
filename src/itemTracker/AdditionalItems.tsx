@@ -5,11 +5,10 @@ import { useSelector } from 'react-redux';
 import { rawItemCountSelector } from '../tracker/selectors';
 
 type AdditionalItemsProps = {
-    styleProps: CSSProperties;
+    width: number;
 };
 
-const AdditionalItems = ({ styleProps }: AdditionalItemsProps) => {
-    const width = styleProps.width as number;
+const AdditionalItems = ({ width }: AdditionalItemsProps) => {
     const pouchStyle: CSSProperties = {
         position: 'relative',
         bottom: width * 0.425 + 400 / width,

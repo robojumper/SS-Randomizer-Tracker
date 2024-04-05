@@ -1,15 +1,13 @@
-import { CSSProperties } from 'react';
 import Item from './Item';
 import wheel from '../assets/b wheel.png';
 import { useSelector } from 'react-redux';
 import { tumbleweedSelector } from '../customization/selectors';
 
 type BWheelProps = {
-    styleProps: CSSProperties;
+    width: number;
 };
 
-const BWheel = ({ styleProps }: BWheelProps) => {
-    const wid = Number(styleProps.width || 0);
+const BWheel = ({ width: wid }: BWheelProps) => {
 
     const beetleWidth = wid / 5.2;
     const slingshotWidth = wid / 6.5;

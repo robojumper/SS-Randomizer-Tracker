@@ -10,7 +10,7 @@ import { rawItemCountSelector } from '../tracker/selectors';
 import { clickItem } from '../tracker/slice';
 
 type SwordBlockProperties = {
-    styleProps: CSSProperties;
+    width: number;
 };
 
 const SwordBlock = (props: SwordBlockProperties) => {
@@ -19,7 +19,7 @@ const SwordBlock = (props: SwordBlockProperties) => {
         dispatch(clickItem({ item: 'Extra Wallet', take: false }));
     };
 
-    const wid = Number(props.styleProps.width || 0);
+    const wid = props.width;
 
     const swordStyle: CSSProperties = {
         position: 'relative',

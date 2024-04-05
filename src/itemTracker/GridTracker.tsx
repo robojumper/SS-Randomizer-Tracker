@@ -11,11 +11,12 @@ import { clickItem } from '../tracker/slice';
 import { tumbleweedSelector } from '../customization/selectors';
 
 type GridTrackerProps = {
-    styleProps: CSSProperties;
+    width: number;
+    maxHeight: number;
     mapMode: boolean;
 };
 
-const GridTracker = ({ styleProps, mapMode: map }: GridTrackerProps) => {
+const GridTracker = ({ maxHeight, width, mapMode: map }: GridTrackerProps) => {
     const dispatch = useDispatch();
     const handleExtraWalletClick = () => {
         dispatch(clickItem({ item: 'Extra Wallet', take: false }));
@@ -41,8 +42,7 @@ const GridTracker = ({ styleProps, mapMode: map }: GridTrackerProps) => {
         top: '0%',
     };
 
-    let imgWidth = (styleProps.width as number) / 10;
-    const maxHeight = styleProps.height as number;
+    let imgWidth = width / 10;
     const fraction = (map ? 10 : 8)
     if (maxHeight < imgWidth * fraction) {
         imgWidth = maxHeight / fraction;
@@ -102,21 +102,27 @@ const GridTracker = ({ styleProps, mapMode: map }: GridTrackerProps) => {
                     <td rowSpan={2} colSpan={2}>
                         <div style={{ position: 'relative' }}>
                             <img src={noTablets} alt="" width={emptyTabWidth} />
-                            <Item
-                                styleProps={amberTabletStyle}
-                                imgWidth={amberWidth}
-                                itemName="Amber Tablet"
-                            />
-                            <Item
-                                styleProps={emeraldTabletStyle}
-                                imgWidth={emeraldWidth}
-                                itemName="Emerald Tablet"
-                            />
-                            <Item
-                                styleProps={rubyTabletStyle}
-                                imgWidth={rubyWidth}
-                                itemName="Ruby Tablet"
-                            />
+                            <div style={amberTabletStyle}>
+                                <Item
+                                    imgWidth={amberWidth}
+                                    itemName="Amber Tablet"
+                                    ignoreItemClass
+                                />
+                            </div>
+                            <div style={emeraldTabletStyle}>
+                                <Item
+                                    imgWidth={emeraldWidth}
+                                    itemName="Emerald Tablet"
+                                    ignoreItemClass
+                                />
+                            </div>
+                            <div style={rubyTabletStyle}>
+                                <Item
+                                    imgWidth={rubyWidth}
+                                    itemName="Ruby Tablet"
+                                    ignoreItemClass
+                                />
+                            </div>
                         </div>
                     </td>
                 </tr>
