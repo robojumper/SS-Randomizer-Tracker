@@ -1,11 +1,5 @@
 import { ExitRule } from './Entrances';
-import { Logic, LogicalCheck } from './Logic';
-import { BitVector } from './bitlogic/BitVector';
-
-export interface DerivedState {
-    logic: Logic;
-    inventoryBits: BitVector;
-}
+import { LogicalCheck } from './Logic';
 
 export interface HintRegion<N extends string = string> {
     name: N;
