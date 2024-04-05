@@ -6,6 +6,7 @@ import BooleanExpression, {
 import { LogicalState } from '../logic/Locations';
 import prettyItemNames_ from '../data/prettyItemNames.json';
 import _ from 'lodash';
+import { InventoryItem, itemOrder } from '../logic/Inventory';
 
 const prettyItemNames: Record<
     string,
@@ -14,12 +15,14 @@ const prettyItemNames: Record<
 
 export interface TerminalRequirement {
     type: 'item';
+    sortIndex: number;
     item: string;
     logicalState: LogicalState;
 }
 
 export interface NonterminalRequirement {
     type: 'expr';
+    sortIndex: number;
     items: TooltipExpression[];
     op: Op;
 }
@@ -37,6 +40,7 @@ const impossible: RootTooltipExpression = {
         {
             type: 'item',
             item: 'Impossible (discover an entrance first)',
+            sortIndex: 0,
             logicalState: 'outLogic',
         },
     ],
@@ -48,31 +52,57 @@ const nothing: RootTooltipExpression = {
         {
             type: 'item',
             item: 'Nothing',
+            sortIndex: 0,
             logicalState: 'inLogic',
         },
     ],
 };
+
+function sortRequirements(exprs: TooltipExpression[]) {
+    return _.sortBy(exprs, (expr: TooltipExpression) => (expr.sortIndex));
+}
 
 export function booleanExprToTooltipExpr(
     logic: Logic,
     expr: BooleanExpression,
     getRequirementLogicalState: (requirement: string) => LogicalState,
 ): RootTooltipExpression {
-    const reducer = (arg: ReducerArg<NonterminalRequirement>) => {
+    const reducer = (arg: ReducerArg<NonterminalRequirement>): NonterminalRequirement => {
         if (arg.isReduced) {
             return {
                 ...arg.accumulator,
-                items: [...arg.accumulator.items, arg.item],
+                sortIndex:
+                    arg.accumulator.op === Op.Or
+                        ? Math.min(
+                            arg.accumulator.sortIndex,
+                            arg.item.sortIndex,
+                        )
+                        : Math.max(
+                            arg.accumulator.sortIndex,
+                            arg.item.sortIndex,
+                        ),
+                items: sortRequirements([...arg.accumulator.items, arg.item]),
             };
         } else {
             const wrappedItem: TerminalRequirement = {
                 type: 'item',
+                sortIndex: itemOrder[getBaseItem(arg.item) as InventoryItem] ?? 0,
                 item: getReadableItemName(logic, arg.item),
                 logicalState: getRequirementLogicalState(arg.item),
             };
             return {
                 ...arg.accumulator,
-                items: [...arg.accumulator.items, wrappedItem],
+                sortIndex:
+                    arg.accumulator.op === Op.Or
+                        ? Math.min(
+                            arg.accumulator.sortIndex,
+                            wrappedItem.sortIndex,
+                        )
+                        : Math.max(
+                            arg.accumulator.sortIndex,
+                            wrappedItem.sortIndex,
+                        ),
+                items: sortRequirements([...arg.accumulator.items, wrappedItem]),
             };
         }
     };
@@ -81,11 +111,13 @@ export function booleanExprToTooltipExpr(
         andInitialValue: {
             type: 'expr',
             items: [],
+            sortIndex: Number.MIN_SAFE_INTEGER,
             op: Op.And,
         },
         orInitialValue: {
             type: 'expr',
             items: [],
+            sortIndex: Number.MAX_SAFE_INTEGER,
             op: Op.Or,
         },
         andReducer: reducer,
@@ -110,6 +142,16 @@ export function booleanExprToTooltipExpr(
 }
 
 const itemCountPat = /^(.+) x (\d+)$/;
+
+function getBaseItem(item: string) {
+    const match = item.match(itemCountPat);
+    if (match) {
+        const [, baseName] = match;
+        return baseName;
+    }
+
+    return item;
+}
 
 function getReadableItemName(logic: Logic, item: string) {
     if (item in prettyItemNames) {

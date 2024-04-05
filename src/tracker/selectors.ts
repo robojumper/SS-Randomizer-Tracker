@@ -23,7 +23,6 @@ import {
     ExitMapping,
     dungeonNames,
     isDungeon,
-    isRegularDungeon,
     LogicalState,
 } from '../logic/Locations';
 import {
@@ -242,14 +241,13 @@ export const requiredDungeonsSelector = createSelector(
         skyKeepRequiredSelector,
     ],
     (selectedRequiredDungeons, numRequiredDungeons, skyKeepRequired) => {
-        const requiredDungeons =
-            numRequiredDungeons === 6
-                ? dungeonNames.filter((n) => n !== 'Sky Keep')
-                : selectedRequiredDungeons.filter(isRegularDungeon);
-        if (skyKeepRequired) {
-            requiredDungeons.push('Sky Keep');
-        }
-        return requiredDungeons;
+        // Enforce consistent order
+        return dungeonNames.filter((d) =>
+            d === 'Sky Keep'
+                ? skyKeepRequired
+                : numRequiredDungeons === 6 ||
+                  selectedRequiredDungeons.includes(d),
+        );
     },
 );
 
