@@ -1,7 +1,7 @@
 import { Col, Row } from 'react-bootstrap';
 import keyDownWrapper from '../KeyDownWrapper';
 import { useContextMenu } from './context-menu';
-import { useCallback } from 'react';
+import { CSSProperties, useCallback } from 'react';
 import { TriggerEvent } from 'react-contexify';
 import images from '../itemTracker/Images';
 import placeholderImg from '../assets/slot test.png';
@@ -37,11 +37,12 @@ export default function Location({
 
     const style = {
         textDecoration: check.checked ? 'line-through' : 'none',
+        userSelect: 'none',
         cursor: 'pointer',
         color: check.checked ? `var(--scheme-checked)` : `var(--scheme-${check.logicalState})`,
         paddingLeft: 6,
         paddingRight: 0,
-    };
+    } satisfies CSSProperties;
 
     const { show } = useContextMenu<LocationContextMenuProps>({
         id: 'location-context',

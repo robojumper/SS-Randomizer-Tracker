@@ -51,6 +51,7 @@ const SwordBlock = (props: SwordBlockProperties) => {
         left: wid / 1.6,
     };
     const extraWalletStyle: CSSProperties = {
+        userSelect: 'none',
         position: 'relative',
         bottom: wid / 4.6 - 1 / wid,
         left: wid / 1.2,
