@@ -144,6 +144,13 @@ export class LogicalExpression {
             this.conjunctions.some((c) => c.isEmpty())
         );
     }
+
+    /**
+     * Returns a deep clone of this expression
+     */
+    clone() {
+        return new LogicalExpression(this.conjunctions.map((c) => c.clone()));
+    }
 }
 
 /**

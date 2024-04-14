@@ -388,6 +388,9 @@ export function bottomUpTooltipPropagation(
 ) {
     let changed = true;
     let rounds = 0;
+
+    let recentlyChanged: BitVector | undefined = undefined;
+
     const propagationCandidates = new BitVector();
     // Propagation candidates are non-opaque expressions that contain
     // a disjunct with only opaque bits set.
@@ -403,12 +406,19 @@ export function bottomUpTooltipPropagation(
     while (changed) {
         rounds++;
         changed = false;
+        const thisRoundChanged = new BitVector();
+        const interestingCandidates = recentlyChanged
+            ? recentlyChanged.and(propagationCandidates)
+            : propagationCandidates;
 
         for (const [idx, expr] of requirements.entries()) {
+
             let additionalTerms = LogicalExpression.false();
     
             for (const conj of expr.conjunctions) {
-                if (conj.intersects(propagationCandidates)) {
+                if (
+                    conj.intersects(interestingCandidates)
+                ) {
                     const newItems = new BitVector();
                     let toPropagate = LogicalExpression.true();
                     let skip = false;
@@ -417,7 +427,7 @@ export function bottomUpTooltipPropagation(
                             newItems.setBit(reqBit);
                         } else {
                             const revealed = requirements[reqBit];
-    
+
                             if (revealed.isTriviallyFalse()) {
                                 skip = true;
                                 break;
@@ -430,7 +440,9 @@ export function bottomUpTooltipPropagation(
                                         c.isSubsetOf(opaqueBits),
                                     ),
                                 );
-                            toPropagate = toPropagate.and(propagationRequirements).removeDuplicates();
+                            toPropagate = toPropagate
+                                .and(propagationRequirements)
+                                .removeDuplicates();
                         }
                     }
 
@@ -438,7 +450,11 @@ export function bottomUpTooltipPropagation(
                     // below we can check if any of the additional terms are useful.
                     if (!skip) {
                         for (const term of toPropagate.conjunctions) {
-                            additionalTerms = additionalTerms.or(term.or(newItems));
+                            if (!newItems.test(idx)) {
+                                additionalTerms = additionalTerms.or(
+                                    term.or(newItems),
+                                );
+                            }
                         }
                     }
                 }
@@ -446,11 +462,14 @@ export function bottomUpTooltipPropagation(
 
             const [useful, newExpr] = expr.orExtended(additionalTerms);
             if (useful) {
+                thisRoundChanged.setBit(idx);
                 changed = true;
                 requirements[idx] = newExpr;
                 propagationCandidates.setBit(idx);
             }
         }
+
+        recentlyChanged = thisRoundChanged;
     }
 
 

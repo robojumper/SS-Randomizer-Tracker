@@ -30,7 +30,8 @@ interface GlobalState {
     logic: LeanLogic;
     opaqueBits: BitVector;
     learned: Set<number>;
-    requirements: LogicalExpression[];
+    // requirementsForTopDown: LogicalExpression[];
+    requirementsForBottomUp: LogicalExpression[];
 }
 
 let g: GlobalState;
@@ -45,27 +46,42 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
             for (const bit of ev.data.opaqueBits) {
                 opaqueBits.setBit(bit);
             }
+            const requirements = ev.data.requirements.map(
+                deserializeLogicalExpression,
+            );
             g = {
                 logic: ev.data.logic,
                 opaqueBits,
                 learned: new Set(),
-                requirements: ev.data.requirements.map(
-                    deserializeLogicalExpression,
-                ),
+                // requirementsForTopDown: requirements.map((req) => req.clone()), 
+                requirementsForBottomUp: requirements,
             };
+
+            /*
+            do {
+                // First, perform some cheap optimizations that will help every
+                // query afterwards.
+                removeDuplicates(g.requirementsForTopDown);
+                while (shallowSimplify(g.opaqueBits, g.requirementsForTopDown)) {
+                    removeDuplicates(g.requirementsForTopDown);
+                }
+            } while (unifyRequirements(g.opaqueBits, g.requirementsForTopDown));
+            console.log('worker', 'initializing and pre-simplifying took', performance.now() - start, 'ms');
+            */
 
             do {
                 // First, perform some cheap optimizations that will help every
                 // query afterwards.
-                removeDuplicates(g.requirements);
-                while (shallowSimplify(g.opaqueBits, g.requirements)) {
-                    removeDuplicates(g.requirements);
+                removeDuplicates(g.requirementsForBottomUp);
+                while (shallowSimplify(g.opaqueBits, g.requirementsForBottomUp)) {
+                    removeDuplicates(g.requirementsForBottomUp);
                 }
-            } while (unifyRequirements(g.opaqueBits, g.requirements));
+            } while (unifyRequirements(g.opaqueBits, g.requirementsForBottomUp));
             console.log('worker', 'initializing and pre-simplifying took', performance.now() - start, 'ms');
+            
 
             const start2 = performance.now();
-            bottomUpTooltipPropagation(g.opaqueBits, g.requirements);
+            bottomUpTooltipPropagation(g.opaqueBits, g.requirementsForBottomUp);
             console.log('worker', 'fixpoint propagation tool', performance.now() - start2, 'ms');
 
             break;
@@ -97,7 +113,7 @@ function analyze(checkId: string): BooleanExpression {
     while (numLearnedInPrecomputation < 5) {
         const potentialPath = findNewSubgoals(
             g.opaqueBits,
-            g.requirements,
+            g.requirementsForTopDown,
             bit,
             g.learned,
         );
@@ -113,9 +129,9 @@ function analyze(checkId: string): BooleanExpression {
                     // Note that even though the result of `findNewSubgoals` is obviously path-dependent and depends on the check in question,
                     // this particular call happens in isolation and has no dependencies on the check in question, so reusing is sound!
                     const start = performance.now();
-                    g.requirements[precomputeBit] = computeGroundExpression(
+                    g.requirementsForTopDown[precomputeBit] = computeGroundExpression(
                         g.opaqueBits,
-                        g.requirements,
+                        g.requirementsForTopDown,
                         precomputeBit,
                     );
                     console.log('  ', 'worker', 'precomputing', g.logic.allItems[precomputeBit], 'took', performance.now() - start, 'ms');
@@ -130,19 +146,25 @@ function analyze(checkId: string): BooleanExpression {
     }
 
     const start = performance.now();
-    const opaqueOnlyExpr = computeGroundExpression(
+    const topDownExpression = computeGroundExpression(
         g.opaqueBits,
-        g.requirements,
+        g.requirementsForTopDown,
         bit,
-    );
+    ).removeDuplicates();
     console.log('  ', 'worker', 'computing', g.logic.allItems[bit], 'took', performance.now() - start, 'ms');
-    g.requirements[bit] = opaqueOnlyExpr;
+    g.requirementsForTopDown[bit] = topDownExpression;
     */
 
-    const opaqueOnlyExpr = g.requirements[bit];
+    const bottomUpExpression = g.requirementsForBottomUp[bit].removeDuplicates();
+
+    /*
+    if (topDownExpression.conjunctions.length !== bottomUpExpression.conjunctions.length) {
+        console.error('Bad optimization for', checkId);
+    }
+    */
 
     const simplifyStart = performance.now();
-    const simplified = dnfToRequirementExpr(g.logic, opaqueOnlyExpr.conjunctions);
+    const simplified = dnfToRequirementExpr(g.logic, bottomUpExpression.conjunctions);
     console.log('  ', 'worker', 'simplifying took', performance.now() - simplifyStart, 'ms');
     return simplified;
 }
