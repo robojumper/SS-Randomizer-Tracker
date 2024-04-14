@@ -96,7 +96,7 @@ export class LogicalExpression {
      * the terms of `this` changing.
      */
     orExtended(other: LogicalExpression) {
-        const terms: BitVector[] = this.conjunctions;
+        const terms: BitVector[] = [...this.conjunctions];
         let useful = false;
 
         const otherTerms = other.removeDuplicates().conjunctions;

@@ -5,7 +5,7 @@ import {
     // findNewSubgoals,
     removeDuplicates,
     shallowSimplify,
-    // unifyRequirements,
+    unifyRequirements,
 } from '../../logic/bitlogic/BitLogic';
 import { BitVector } from '../../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
@@ -61,8 +61,7 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
                 while (shallowSimplify(g.opaqueBits, g.requirements)) {
                     removeDuplicates(g.requirements);
                 }
-            // eslint-disable-next-line no-constant-condition
-            } while (/* unifyRequirements(g.opaqueBits, g.requirements) */ false);
+            } while (unifyRequirements(g.opaqueBits, g.requirements));
             console.log('worker', 'initializing and pre-simplifying took', performance.now() - start, 'ms');
 
             const start2 = performance.now();

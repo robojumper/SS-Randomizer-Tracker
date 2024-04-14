@@ -386,29 +386,23 @@ export function bottomUpTooltipPropagation(
     opaqueBits: BitVector,
     requirements: BitLogic,
 ) {
-
-    let recentlyChanged: BitVector | undefined = undefined;
-
     let changed = true;
     let rounds = 0;
+    const propagationCandidates = new BitVector();
+    // Propagation candidates are non-opaque expressions that contain
+    // a disjunct with only opaque bits set.
+    for (let item = 0; item < requirements.length; item++) {
+        if (
+            !opaqueBits.test(item) &&
+            requirements[item].conjunctions.some((vec) => vec.isSubsetOf(opaqueBits))
+        ) {
+            propagationCandidates.setBit(item);
+        }
+    }
+
     while (changed) {
         rounds++;
         changed = false;
-
-        // Propagation candidates are non-opaque expressions that contain
-        // a disjunct with only opaque bits set.
-        const propagationCandidates = new BitVector();
-        for (let item = 0; item < requirements.length; item++) {
-            if (
-                !opaqueBits.test(item) &&
-                (!recentlyChanged || recentlyChanged.test(item)) &&
-                requirements[item].conjunctions.some((vec) => vec.isSubsetOf(opaqueBits))
-            ) {
-                propagationCandidates.setBit(item);
-            }
-        }
-
-        recentlyChanged = new BitVector();
 
         for (const [idx, expr] of requirements.entries()) {
             let additionalTerms = LogicalExpression.false();
@@ -416,17 +410,11 @@ export function bottomUpTooltipPropagation(
             for (const conj of expr.conjunctions) {
                 if (conj.intersects(propagationCandidates)) {
                     const newItems = new BitVector();
-                    let toPropagate: BitVector[] | undefined = undefined;
+                    let toPropagate = LogicalExpression.true();
                     let skip = false;
                     for (const reqBit of conj.iter()) {
                         if (!propagationCandidates.test(reqBit)) {
                             newItems.setBit(reqBit);
-                        } else if (toPropagate) {
-                            // we can only propagate through one bit at a time, otherwise our
-                            // assumptions in orExtended get broken
-                            newItems.setBit(reqBit);
-                            // remember this bit for next round though
-                            recentlyChanged.setBit(reqBit);
                         } else {
                             const revealed = requirements[reqBit];
     
@@ -436,14 +424,20 @@ export function bottomUpTooltipPropagation(
                             }
 
                             // The only terms we can propagate are the ones that are completely opaque
-                            toPropagate = revealed.conjunctions.filter((c) => c.isSubsetOf(opaqueBits));
+                            const propagationRequirements =
+                                new LogicalExpression(
+                                    revealed.conjunctions.filter((c) =>
+                                        c.isSubsetOf(opaqueBits),
+                                    ),
+                                );
+                            toPropagate = toPropagate.and(propagationRequirements).removeDuplicates();
                         }
                     }
 
                     // We record all propagated possibilities in additionalTerms, so that
                     // below we can check if any of the additional terms are useful.
-                    if (toPropagate && !skip) {
-                        for (const term of toPropagate) {
+                    if (!skip) {
+                        for (const term of toPropagate.conjunctions) {
                             additionalTerms = additionalTerms.or(term.or(newItems));
                         }
                     }
@@ -454,7 +448,7 @@ export function bottomUpTooltipPropagation(
             if (useful) {
                 changed = true;
                 requirements[idx] = newExpr;
-                recentlyChanged.setBit(idx);
+                propagationCandidates.setBit(idx);
             }
         }
     }
@@ -465,7 +459,9 @@ export function bottomUpTooltipPropagation(
     // bits is recursive in some way, and these recursive requirements can be dropped
     // 
     for (const [idx, expr] of requirements.entries()) {
-        requirements[idx] = new LogicalExpression(expr.conjunctions.filter((c) => c.isSubsetOf(opaqueBits)));
+        requirements[idx] = new LogicalExpression(
+            expr.conjunctions.filter((c) => c.isSubsetOf(opaqueBits)),
+        );
     }
 
     console.log('bottom-up tooltip requirements took', rounds, 'rounds');
