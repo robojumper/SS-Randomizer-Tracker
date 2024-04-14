@@ -1,10 +1,11 @@
 import _ from 'lodash';
 import {
-    computeGroundExpression,
-    findNewSubgoals,
+    bottomUpTooltipPropagation,
+    // computeGroundExpression,
+    // findNewSubgoals,
     removeDuplicates,
     shallowSimplify,
-    unifyRequirements,
+    // unifyRequirements,
 } from '../../logic/bitlogic/BitLogic';
 import { BitVector } from '../../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
@@ -60,8 +61,14 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
                 while (shallowSimplify(g.opaqueBits, g.requirements)) {
                     removeDuplicates(g.requirements);
                 }
-            } while (unifyRequirements(g.opaqueBits, g.requirements));
+            // eslint-disable-next-line no-constant-condition
+            } while (/* unifyRequirements(g.opaqueBits, g.requirements) */ false);
             console.log('worker', 'initializing and pre-simplifying took', performance.now() - start, 'ms');
+
+            const start2 = performance.now();
+            bottomUpTooltipPropagation(g.opaqueBits, g.requirements);
+            console.log('worker', 'fixpoint propagation tool', performance.now() - start2, 'ms');
+
             break;
         }
         case 'analyze': {
@@ -81,6 +88,7 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
 function analyze(checkId: string): BooleanExpression {
     const bit = g.logic.itemBits[checkId];
 
+    /*
     // We precompute ("learn") some subgoals because it improves performance.
     // However, we can sometimes end up precomputing trivial requirements
     // like \Distance Activator for X Rupee items while expensive requirements
@@ -130,6 +138,9 @@ function analyze(checkId: string): BooleanExpression {
     );
     console.log('  ', 'worker', 'computing', g.logic.allItems[bit], 'took', performance.now() - start, 'ms');
     g.requirements[bit] = opaqueOnlyExpr;
+    */
+
+    const opaqueOnlyExpr = g.requirements[bit];
 
     const simplifyStart = performance.now();
     const simplified = dnfToRequirementExpr(g.logic, opaqueOnlyExpr.conjunctions);
