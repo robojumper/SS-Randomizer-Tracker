@@ -386,81 +386,83 @@ export function bottomUpTooltipPropagation(
     opaqueBits: BitVector,
     requirements: BitLogic,
 ) {
+    // First, we split our requirements into disjuncts that contain non-opaque
+    // terms and disjuncts that contain no non-opaque terms.
+    const originalRequirements = requirements.map(
+        (expr, idx) =>
+            opaqueBits.test(idx) ? expr : new LogicalExpression(
+                expr.conjunctions.filter((c) => !c.isSubsetOf(opaqueBits)),
+            ),
+    );
+
+    const propagationCandidates = new BitVector();
+
+    for (const [idx, expr] of requirements.entries()) {
+        const newExpr = new LogicalExpression(
+            expr.conjunctions.filter((c) => c.isSubsetOf(opaqueBits)),
+        );
+        requirements[idx] = newExpr;
+        if (!newExpr.isTriviallyFalse()) {
+            propagationCandidates.setBit(idx);
+        }
+    }
+
+    // Invariant: Terms in `requirements` contain no non-opaque bits
+    // Invariant: For every requirement in `requirements` that isn't trivially false,
+    //            `propagationCandidates` has the corresponding bit set.
+
     let changed = true;
     let rounds = 0;
 
     let recentlyChanged: BitVector | undefined = undefined;
 
-    const propagationCandidates = new BitVector();
-    // Propagation candidates are non-opaque expressions that contain
-    // a disjunct with only opaque bits set.
-    for (let item = 0; item < requirements.length; item++) {
-        if (
-            !opaqueBits.test(item) &&
-            requirements[item].conjunctions.some((vec) => vec.isSubsetOf(opaqueBits))
-        ) {
-            propagationCandidates.setBit(item);
-        }
-    }
 
     while (changed) {
         rounds++;
         changed = false;
         const thisRoundChanged = new BitVector();
+        const updatableExpressions = propagationCandidates.or(opaqueBits);
+
         const interestingCandidates = recentlyChanged
             ? recentlyChanged.and(propagationCandidates)
             : propagationCandidates;
 
-        for (const [idx, expr] of requirements.entries()) {
-
+        // Repeatedly apply the "rules" to further propagate
+        // requirements
+        for (const [idx, expr] of originalRequirements.entries()) {
             let additionalTerms = LogicalExpression.false();
     
             for (const conj of expr.conjunctions) {
+                // We can only propagate if all mentioned bits are either opaque or refer
+                // to an expression where at least one disjunct contains no opaque bits
+                // Additionally, as an optimization, after the first round we only look at
+                // terms we updated last round, to reduce the number of redundant terms
                 if (
+                    conj.isSubsetOf(updatableExpressions) &&
                     conj.intersects(interestingCandidates)
                 ) {
                     const newItems = new BitVector();
                     let toPropagate = LogicalExpression.true();
-                    let skip = false;
                     for (const reqBit of conj.iter()) {
-                        if (!propagationCandidates.test(reqBit)) {
+                        if (opaqueBits.test(reqBit)) {
                             newItems.setBit(reqBit);
                         } else {
                             const revealed = requirements[reqBit];
-
-                            if (revealed.isTriviallyFalse()) {
-                                skip = true;
-                                break;
-                            }
-
-                            // The only terms we can propagate are the ones that are completely opaque
-                            const propagationRequirements =
-                                new LogicalExpression(
-                                    revealed.conjunctions.filter((c) =>
-                                        c.isSubsetOf(opaqueBits),
-                                    ),
-                                );
                             toPropagate = toPropagate
-                                .and(propagationRequirements)
+                                .and(revealed)
                                 .removeDuplicates();
                         }
                     }
 
                     // We record all propagated possibilities in additionalTerms, so that
                     // below we can check if any of the additional terms are useful.
-                    if (!skip) {
-                        for (const term of toPropagate.conjunctions) {
-                            if (!newItems.test(idx)) {
-                                additionalTerms = additionalTerms.or(
-                                    term.or(newItems),
-                                );
-                            }
-                        }
+                    for (const term of toPropagate.conjunctions) {
+                        additionalTerms = additionalTerms.or(term.or(newItems));
                     }
                 }
             }
 
-            const [useful, newExpr] = expr.orExtended(additionalTerms);
+            const [useful, newExpr] = requirements[idx].orExtended(additionalTerms);
             if (useful) {
                 thisRoundChanged.setBit(idx);
                 changed = true;
@@ -474,14 +476,8 @@ export function bottomUpTooltipPropagation(
 
 
     // We've reached a fixed point, which means we cannot find any new paths
-    // in our requirement graph. So every requirement that relies on non-opaque
-    // bits is recursive in some way, and these recursive requirements can be dropped
-    // 
-    for (const [idx, expr] of requirements.entries()) {
-        requirements[idx] = new LogicalExpression(
-            expr.conjunctions.filter((c) => c.isSubsetOf(opaqueBits)),
-        );
-    }
+    // in our requirement graph. So our output requirements now contain all
+    // possible paths.
 
     console.log('bottom-up tooltip requirements took', rounds, 'rounds');
 }
