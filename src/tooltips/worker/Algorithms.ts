@@ -1,8 +1,10 @@
-import _ from "lodash";
-import { BitVector } from "../../logic/bitlogic/BitVector";
-import { LogicalExpression } from "../../logic/bitlogic/LogicalExpression";
-import BooleanExpression, { Item } from "../../logic/booleanlogic/BooleanExpression";
-import { LeanLogic } from "./Types";
+import _ from 'lodash';
+import { BitVector } from '../../logic/bitlogic/BitVector';
+import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
+import BooleanExpression, {
+    Item,
+} from '../../logic/booleanlogic/BooleanExpression';
+import { LeanLogic } from './Types';
 
 function simplifier(logic: LeanLogic) {
     return (a: string, b: string) => {
@@ -60,7 +62,8 @@ export function dnfToRequirementExpr(
     // that we later can't easily simplify in a multi level form.
     for (const conj of conjunctions) {
         for (const bit of [...conj.iter()]) {
-            for (const dominator of logic.impliedBy[logic.allItems[bit]] ?? []) {
+            for (const dominator of logic.impliedBy[logic.allItems[bit]] ??
+                []) {
                 const dominatorBit = logic.itemBits[dominator];
                 if (dominatorBit !== bit && conj.test(dominatorBit)) {
                     conj.clearBit(bit);
