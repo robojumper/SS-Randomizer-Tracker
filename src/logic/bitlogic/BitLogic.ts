@@ -259,6 +259,24 @@ export function shallowSimplify(
  * This is basically symbolic logical state computation - but instead
  * of computing boolean logical state bottom-up, we compute requirements
  * bottom-up, which a fixpoint being reached if requirements don't change anymore.
+ * 
+ * Previously the use case was implemented using a top-down algorithm, but that
+ * ended up with unpredictable performance due to heuristics. Bottom-up performs well
+ * and computes all tooltips very quickly (<250ms on my machine, which is not
+ * quite fast enough to move it to the main thread, but pretty hard to beat).
+ * 
+ * The reason I investigated replacing the top-down algorithm with a bottom-
+ * up algorithm is my hope that this approach will adapt better to alternative
+ * or future logic implementations that don't map everything to bits, e.g. lepe's
+ * Rust logic experiments that literally traverse an area graph. In that case
+ * "opaque bits" are ::Item requirements, propagation happens through area exits,
+ * ::Event requirements and ::Area requirements, and the keys in our lookup are Event
+ * IDs and Area+ToD keys. A fixpoint is then reached if we can't find new paths to Areas
+ * and Events, and after that we can inline them into the check requirements since
+ * checks cannot be a further dependency. The main challenge will be having a
+ * normalized requirements form that you can quickly use to identify whether there is
+ * a satisfiable option and figure out if a fixpoint is reached, since
+ * expression equality really wants a normal form.
  */
 export function bottomUpTooltipPropagation(
     opaqueBits: BitVector,
