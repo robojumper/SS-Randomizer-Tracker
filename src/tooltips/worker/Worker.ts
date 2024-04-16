@@ -78,11 +78,10 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
                 }
             } while (unifyRequirements(g.opaqueBits, g.requirementsForBottomUp));
             console.log('worker', 'initializing and pre-simplifying took', performance.now() - start, 'ms');
-            
 
             const start2 = performance.now();
             bottomUpTooltipPropagation(g.opaqueBits, g.requirementsForBottomUp);
-            console.log('worker', 'fixpoint propagation tool', performance.now() - start2, 'ms');
+            console.log('worker', 'fixpoint propagation took', performance.now() - start2, 'ms');
 
             break;
         }
@@ -99,7 +98,13 @@ onmessage = (ev: MessageEvent<WorkerRequest>) => {
         }
     }
 };
-
+/*
+function dnfsEqual(left: LogicalExpression, right: LogicalExpression) {
+    const mapTerm = (c: BitVector) => [...c.iter()].sort((a, b) => a - b).join(',');
+    const mapDnf = (e: LogicalExpression) => e.conjunctions.map(mapTerm).sort().join(';');
+    return mapDnf(left) === mapDnf(right);
+}
+*/
 function analyze(checkId: string): BooleanExpression {
     const bit = g.logic.itemBits[checkId];
 
@@ -158,8 +163,10 @@ function analyze(checkId: string): BooleanExpression {
     const bottomUpExpression = g.requirementsForBottomUp[bit].removeDuplicates();
 
     /*
-    if (topDownExpression.conjunctions.length !== bottomUpExpression.conjunctions.length) {
+    if (!dnfsEqual(topDownExpression, bottomUpExpression)) {
         console.error('Bad optimization for', checkId);
+    } else {
+        console.log('ok');
     }
     */
 

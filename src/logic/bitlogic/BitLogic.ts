@@ -389,8 +389,8 @@ export function bottomUpTooltipPropagation(
     // First, we split our requirements into disjuncts that contain non-opaque
     // terms and disjuncts that contain no non-opaque terms.
     const originalRequirements = requirements.map(
-        (expr, idx) =>
-            opaqueBits.test(idx) ? expr : new LogicalExpression(
+        (expr) =>
+            new LogicalExpression(
                 expr.conjunctions.filter((c) => !c.isSubsetOf(opaqueBits)),
             ),
     );
@@ -402,14 +402,14 @@ export function bottomUpTooltipPropagation(
             expr.conjunctions.filter((c) => c.isSubsetOf(opaqueBits)),
         );
         requirements[idx] = newExpr;
-        if (!newExpr.isTriviallyFalse()) {
+        if (!newExpr.isTriviallyFalse() || opaqueBits.test(idx)) {
             propagationCandidates.setBit(idx);
         }
     }
 
     // Invariant: Terms in `requirements` contain no non-opaque bits
-    // Invariant: For every requirement in `requirements` that isn't trivially false,
-    //            `propagationCandidates` has the corresponding bit set.
+    // Invariant: For every requirement in `requirements` that is opaque or
+    // isn't trivially false, `propagationCandidates` has the corresponding bit set.
 
     let changed = true;
     let rounds = 0;
@@ -421,7 +421,6 @@ export function bottomUpTooltipPropagation(
         rounds++;
         changed = false;
         const thisRoundChanged = new BitVector();
-        const updatableExpressions = propagationCandidates.or(opaqueBits);
 
         const interestingCandidates = recentlyChanged
             ? recentlyChanged.and(propagationCandidates)
@@ -434,11 +433,14 @@ export function bottomUpTooltipPropagation(
     
             for (const conj of expr.conjunctions) {
                 // We can only propagate if all mentioned bits are either opaque or refer
-                // to an expression where at least one disjunct contains no opaque bits
+                // to an expression where we've found at least one way for it to be satisfied.
+                // If a non-opaque bit in there had no propagated requirements yet, `toPropagate`
+                // would end up being False and the whole thing would be pointless.
                 // Additionally, as an optimization, after the first round we only look at
-                // terms we updated last round, to reduce the number of redundant terms
+                // terms we updated last round, to reduce the number operations that definitely
+                // won't cause an update.
                 if (
-                    conj.isSubsetOf(updatableExpressions) &&
+                    conj.isSubsetOf(propagationCandidates) &&
                     conj.intersects(interestingCandidates)
                 ) {
                     const newItems = new BitVector();
