@@ -325,6 +325,13 @@ export function bottomUpTooltipPropagation(
         // Repeatedly apply the "rules" to further propagate
         // requirements
         for (const [idx, expr] of originalRequirements.entries()) {
+
+            // If something already requires Nothing, we don't even need to
+            // bother with alternative ways to fulfill this requirement
+            if (requirements[idx].isTriviallyTrue()) {
+                continue;
+            }
+
             let additionalTerms = LogicalExpression.false();
     
             for (const conj of expr.conjunctions) {
