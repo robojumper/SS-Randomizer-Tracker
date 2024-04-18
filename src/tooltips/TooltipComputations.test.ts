@@ -6,8 +6,8 @@ import {
     booleanExprToLogicalExpr,
     parseExpression,
 } from '../logic/booleanlogic/ExpressionParse';
+import { dnfToRequirementExpr } from './worker/Algorithms';
 import { LeanLogic } from './worker/Types';
-import { dnfToRequirementExpr } from './worker/Worker';
 
 function stringifyExpression(expr: Item): string {
     if (BooleanExpression.isExpression(expr)) {

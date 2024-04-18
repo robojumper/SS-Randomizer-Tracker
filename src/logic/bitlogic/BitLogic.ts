@@ -80,128 +80,6 @@ export function computeLeastFixedPoint(
     return bits;
 }
 
-/**
- * Some requirements still have some relatively deep expressions, and the `computeGroundExpression` algorithm may perform poorly
- * if it repeately has to reveal a complex entrance. Finding *any* path to the check has a reasonably likelyhood
- * of including these bottlenecks, and precomputing bits in that partial path can solve a lot of problems and the
- * results can even be reused.
- */
-export function findNewSubgoals(
-    /** Do not reveal these bits */
-    opaqueBits: BitVector,
-    /** Traverse these requirements... */
-    requirements: LogicalExpression[],
-    /** ...starting from here. */
-    idx: number,
-    /**
-     * Expressions we've already precomputed
-     * in a previous run, used to reveal new paths
-     * and stop searching if there aren't any paths remaining.
-     */
-    learnedExpressions: Set<number>,
-    visitedExpressions: Set<number> = new Set(),
-): BitVector | undefined {
-    if (visitedExpressions.has(idx)) {
-        return undefined;
-    }
-    const expr = requirements[idx];
-    if (expr.isTriviallyFalse()) {
-        return undefined;
-    }
-
-    if (learnedExpressions.has(idx)) {
-        return undefined;
-    }
-
-    visitedExpressions.add(idx);
-
-    for (const conj of requirements[idx].conjunctions) {
-        for (const bit of conj.iter()) {
-            if (!opaqueBits.test(bit) && !learnedExpressions.has(bit)) {
-                const moreBits = findNewSubgoals(
-                    opaqueBits,
-                    requirements,
-                    bit,
-                    learnedExpressions,
-                    visitedExpressions,
-                );
-                if (moreBits) {
-                    return new BitVector()
-                        .setBit(bit)
-                        .or(moreBits);
-                }
-            }
-        }
-    }
-
-    visitedExpressions.delete(idx);
-    return new BitVector();
-}
-
-/**
- * Convert the expression at `idx` to a first-order logic expression
- * that is only based on the ground terms `opaqueBits` - in other words,
- * create a closed formula for the potentially (self- and nested-)recursive
- * expression at `idx`.
- */
-export function computeGroundExpression(
-    opaqueBits: BitVector,
-    requirements: LogicalExpression[],
-    idx: number,
-    visitedExpressions: Set<number> = new Set(),
-): LogicalExpression {
-    let result = LogicalExpression.false();
-    if (visitedExpressions.has(idx)) {
-        return result;
-    }
-    visitedExpressions.add(idx);
-
-    // TODO this is a standard BRANCH algorithm but we don't have a BOUND.
-    // It'd be useful to know when we've found the minimum requirements and
-    // when exploring additional paths wouldn't help.
-
-    // TODO even with a BOUND this may not be the best solution. In practice this
-    // works for some requirements, is fairly slow for others, and fails catastrophically
-    // for a few unless some specific subgoals are evaluated first (see `findNewSubgoals`).
-    // So if you see the tooltips task getting stuck, it's likely here and because `findNewSubgoals`
-    // didn't make us learn an important expression.
-    // Some alternatives:
-    // * Not output a DNF but a multi-level form. This however needs tooltips to implement
-    //   more sophisticated simplification algorithms.
-    // * Convert the requirements to a proper directed graph structure first, where things like
-    //   degree and "bottlenecks" are known, then use better heuristics there.
-    // * Find a All-SAT solver that can deal with fixed-point logic.
-    //   Good luck with that, SAT solvers need input in CNF, All-SAT solvers seem to
-    //   only exist in theory, and cycles are not considered.
-
-    nextConj: for (const conj of requirements[idx].conjunctions) {
-        let tmpExpr = LogicalExpression.true();
-        const conjOpaqueBits = opaqueBits.and(conj);
-        for (const bit of conj.iter()) {
-            if (!conjOpaqueBits.test(bit)) {
-                const newTerm = computeGroundExpression(
-                    opaqueBits,
-                    requirements,
-                    bit,
-                    visitedExpressions,
-                );
-                if (newTerm.isTriviallyFalse()) {
-                    continue nextConj;
-                }
-                tmpExpr = tmpExpr.and(newTerm).removeDuplicates();
-            }
-        }
-        if (conjOpaqueBits.numSetBits) {
-            tmpExpr = tmpExpr.and(conjOpaqueBits);
-        }
-
-        result = result.or(tmpExpr);
-    }
-
-    visitedExpressions.delete(idx);
-    return result.removeDuplicates();
-}
-
 export function removeDuplicates(logic: BitLogic) {
     for (const [idx, expr] of logic.entries()) {
         if (expr.conjunctions.length >= 2) {
@@ -335,7 +213,7 @@ export function shallowSimplify(
     }
 
     for (const [idx, expr] of requirements.entries()) {
-        if (expr.conjunctions.length >= 30 || opaqueBits.test(idx)) {
+        if (expr.conjunctions.length >= 30) {
             continue;
         }
         let newExpr = LogicalExpression.false();
@@ -372,4 +250,139 @@ export function shallowSimplify(
         requirements[idx] = newExpr;
     }
     return simplified;
+}
+
+/**
+ * Bottom-up propagation propagates disjuncts that consist of completely
+ * opaque bits until a fixpoint is reached.
+ * 
+ * This is basically symbolic logical state computation - but instead
+ * of computing boolean logical state bottom-up, we compute requirements
+ * bottom-up, which a fixpoint being reached if requirements don't change anymore.
+ * 
+ * Previously the use case was implemented using a top-down algorithm, but that
+ * ended up with unpredictable performance due to heuristics. Bottom-up performs well
+ * and computes all tooltips very quickly (<250ms on my machine, which is not
+ * quite fast enough to move it to the main thread, but pretty hard to beat).
+ * 
+ * The reason I investigated replacing the top-down algorithm with a bottom-
+ * up algorithm is my hope that this approach will adapt better to alternative
+ * or future logic implementations that don't map everything to bits, e.g. lepe's
+ * Rust logic experiments that literally traverse an area graph. In that case
+ * "opaque bits" are ::Item requirements, propagation happens through area exits,
+ * ::Event requirements and ::Area requirements, and the keys in our lookup are Event
+ * IDs and Area+ToD keys. A fixpoint is then reached if we can't find new paths to Areas
+ * and Events, and after that we can inline them into the check requirements since
+ * checks cannot be a further dependency. The main challenge will be having a
+ * normalized requirements form that you can quickly use to identify whether there is
+ * a satisfiable option and figure out if a fixpoint is reached, since
+ * expression equality really wants a normal form.
+ */
+export function bottomUpTooltipPropagation(
+    opaqueBits: BitVector,
+    requirements: BitLogic,
+) {
+    // First, we split our requirements into disjuncts that contain non-opaque
+    // terms and disjuncts that contain no non-opaque terms.
+    const originalRequirements = requirements.map(
+        (expr) =>
+            new LogicalExpression(
+                expr.conjunctions.filter((c) => !c.isSubsetOf(opaqueBits)),
+            ),
+    );
+
+    const propagationCandidates = new BitVector();
+
+    for (const [idx, expr] of requirements.entries()) {
+        const newExpr = new LogicalExpression(
+            expr.conjunctions.filter((c) => c.isSubsetOf(opaqueBits)),
+        );
+        requirements[idx] = newExpr;
+        if (!newExpr.isTriviallyFalse() || opaqueBits.test(idx)) {
+            propagationCandidates.setBit(idx);
+        }
+    }
+
+    // Invariant: Terms in `requirements` contain no non-opaque bits
+    // Invariant: For every requirement in `requirements` that is opaque or
+    // isn't trivially false, `propagationCandidates` has the corresponding bit set.
+
+    let changed = true;
+    let rounds = 0;
+
+    let recentlyChanged: BitVector | undefined = undefined;
+
+
+    while (changed) {
+        rounds++;
+        changed = false;
+        const thisRoundChanged = new BitVector();
+
+        const interestingCandidates = recentlyChanged
+            ? recentlyChanged.and(propagationCandidates)
+            : propagationCandidates;
+
+        // Repeatedly apply the "rules" to further propagate
+        // requirements
+        for (const [idx, expr] of originalRequirements.entries()) {
+
+            // If something already requires Nothing, we don't even need to
+            // bother with alternative ways to fulfill this requirement
+            if (requirements[idx].isTriviallyTrue()) {
+                continue;
+            }
+
+            let additionalTerms = LogicalExpression.false();
+    
+            for (const conj of expr.conjunctions) {
+                // We can only propagate if all mentioned bits are either opaque or refer
+                // to an expression where we've found at least one way for it to be satisfied.
+                // If a non-opaque bit in there had no propagated requirements yet, `toPropagate`
+                // would end up being False and the whole thing would be pointless.
+                // Additionally, as an optimization, after the first round we only look at
+                // terms we updated last round, to reduce the number operations that definitely
+                // won't cause an update.
+                if (
+                    conj.isSubsetOf(propagationCandidates) &&
+                    conj.intersects(interestingCandidates)
+                ) {
+                    const newItems = new BitVector();
+                    let toPropagate = LogicalExpression.true();
+                    for (const reqBit of conj.iter()) {
+                        if (opaqueBits.test(reqBit)) {
+                            newItems.setBit(reqBit);
+                        } else {
+                            const revealed = requirements[reqBit];
+                            toPropagate = toPropagate
+                                .and(revealed)
+                                .removeDuplicates();
+                        }
+                    }
+
+                    // We record all propagated possibilities in additionalTerms, so that
+                    // below we can check if any of the additional terms are useful.
+                    for (const term of toPropagate.conjunctions) {
+                        additionalTerms = additionalTerms.or(term.or(newItems));
+                    }
+                }
+            }
+
+            const [useful, newExpr] = requirements[idx].orExtended(additionalTerms);
+            if (useful) {
+                thisRoundChanged.setBit(idx);
+                changed = true;
+                requirements[idx] = newExpr;
+                propagationCandidates.setBit(idx);
+            }
+        }
+
+        recentlyChanged = thisRoundChanged;
+    }
+
+
+    // We've reached a fixed point, which means we cannot find any new paths
+    // in our requirement graph. So our output requirements now contain all
+    // possible paths.
+
+    console.log('bottom-up tooltip requirements took', rounds, 'rounds');
 }

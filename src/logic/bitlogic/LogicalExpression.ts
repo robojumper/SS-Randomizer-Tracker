@@ -92,6 +92,36 @@ export class LogicalExpression {
     }
 
     /**
+     * Computes .or, and returns true iff it resulted in
+     * the terms of `this` changing.
+     */
+    orExtended(other: LogicalExpression) {
+        const terms: BitVector[] = [...this.conjunctions];
+        let useful = false;
+
+        const otherTerms = other.removeDuplicates().conjunctions;
+        for (let i = 0; i < otherTerms.length; i++) {
+            const candidate = otherTerms[i];
+            const weakerTerm = terms.findIndex((t) => t.isSubsetOf(candidate));
+            if (weakerTerm !== -1) {
+                continue;
+            }
+
+            useful = true;
+
+            const strongerTerm = terms.findIndex((t) =>
+                candidate.isSubsetOf(t),
+            );
+            if (strongerTerm !== -1) {
+                terms[strongerTerm] = candidate;
+            } else {
+                terms.push(candidate);
+            }
+        }
+        return [useful, new LogicalExpression(terms)] as const;
+    }
+
+    /**
      * Evaluates the expression assuming the variables in `vec` are true.
      */
     eval(vec: BitVector) {
@@ -113,6 +143,13 @@ export class LogicalExpression {
             this.conjunctions.length > 0 &&
             this.conjunctions.some((c) => c.isEmpty())
         );
+    }
+
+    /**
+     * Returns a deep clone of this expression
+     */
+    clone() {
+        return new LogicalExpression(this.conjunctions.map((c) => c.clone()));
     }
 }
 
