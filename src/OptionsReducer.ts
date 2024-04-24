@@ -49,6 +49,11 @@ export type OptionsAction =
         viaImport?: boolean;
     }
     | {
+        type: 'applyPreset';
+        remote: RemoteReference,
+        settings: AllTypedOptions;
+    }
+    | {
         type: 'revertChanges';
     };
 
@@ -91,6 +96,13 @@ function optionsReducer(storedSettings: Partial<AllTypedOptions>) {
                     settings: state.backupSettings,
                     hasChanges: false,
                 };
+            }
+            case 'applyPreset': {
+                return {
+                    ...state,
+                    selectedRemote: action.remote,
+                    settings: action.settings,
+                }
             }
             case 'selectRemote': {
                 const newState = {
@@ -218,6 +230,7 @@ export function useOptionsState() {
             logic: {
                 loaded: loadedBundle,
             },
+            saves: { presets: [] },
         };
         let counters: ReturnType<typeof totalCountersSelector> | undefined;
         let evalError: string | undefined;

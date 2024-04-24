@@ -3,6 +3,7 @@ import customization, {
     preloadedCustomizationState,
 } from '../customization/slice';
 import tracker, { preloadedTrackerState } from '../tracker/slice';
+import saves, { preloadedSavesState } from '../saves/slice';
 import logic from '../logic/slice';
 import { useDispatch } from 'react-redux';
 
@@ -12,10 +13,12 @@ export function createStore() {
             logic,
             customization,
             tracker,
+            saves,
         },
         preloadedState: {
             customization: preloadedCustomizationState(),
             tracker: preloadedTrackerState(),
+            saves: preloadedSavesState(),
         },
     });
 }

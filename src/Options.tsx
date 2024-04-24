@@ -37,7 +37,7 @@ import Acknowledgement from './Acknowledgment';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch } from './store/store';
 import { range } from 'lodash';
-import { loadLogic } from './logic/slice';
+import { LogicBundle, loadLogic } from './logic/slice';
 import Select, { MultiValue, ActionMeta, SingleValue } from 'react-select';
 import { selectStyles } from './customization/ComponentStyles';
 import _ from 'lodash';
@@ -48,6 +48,7 @@ import Tooltip from './additionalComponents/Tooltip';
 import { LoadingState, OptionsAction, useOptionsState } from './OptionsReducer';
 import { useReleases } from './loader/ReleasesLoader';
 import { satisfies as semverSatisfies } from 'semver';
+import { OptionsPresets } from './OptionsPresets';
 
 /** The tracker will only show these options, and tracker logic code is only allowed to access these! */
 const optionCategorization_ = {
@@ -160,13 +161,15 @@ export default function Options() {
                     />
                     <PermalinkChooser dispatch={dispatch} options={loaded?.options} settings={settings} />
                 </div>
-                <LaunchButtons
+                {loaded && <LaunchButtons
                     hasChanges={hasChanges}
                     counters={counters}
                     loaded={Boolean(loaded)}
                     launch={launch}
                     dispatch={dispatch}
-                />
+                    currentLogic={loaded}
+                    currentSettings={settings!}
+                />}
                 {loaded && (
                     <OptionsList
                         options={loaded.options}
@@ -186,6 +189,8 @@ function LaunchButtons({
     counters,
     launch,
     dispatch,
+    currentLogic,
+    currentSettings,
 }: {
     loaded: boolean;
     hasChanges: boolean;
@@ -194,6 +199,8 @@ function LaunchButtons({
         | undefined;
     launch: (shouldReset?: boolean) => void;
     dispatch: React.Dispatch<OptionsAction>;
+    currentLogic: LogicBundle;
+    currentSettings: AllTypedOptions;
 }) {
     const canStart = loaded;
     const canResume = loaded && Boolean(counters);
@@ -242,6 +249,8 @@ function LaunchButtons({
             >
                 Undo Changes
             </Button>
+
+            <div style={{ marginLeft: 'auto' }}><OptionsPresets dispatch={dispatch} currentLogic={currentLogic} currentSettings={currentSettings} /></div>
         </div>
     );
 }
@@ -263,7 +272,7 @@ function useRemoteOptions() {
 
         if (githubReleases) {
             const supportedReleases = githubReleases.releases.filter((r) => semverSatisfies(r, leastSupportedRelease));
-            remotes.push(...supportedReleases.filter((r) => r !== githubReleases.latest).map((r) => ({
+            remotes.push(...supportedReleases.map((r) => ({
                 value: { type: 'releaseVersion', versionTag: r } as const,
                 label: r,
             })));

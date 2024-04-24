@@ -5,10 +5,12 @@ import { TrackerState } from './tracker/slice';
 import { RemoteReference, formatRemote, parseRemote } from './loader/LogicLoader';
 import { CounterBasis, CustomizationState, ItemLayout, LocationLayout } from './customization/slice';
 import ColorScheme from './customization/ColorScheme';
+import { SavesState } from './saves/slice';
 
 const trackerStateLocalStorageKey = 'ssrTrackerState';
 const customizationStateLocalStorageKey = 'ssrTrackerCustomization';
 const remoteLogicLocalStorageKey = 'ssrTrackerRemoteLogic';
+const savesLocalStorageKey = 'ssrTrackerSaves';
 
 // Legacy
 const itemLayoutLocalStorageKey = 'ssrTrackerLayout';
@@ -36,6 +38,14 @@ export function useSyncTrackerStateToLocalStorage() {
     useEffect(() => {
         localStorage.setItem(customizationStateLocalStorageKey, JSON.stringify(customizationState))
     }, [customizationState])
+}
+
+export function useSyncSavesToLocalStorage() {
+    const saves = useSelector((state: RootState) => state.saves);
+
+    useEffect(() => {
+        localStorage.setItem(savesLocalStorageKey, JSON.stringify(saves));
+    }, [saves]);
 }
 
 export function getStoredTrackerState(): Partial<TrackerState> | undefined {
@@ -96,6 +106,11 @@ export function getStoredRemote(): RemoteReference | undefined {
 
 export function clearStoredRemote() {
     localStorage.removeItem(remoteLogicLocalStorageKey);
+}
+
+export function getStoredSaves(): Partial<SavesState> | undefined {
+    const saves = localStorage.getItem(savesLocalStorageKey);
+    return saves ? JSON.parse(saves) as SavesState : undefined;
 }
 
 // Legacy

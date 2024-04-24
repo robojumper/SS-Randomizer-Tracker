@@ -26,7 +26,8 @@
     "react-select": "^5.7.0",
     "react-window": "^1.8.8",
     "semver": "^7.6.0",
-    "tippy.js": "^6.3.7"
+    "tippy.js": "^6.3.7",
+    "uuid": "^9.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -65,6 +66,7 @@
     "@types/react-color": "^3.0.10",
     "@types/react-dom": "^18.0.10",
     "@types/react-window": "^1.8.5",
+    "@types/uuid": "^9.0.8",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
     "@typescript-eslint/parser": "^5.56.0",
     "eslint": "^8.36.0",
