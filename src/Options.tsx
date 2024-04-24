@@ -254,14 +254,12 @@ function LaunchButtons({
                 Undo Changes
             </Button>
 
-            {currentLogic && (
-                <OptionsPresets
-                    style={{ marginLeft: 'auto' }}
-                    dispatch={dispatch}
-                    currentLogic={currentLogic}
-                    currentSettings={currentSettings!}
-                />
-            )}
+            <OptionsPresets
+                style={{ marginLeft: 'auto' }}
+                dispatch={dispatch}
+                currentLogic={currentLogic}
+                currentSettings={currentSettings}
+            />
         </div>
     );
 }

@@ -17,8 +17,8 @@ export function OptionsPresets({
     dispatch,
 }: {
     style: CSSProperties
-    currentLogic: LogicBundle;
-    currentSettings: AllTypedOptions;
+    currentLogic: LogicBundle | undefined;
+    currentSettings: AllTypedOptions | undefined;
     dispatch: React.Dispatch<OptionsAction>;
 }) {
     const [showModal, setShowModal] = useState(false);
@@ -45,8 +45,8 @@ function PresetsModal({
     show,
     onHide,
 }: {
-    currentLogic: LogicBundle;
-    currentSettings: AllTypedOptions;
+    currentLogic: LogicBundle | undefined;
+    currentSettings: AllTypedOptions | undefined;
     dispatch: React.Dispatch<OptionsAction>;
     show: boolean;
     onHide: () => void;
@@ -63,7 +63,7 @@ function PresetsModal({
             <Modal.Body className="show-grid">
                 <div style={{ display: 'flex', flexFlow: 'column nowrap' }}>
                     {presets.map((p) => (<PresetRow preset={p} dispatch={dispatch} key={p.id} onHide={onHide} />))}
-                    <AddPresetRow currentLogic={currentLogic} currentSettings={currentSettings} />
+                    {currentLogic && currentSettings && <AddPresetRow currentLogic={currentLogic} currentSettings={currentSettings} />}
                 </div>
             </Modal.Body>
             <Modal.Footer>
