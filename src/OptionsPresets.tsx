@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { CSSProperties, useState } from 'react';
 import { OptionsAction } from './OptionsReducer';
 import { AllTypedOptions } from './permalink/SettingsTypes';
 import { LogicBundle } from './logic/slice';
@@ -11,10 +11,12 @@ import { encodePermalink } from './permalink/Settings';
 import { useSyncSavesToLocalStorage } from './LocalStorage';
 
 export function OptionsPresets({
+    style,
     currentLogic,
     currentSettings,
     dispatch,
 }: {
+    style: CSSProperties
     currentLogic: LogicBundle;
     currentSettings: AllTypedOptions;
     dispatch: React.Dispatch<OptionsAction>;
@@ -24,7 +26,7 @@ export function OptionsPresets({
 
     return (
         <>
-            <Button onClick={() => setShowModal(true)}>Presets</Button>
+            <Button style={style} onClick={() => setShowModal(true)}>Presets</Button>
             <PresetsModal
                 currentLogic={currentLogic}
                 currentSettings={currentSettings}

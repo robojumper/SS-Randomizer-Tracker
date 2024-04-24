@@ -255,13 +255,12 @@ function LaunchButtons({
             </Button>
 
             {currentLogic && (
-                <div style={{ marginLeft: 'auto' }}>
-                    <OptionsPresets
-                        dispatch={dispatch}
-                        currentLogic={currentLogic}
-                        currentSettings={currentSettings!}
-                    />
-                </div>
+                <OptionsPresets
+                    style={{ marginLeft: 'auto' }}
+                    dispatch={dispatch}
+                    currentLogic={currentLogic}
+                    currentSettings={currentSettings!}
+                />
             )}
         </div>
     );
