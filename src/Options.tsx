@@ -161,15 +161,15 @@ export default function Options() {
                     />
                     <PermalinkChooser dispatch={dispatch} options={loaded?.options} settings={settings} />
                 </div>
-                {loaded && <LaunchButtons
+                <LaunchButtons
                     hasChanges={hasChanges}
                     counters={counters}
                     loaded={Boolean(loaded)}
                     launch={launch}
                     dispatch={dispatch}
                     currentLogic={loaded}
-                    currentSettings={settings!}
-                />}
+                    currentSettings={settings}
+                />
                 {loaded && (
                     <OptionsList
                         options={loaded.options}
@@ -199,8 +199,8 @@ function LaunchButtons({
         | undefined;
     launch: (shouldReset?: boolean) => void;
     dispatch: React.Dispatch<OptionsAction>;
-    currentLogic: LogicBundle;
-    currentSettings: AllTypedOptions;
+    currentLogic: LogicBundle | undefined;
+    currentSettings: AllTypedOptions | undefined;
 }) {
     const canStart = loaded;
     const canResume = loaded && Boolean(counters);
@@ -242,7 +242,11 @@ function LaunchButtons({
             <Button disabled={!canStart} onClick={() => confirmLaunch(true)}>
                 Launch New Tracker
             </Button>
-            <ImportButton setLogicBranch={(remote) => dispatch({ type: 'selectRemote', remote, viaImport: true })} />
+            <ImportButton
+                setLogicBranch={(remote) =>
+                    dispatch({ type: 'selectRemote', remote, viaImport: true })
+                }
+            />
             <Button
                 disabled={!hasChanges}
                 onClick={() => dispatch({ type: 'revertChanges' })}
@@ -250,7 +254,15 @@ function LaunchButtons({
                 Undo Changes
             </Button>
 
-            <div style={{ marginLeft: 'auto' }}><OptionsPresets dispatch={dispatch} currentLogic={currentLogic} currentSettings={currentSettings} /></div>
+            {currentLogic && (
+                <div style={{ marginLeft: 'auto' }}>
+                    <OptionsPresets
+                        dispatch={dispatch}
+                        currentLogic={currentLogic}
+                        currentSettings={currentSettings!}
+                    />
+                </div>
+            )}
         </div>
     );
 }
