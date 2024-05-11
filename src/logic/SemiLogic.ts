@@ -1,11 +1,15 @@
-import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { TypedOptions } from '../permalink/SettingsTypes';
 import { mapInventory, getAdditionalItems } from '../tracker/selectors';
 import { InventoryItem, isItem, itemMaxes } from './Inventory';
 import { PotentialLocations, getSemiLogicKeys } from './KeyLogic';
 import { Logic } from './Logic';
 import { LogicBuilder } from './LogicBuilder';
 import { cubeCheckToCubeCollected } from './TrackerModifications';
-import { Requirements, computeLeastFixedPoint, mergeRequirements } from './bitlogic/BitLogic';
+import {
+    Requirements,
+    computeLeastFixedPoint,
+    mergeRequirements,
+} from './bitlogic/BitLogic';
 import { BitVector } from './bitlogic/BitVector';
 
 export interface SemiLogicState {
@@ -14,30 +18,37 @@ export interface SemiLogicState {
     assumedChecks: Set<string>;
 }
 
-/** Requirements that assume every trick is enabled. */
-export function getAllTricksEnabledRequirements(
+/**
+ * Requirements that assume every considered trick is enabled. Enables
+ * all tricks if consideredTricks is empty.
+ */
+export function getVisibleTricksEnabledRequirements(
     logic: Logic,
-    options: OptionDefs,
     settings: TypedOptions,
     consideredTricks: Set<string>,
 ): Requirements {
     const requirements: Requirements = {};
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
-    for (const option of options) {
+    for (const [requirement, condition] of Object.entries(
+        logic.optionConditions,
+    )) {
         if (
-            option.type === 'multichoice' &&
-            (option.command === 'enabled-tricks-glitched' ||
-                option.command === 'enabled-tricks-bitless')
+            condition.type === 'query' &&
+            (condition.option === 'enabled-tricks-glitched' ||
+                condition.option === 'enabled-tricks-bitless')
         ) {
-            const vals = option.choices;
-            for (const opt of vals) {
-                const considered =
-                    settings[option.command].includes(opt) ||
+            const settingsEnabledTricks = settings[condition.option];
+            if (
+                Array.isArray(settingsEnabledTricks) &&
+                typeof condition.value === 'string'
+            ) {
+                const visible =
+                    settingsEnabledTricks.includes(condition.value) ||
                     !consideredTricks.size ||
-                    consideredTricks.has(opt);
-                if (considered) {
-                    b.set(`${opt} Trick`, b.true());
+                    consideredTricks.has(condition.value);
+                if (visible) {
+                    b.set(requirement, b.true());
                 }
             }
         }
@@ -78,7 +89,10 @@ export function computeSemiLogic(
     const inSemiLogicBits = semiLogicState.semiLogicBits.clone();
 
     if (!expertMode) {
-        return { inSemiLogicBits, inTrickLogicBits: semiLogicState.semiLogicBits };
+        return {
+            inSemiLogicBits,
+            inTrickLogicBits: semiLogicState.semiLogicBits,
+        };
     }
 
     const settingsRequirementsWithTricks = {

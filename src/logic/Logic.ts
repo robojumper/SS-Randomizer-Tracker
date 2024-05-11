@@ -26,6 +26,8 @@ import {
 } from './booleanlogic/ExpressionParse';
 import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
+import { OptionDefs } from '../permalink/SettingsTypes';
+import { getOptionConditions } from './LegacySupport';
 
 export interface Logic {
     numRequirements: number;
@@ -47,7 +49,8 @@ export interface Logic {
     hintRegions: string[];
     checksByHintRegion: Record<string, string[]>;
     exitsByHintRegion: Record<string, string[]>;
-    dungeonCompletionRequirements: { [dungeon: string]: string }
+    dungeonCompletionRequirements: { [dungeon: string]: string };
+    optionConditions: Exclude<RawLogic['options'], undefined>;
 }
 
 export interface LogicalCheck {
@@ -311,7 +314,7 @@ function preprocessItems(raw: string[]): {
 
 const checkAreaPlaceholder = 'filled-in-later';
 
-export function parseLogic(raw: RawLogic): Logic {
+export function parseLogic(raw: RawLogic, options: OptionDefs): Logic {
     const start = performance.now();
 
     const { newItems, impliedBy, implies } = preprocessItems(
@@ -905,6 +908,7 @@ export function parseLogic(raw: RawLogic): Logic {
         exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph,
+        optionConditions: raw.options ?? getOptionConditions(options),
     };
 }
 

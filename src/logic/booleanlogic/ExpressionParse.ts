@@ -56,7 +56,7 @@ export function booleanExprToLogicalExpr(
     } else {
         if (expr === 'True') {
             return [new BitVector()];
-        } else if (expr === 'False') {
+        } else if (expr === 'False' || expr === 'Unknown') {
             return [];
         } else {
             const bit_idx = lookup(expr);

@@ -1,4 +1,4 @@
-import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { TypedOptions } from '../permalink/SettingsTypes';
 import { BitVector } from './bitlogic/BitVector';
 import { itemName, Logic } from './Logic';
 import {
@@ -91,7 +91,12 @@ export function isItem(id: string): id is InventoryItem {
  * Returns a BitVector containing all the expressions that should be visible in the tooltips
  * and not recursively expanded (items and various item-like requirements).
  */
-export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings: TypedOptions, expertMode: boolean, consideredTricks: Set<string>) {
+export function getTooltipOpaqueBits(
+    logic: Logic,
+    settings: TypedOptions,
+    expertMode: boolean,
+    consideredTricks: Set<string>,
+) {
     const items = new BitVector();
     const set = (id: string) => {
         const bit = logic.itemBits[id];
@@ -102,28 +107,31 @@ export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings
         }
     };
 
-    for (const option of options) {
+    for (const [req, condition] of Object.entries(logic.optionConditions)) {
         if (
-            option.type === 'multichoice' &&
-            (option.command === 'enabled-tricks-glitched' ||
-                option.command === 'enabled-tricks-bitless')
+            condition.type === 'query' &&
+            condition.op === 'in' &&
+            (condition.option === 'enabled-tricks-glitched' ||
+                condition.option === 'enabled-tricks-bitless')
         ) {
-            const vals = option.choices;
-            for (const opt of vals) {
-                const considered =
-                    settings[option.command].includes(opt) ||
-                    (expertMode &&
-                        (!consideredTricks.size || consideredTricks.has(opt)));
-                if (considered) {
-                    set(`${opt} Trick`);
-                }
+            const value = condition.value as string;
+            const considered =
+                settings[condition.option].includes(value) ||
+                (expertMode &&
+                    (!consideredTricks.size || consideredTricks.has(value)));
+            if (considered) {
+                set(req);
             }
         }
     }
 
     // All actual inventory items are shown in the tooltips
     for (const [item, count] of Object.entries(itemMaxes)) {
-        if (count === undefined || item === 'Sailcloth' || item === 'Tumbleweed') {
+        if (
+            count === undefined ||
+            item === 'Sailcloth' ||
+            item === 'Tumbleweed'
+        ) {
             continue;
         }
         if (item === sothItemReplacement) {
@@ -157,8 +165,12 @@ export function getTooltipOpaqueBits(logic: Logic, options: OptionDefs, settings
     }
 
     if (settings['gondo-upgrades'] === false) {
-        set('\\Skyloft\\Central Skyloft\\Bazaar\\Gondo\'s Upgrades\\Upgrade to Quick Beetle');
-        set('\\Skyloft\\Central Skyloft\\Bazaar\\Gondo\'s Upgrades\\Upgrade to Tough Beetle');
+        set(
+            "\\Skyloft\\Central Skyloft\\Bazaar\\Gondo's Upgrades\\Upgrade to Quick Beetle",
+        );
+        set(
+            "\\Skyloft\\Central Skyloft\\Bazaar\\Gondo's Upgrades\\Upgrade to Tough Beetle",
+        );
     }
 
     return items;
