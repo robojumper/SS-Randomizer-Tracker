@@ -289,6 +289,17 @@ function mapSettings(
         }
     }
 
+    // https://github.com/NindyBK/ssrnppbuild/pull/1
+    if (logic.itemBits['Lanayru Mining Facility Unrequired'] !== undefined) {
+        for (const dungeon of dungeonNames) {
+            if (!requiredDungeons.includes(dungeon)) {
+                b.trySet(`${dungeon} Unrequired`, b.true());
+            } else {
+                b.trySet(`${dungeon} Required`, b.true());
+            }
+        }
+    }
+
     for (const option of options) {
         if (
             option.type === 'multichoice' &&

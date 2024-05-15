@@ -51,6 +51,11 @@ export const runtimeOptions: OptionMapping[] = [
     m('Nonlethal Hot Cave', 'damage-multiplier', (val) => val < 12),
     m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),
     m('FS Lava Flow option', 'fs-lava-flow', true),
+
+    // https://github.com/NindyBK/ssrnppbuild/pull/1
+    m('Open Dungeon Shortcuts option', 'open-shortcuts', 'All Dungeons'),
+    m('Open Unrequired Shortcuts option', 'open-shortcuts', 'Unrequired Dungeons Only'),
+    m('Default Dungeon Behavior option', 'open-shortcuts', 'None'),
 ];
 
 export const impaSongCheck =

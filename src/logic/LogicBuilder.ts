@@ -63,6 +63,17 @@ export class LogicBuilder {
         }
     }
 
+    /** Sets the requirement for `target` to `rhs`, ignoring the error if it doesn't exist */
+    trySet(target: string, rhs: LogicalExpression) {
+        const bit = this.bit(target);
+        if (bit !== undefined) {
+            if (this.requirements[bit]) {
+                console.warn('overwriting item', target);
+            }
+            this.requirements[bit] = rhs;
+        }
+    }
+
     /** Adds the `rhs` expression as an alternative to the `target`. */
     addAlternative(target: string, rhs: LogicalExpression) {
         const bit = this.bit(target);

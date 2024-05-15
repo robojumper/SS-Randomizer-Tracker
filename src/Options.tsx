@@ -88,6 +88,7 @@ const optionCategorization_ = {
         'open-lmf',
         'open-thunderhead',
         'fs-lava-flow',
+        'open-shortcuts',
     ],
     Victory: [
         'got-start',

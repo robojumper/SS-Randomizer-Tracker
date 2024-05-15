@@ -61,6 +61,10 @@ export interface AllTypedOptions
     // https://github.com/ssrando/ssrando/pull/497
     'randomize-entrances': GeneratedOptions['randomize-entrances'] | 'All' | 'Vanilla',
     'randomize-dungeon-entrances': GeneratedOptions['randomize-entrances'] | undefined,
+
+    // NindyBK's Preposterous Playoffs add dungeon shortcuts
+    // https://github.com/NindyBK/ssrnppbuild/pull/1
+    'open-shortcuts': 'None' | 'Unrequired Dungeons Only' | 'All Dungeons' | undefined;
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOption>;
