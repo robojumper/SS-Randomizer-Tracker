@@ -56,12 +56,20 @@ describe('full logic tests', () => {
         return selector(store.getState());
     }
 
+    function tryFindCheckId(areaName: string, checkName: string) {
+        const area = findArea(areaName);
+        return (
+            area.checks.find((c) => c.includes(checkName)) ??
+            area.extraChecks.tr_cube?.find((c) => c.includes(checkName)) ??
+            area.extraChecks.gossip_stone?.find((c) => c.includes(checkName))
+        );
+    }
+
     /**
      * Check that a check of the given name exists in the area, and return its id.
      */
     function findCheckId(areaName: string, checkName: string) {
-        const area = findArea(areaName);
-        const check = area.checks.find((c) => c.includes(checkName)) ?? area.extraChecks.tr_cube?.find((c) => c.includes(checkName));
+        const check = tryFindCheckId(areaName, checkName);
         expect(check).toBeDefined();
         return check!;
     }
@@ -80,11 +88,8 @@ describe('full logic tests', () => {
      * To protect against typos, you should also verify that the check exists with different settings.
      */
     function expectCheckAbsent(areaName: string, checkName: string) {
-        const area = findArea(areaName);
-        const check = area.checks.find((c) => c.includes(checkName));
+        const check = tryFindCheckId(areaName, checkName);
         expect(check).toBeUndefined();
-        const maybeCube = area.extraChecks.tr_cube?.find((c) => c.includes(checkName));
-        expect(maybeCube).toBeUndefined();
     }
 
     /** Set a particular settings value. */
@@ -279,5 +284,13 @@ describe('full logic tests', () => {
         // If both tricks are in logic, the check is in logic
         updateSettings('enabled-tricks-bitless', ['Lanayru Desert - Ampilus Bomb Toss', 'Brakeslide']);
         expect(checkState(cagedRobotCheck)).toBe('inLogic');
+    });
+
+    it('hides gossip stones with known hint distros', () => {
+        updateSettingsWithReset('hint-distribution', 'Balanced');
+        findCheckId('Faron Woods', 'Gossip Stone in Deep Woods');
+        
+        updateSettingsWithReset('hint-distribution', 'Remlits Tournament');
+        expectCheckAbsent('Faron Woods', 'Gossip Stone in Deep Woods');
     });
 });

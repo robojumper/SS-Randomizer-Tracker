@@ -72,6 +72,14 @@ export const swordsToAdd = {
     'True Master Sword': 6,
 };
 
+export const knownNoGossipStoneHintDistros = [
+    '2D Dowsing & Fi Hints',
+    'Boss Keysanity Fi Hints',
+    'Dowsing & Fi Hints',
+    'Remlits Tournament',
+    'Strong Dowsing All Dungeons',
+];
+
 // These requirements are populated based on required dungeons
 
 export const gotOpeningReq = 'GoT Opening Requirement';

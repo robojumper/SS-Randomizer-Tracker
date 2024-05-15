@@ -104,6 +104,7 @@ const optionCategorization_ = {
         'enabled-tricks-bitless',
         'enabled-tricks-glitched',
         'excluded-locations',
+        'hint-distribution',
     ],
 } as const satisfies Record<string, readonly OptionsCommand[]>;
 

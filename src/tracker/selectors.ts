@@ -13,6 +13,7 @@ import {
     gotRaisingReq,
     hordeDoorReq,
     impaSongCheck,
+    knownNoGossipStoneHintDistros,
     runtimeOptions,
     swordsToAdd,
 } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
@@ -542,6 +543,7 @@ const isCheckBannedSelector = createSelector(
         settingSelector('tadtonesanity'),
         settingSelector('treasuresanity-in-silent-realms'),
         settingSelector('trial-treasure-amount'),
+        settingSelector('hint-distribution'),
     ],
     (
         logic,
@@ -555,6 +557,7 @@ const isCheckBannedSelector = createSelector(
         tadtoneSanity,
         silentRealmTreasuresanity,
         silentRealmTreasureAmount,
+        hintDistro,
     ) => {
         const bannedChecks = new Set(bannedLocations);
         const rupeesExcluded =
@@ -594,6 +597,9 @@ const isCheckBannedSelector = createSelector(
             return cube && areaNonprogress(logic.checks[cube].area!);
         };
 
+        const gossipStonesBanned =
+            knownNoGossipStoneHintDistros.includes(hintDistro);
+
         return (checkId: string, check: LogicalCheck) =>
             // Loose crystal checks can be banned to not require picking them up
             // in logic, but we want to allow marking them as collected.
@@ -607,7 +613,8 @@ const isCheckBannedSelector = createSelector(
             (banBeedle && check.type === 'beedle_shop') ||
             (banGearShop && check.type === 'gear_shop') ||
             (banPotionShop && check.type === 'potion_shop') ||
-            (!tadtoneSanity && check.type === 'tadtone');
+            (!tadtoneSanity && check.type === 'tadtone') || 
+            (gossipStonesBanned && check.type === 'gossip_stone');
     },
 );
 
