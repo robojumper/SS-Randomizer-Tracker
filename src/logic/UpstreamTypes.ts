@@ -1,3 +1,6 @@
+import { OptionValue, OptionsCommand } from '../permalink/SettingsTypes';
+import { InventoryItem } from './Inventory';
+
 export enum TimeOfDay {
     DayOnly = 1,
     NightOnly = 2,
@@ -44,8 +47,49 @@ export interface RawCheck {
 }
 
 export interface ExitLink {
-    exit_from_outside: string | string[],
-    exit_from_inside: string,
+    exit_from_outside: string | string[];
+    exit_from_inside: string;
+}
+
+export interface CombinationQuery {
+    type: 'combination';
+    op: 'and' | 'or';
+    args: SettingsQuery[];
+}
+
+export interface OptionQuery {
+    type: 'query';
+    option: OptionsCommand;
+    op: 'eq' | 'in' | 'lt' | 'gt';
+    negation: boolean;
+    value: OptionValue;
+}
+
+export interface DungeonQuery {
+    type: 'req_dungeon';
+    dungeon: string;
+    negation: boolean;
+}
+
+export type SettingsQuery = CombinationQuery | DungeonQuery | OptionQuery;
+
+export type CounterExpression =
+    | {
+          type: 'mul';
+          factor: number;
+      }
+    | {
+          type: 'lookup';
+          dict: Record<number, number>;
+      };
+
+export interface CounterAddend {
+    item: InventoryItem;
+    expression: CounterExpression;
+}
+
+export interface Counter {
+    targets: CounterAddend[];
 }
 
 export interface RawLogic {
@@ -53,18 +97,28 @@ export interface RawLogic {
     checks: Record<string, RawCheck>;
     /** LocationId -> Area - Location Name */
     gossip_stones: Record<string, string>;
-    exits: Record<string, RawExit>,
-    entrances: Record<string, RawEntrance>,
+    exits: Record<string, RawExit>;
+    entrances: Record<string, RawEntrance>;
     areas: RawArea;
     linked_entrances: {
         silent_realms: {
-            [realm: string]: ExitLink
-        },
+            [realm: string]: ExitLink;
+        };
         dungeons: {
-            [dungeon: string]: ExitLink
-        }
-    }
+            [dungeon: string]: ExitLink;
+        };
+    };
     dungeon_completion_requirements: {
-        [dungeon: string]: string,
-    }
+        [dungeon: string]: string;
+    };
+    well_known_requirements?: {
+        [key in
+            | 'open_got'
+            | 'raise_got'
+            | 'horde_door'
+            | 'impa_song_check'
+            | 'complete_triforce']: string;
+    };
+    options?: Record<string, OptionQuery | DungeonQuery>;
+    counters?: Record<string, Counter>;
 }

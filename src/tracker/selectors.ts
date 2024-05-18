@@ -4,17 +4,11 @@ import {
     logicSelector,
     optionsSelector,
 } from '../logic/selectors';
-import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { TypedOptions } from '../permalink/SettingsTypes';
 import { RootState } from '../store/store';
 import { currySelector } from '../utils/redux';
 import {
-    completeTriforceReq,
-    gotOpeningReq,
-    gotRaisingReq,
-    hordeDoorReq,
-    impaSongCheck,
     knownNoGossipStoneHintDistros,
-    runtimeOptions,
     swordsToAdd,
 } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
@@ -26,11 +20,7 @@ import {
     isDungeon,
     LogicalState,
 } from '../logic/Locations';
-import {
-    Logic,
-    LogicalCheck,
-    itemName,
-} from '../logic/Logic';
+import { Logic, LogicalCheck, itemName } from '../logic/Logic';
 import {
     cubeCheckToCubeCollected,
     cubeCheckToGoddessChestCheck,
@@ -43,21 +33,39 @@ import {
 } from '../logic/TrackerModifications';
 import _ from 'lodash';
 import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
-import { TimeOfDay } from '../logic/UpstreamTypes';
-import { Requirements, computeLeastFixedPoint, mergeRequirements } from '../logic/bitlogic/BitLogic';
+import { SettingsQuery, TimeOfDay } from '../logic/UpstreamTypes';
+import {
+    Requirements,
+    computeLeastFixedPoint,
+    mergeRequirements,
+} from '../logic/bitlogic/BitLogic';
 import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
 import { exploreAreaGraph } from '../logic/Pathfinding';
 import { keyData } from '../logic/KeyLogic';
 import { BitVector } from '../logic/bitlogic/BitVector';
 import { InventoryItem, itemMaxes } from '../logic/Inventory';
-import { getAllowedStartingEntrances, getEntrancePools, getExitRules, getExits, getUsedEntrances } from '../logic/Entrances';
-import { computeSemiLogic, getAllTricksEnabledRequirements } from '../logic/SemiLogic';
-import { counterBasisSelector, trickSemiLogicSelector, trickSemiLogicTrickListSelector } from '../customization/selectors';
+import {
+    getAllowedStartingEntrances,
+    getEntrancePools,
+    getExitRules,
+    getExits,
+    getUsedEntrances,
+} from '../logic/Entrances';
+import {
+    computeSemiLogic,
+    getVisibleTricksEnabledRequirements,
+} from '../logic/SemiLogic';
+import {
+    counterBasisSelector,
+    trickSemiLogicSelector,
+    trickSemiLogicTrickListSelector,
+} from '../customization/selectors';
 
 const bitVectorMemoizeOptions = {
     memoizeOptions: {
-        resultEqualityCheck: (a: BitVector, b: BitVector) => (a instanceof BitVector && b instanceof BitVector && a.equals(b)),
+        resultEqualityCheck: (a: BitVector, b: BitVector) =>
+            a instanceof BitVector && b instanceof BitVector && a.equals(b),
     },
 };
 
@@ -71,7 +79,8 @@ export const areaHintSelector = currySelector(
 /**
  * All hinted items.
  */
-export const checkHintsSelector = (state: RootState) => state.tracker.checkHints;
+export const checkHintsSelector = (state: RootState) =>
+    state.tracker.checkHints;
 
 /**
  * Selects the hinted item for a given check
@@ -208,7 +217,6 @@ export const entrancePoolsSelector = createSelector(
 
 const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
 
-
 /** Defines how exits should be resolved. */
 export const exitRulesSelector = createSelector(
     [
@@ -260,7 +268,6 @@ export const requiredDungeonsSelector = createSelector(
 export const settingsRequirementsSelector = createSelector(
     [
         logicSelector,
-        optionsSelector,
         settingsSelector,
         exitsSelector,
         requiredDungeonsSelector,
@@ -268,9 +275,56 @@ export const settingsRequirementsSelector = createSelector(
     mapSettings,
 );
 
+function evalCondition(
+    condition: SettingsQuery,
+    settings: TypedOptions,
+    requiredDungeons: string[],
+): boolean {
+
+    if (condition.type === 'combination') {
+        const results = condition.args.map((c) => evalCondition(c, settings, requiredDungeons));
+        if (condition.op === 'and') {
+            return results.every(_.identity);
+        } else if (condition.op === 'or') {
+            return results.some(_.identity);
+        } else {
+            throw new Error("unreachable");
+        }
+    }
+
+    const evalInner = () => {
+        const ty = condition.type;
+        switch (ty) {
+            case 'query': {
+                const settingsValue = settings[condition.option as keyof TypedOptions];
+                // eslint-disable-next-line sonarjs/no-nested-switch
+                switch (condition.op) {
+                    case 'eq':
+                        return settingsValue === condition.value;
+                    case 'in':
+                        return Array.isArray(settingsValue) && settingsValue.includes(condition.value as string);
+                    case 'lt':
+                        return (settingsValue as number) < (condition.value as number);
+                    case 'gt':
+                        return (settingsValue as number) > (condition.value as number);
+                    default:
+                        console.warn('unknown op', condition);
+                        return false;
+                }
+            }
+            case 'req_dungeon':
+                return requiredDungeons.includes(condition.dungeon);
+            default:
+                console.warn('unknown options type', ty)
+                return false;
+        }
+    };
+
+    return evalInner() !== condition.negation;
+}
+
 function mapSettings(
     logic: Logic,
-    options: OptionDefs,
     settings: TypedOptions,
     exits: ExitMapping[],
     requiredDungeons: string[],
@@ -278,50 +332,24 @@ function mapSettings(
     const requirements: Requirements = {};
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
-    for (const option of runtimeOptions) {
-        const [item, command, expect] = option;
-        const val = settings[command];
-        const match =
-            val !== undefined &&
-            (typeof expect === 'function' ? expect(val) : expect === val);
-        if (match) {
-            console.log('setting', item);
-            b.set(item, b.true());
+    for (const [requirement, condition] of Object.entries(
+        logic.optionConditions,
+    )) {
+        if (evalCondition(condition, settings, requiredDungeons)) {
+            b.trySet(requirement, b.true());
         }
     }
 
-    // https://github.com/NindyBK/ssrnppbuild/pull/1
-    if (logic.itemBits['Lanayru Mining Facility Unrequired'] !== undefined) {
-        for (const dungeon of dungeonNames) {
-            if (!requiredDungeons.includes(dungeon)) {
-                b.trySet(`${dungeon} Unrequired`, b.true());
-            } else {
-                b.trySet(`${dungeon} Required`, b.true());
-            }
-        }
-    }
-
-    for (const option of options) {
-        if (
-            option.type === 'multichoice' &&
-            (option.command === 'enabled-tricks-glitched' ||
-                option.command === 'enabled-tricks-bitless')
-        ) {
-            const vals = settings[option.command];
-            for (const option of vals) {
-                b.set(`${option} Trick`, b.true());
-            }
-        }
-    }
+    const runtimeReqs = logic.wellKnownRequirements;
 
     const raiseGotExpr =
         settings['got-start'] === 'Raised'
             ? b.true()
-            : b.singleBit(impaSongCheck);
+            : b.singleBit(runtimeReqs.impa_song_check);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = b.singleBit(`Progressive Sword x ${neededSwords}`);
     let hordeDoorExpr = settings['triforce-required']
-        ? b.singleBit(completeTriforceReq)
+        ? b.singleBit(runtimeReqs.complete_triforce)
         : b.true();
 
     const allRequiredDungeonsBits = requiredDungeons.reduce((acc, dungeon) => {
@@ -338,9 +366,9 @@ function mapSettings(
         hordeDoorExpr = hordeDoorExpr.and(dungeonsExpr);
     }
 
-    b.set(gotOpeningReq, openGotExpr);
-    b.set(gotRaisingReq, raiseGotExpr);
-    b.set(hordeDoorReq, hordeDoorExpr);
+    b.set(runtimeReqs.open_got, openGotExpr);
+    b.set(runtimeReqs.raise_got, raiseGotExpr);
+    b.set(runtimeReqs.horde_door, hordeDoorExpr);
 
     const mapConnection = (from: string, to: string) => {
         const exitArea = logic.areaGraph.areasByExit[from];
@@ -397,7 +425,11 @@ export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
     for (const [item, count] of Object.entries(itemCounts)) {
-        if (count === undefined || item === 'Sailcloth' || item === 'Tumbleweed') {
+        if (
+            count === undefined ||
+            item === 'Sailcloth' ||
+            item === 'Tumbleweed'
+        ) {
             continue;
         }
         if (item === sothItemReplacement) {
@@ -411,6 +443,30 @@ export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
         } else {
             for (let i = 1; i <= count; i++) {
                 b.set(itemName(item, i), b.true());
+            }
+        }
+    }
+
+    if (logic.counters) {
+        for (const [target, threshold] of Object.entries(logic.counterThresholds)) {
+            const counter = logic.counters[threshold.item];
+            let result = 0;
+            for (const addend of counter.targets) {
+                const itemCount = itemCounts[addend.item];
+                switch (addend.expression.type) {
+                    case 'mul':
+                        result += addend.expression.factor * itemCount;
+                        break;
+                    case 'lookup':
+                        result += addend.expression.dict[itemCount];
+                        break;
+                    default:
+                        console.warn('unknown counter expression', addend.expression)
+                        break;
+                }
+            }
+            if (result >= threshold.count) {
+                b.set(target, b.true());
             }
         }
     }
@@ -446,11 +502,7 @@ export const inLogicBitsSelector = createSelector(
 
 const optimisticInventoryItemRequirementsSelector = createSelector(
     [logicSelector],
-    (logic) =>
-        mapInventory(
-            logic,
-            itemMaxes,
-        ),
+    (logic) => mapInventory(logic, itemMaxes),
 );
 
 /**
@@ -632,14 +684,13 @@ const dungeonKeyLogicSelector = createSelector(
 );
 
 /** A selector for the requirements that assume every trick enabled in customization is enabled. */
-const allTricksRequirementsSelector = createSelector(
+const visibleTricksRequirementsSelector = createSelector(
     [
         logicSelector,
-        optionsSelector,
         settingsSelector,
         trickSemiLogicTrickListSelector,
     ],
-    getAllTricksEnabledRequirements,
+    getVisibleTricksEnabledRequirements,
 );
 
 export const inTrickLogicBitsSelector = createSelector(
@@ -649,7 +700,7 @@ export const inTrickLogicBitsSelector = createSelector(
         settingsRequirementsSelector,
         inventoryRequirementsSelector,
         checkRequirementsSelector,
-        allTricksRequirementsSelector,
+        visibleTricksRequirementsSelector,
     ],
     (
         logic,
@@ -683,7 +734,7 @@ const semiLogicBitsSelector = createSelector(
         settingsRequirementsSelector,
         checkHintsSelector,
         trickSemiLogicSelector,
-        allTricksRequirementsSelector,
+        visibleTricksRequirementsSelector,
     ],
     computeSemiLogic,
 );
@@ -855,7 +906,7 @@ export const totalCountersSelector = createSelector(
 
 export const usedEntrancesSelector = createSelector(
     [entrancePoolsSelector, exitsSelector],
-    getUsedEntrances
+    getUsedEntrances,
 );
 
 export const inLogicPathfindingSelector = createSelector(

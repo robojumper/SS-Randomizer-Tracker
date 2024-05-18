@@ -7,6 +7,7 @@ import {
     TimeOfDay,
     RawEntrance,
     RawExit,
+    Counter,
 } from './UpstreamTypes';
 import {
     cubeCheckToCubeCollected,
@@ -22,10 +23,13 @@ import {
 } from './bitlogic/BitLogic';
 import {
     booleanExprToLogicalExpr,
+    parseCounterThreshold,
     parseExpression,
 } from './booleanlogic/ExpressionParse';
 import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
+import { OptionDefs } from '../permalink/SettingsTypes';
+import { getLegacyOptionConditions, getLegacyWellKnownRequirements } from './LegacySupport';
 
 export interface Logic {
     numRequirements: number;
@@ -47,7 +51,16 @@ export interface Logic {
     hintRegions: string[];
     checksByHintRegion: Record<string, string[]>;
     exitsByHintRegion: Record<string, string[]>;
-    dungeonCompletionRequirements: { [dungeon: string]: string }
+    dungeonCompletionRequirements: { [dungeon: string]: string };
+    optionConditions: Exclude<RawLogic['options'], undefined>;
+    wellKnownRequirements: Exclude<RawLogic['well_known_requirements'], undefined>;
+    counters: Record<string, Counter> | undefined;
+    counterThresholds: Record<string, CounterThreshold>;
+}
+
+export interface CounterThreshold {
+    item: string;
+    count: number;
 }
 
 export interface LogicalCheck {
@@ -311,7 +324,7 @@ function preprocessItems(raw: string[]): {
 
 const checkAreaPlaceholder = 'filled-in-later';
 
-export function parseLogic(raw: RawLogic): Logic {
+export function parseLogic(raw: RawLogic, options: OptionDefs): Logic {
     const start = performance.now();
 
     const { newItems, impliedBy, implies } = preprocessItems(
@@ -322,6 +335,8 @@ export function parseLogic(raw: RawLogic): Logic {
         ...Object.keys(cubeCollectedToCubeCheck),
         ...Object.values(dungeonCompletionItems),
     ];
+
+    const counterThresholds: Logic['counterThresholds'] = {};
 
     // Pessimistically, all items are opaque
     const opaqueItems = new BitVector();
@@ -647,7 +662,19 @@ export function parseLogic(raw: RawLogic): Logic {
                     ? location
                     : `${area.id}\\${location}`;
 
-                const expr = parseExpr(locationRequirementExpression);
+                let expr: LogicalExpression | undefined = undefined;
+                if (area.abstract) {
+                    // only abstract areas can contain counters
+                    const counter = parseCounterThreshold(locationRequirementExpression);
+                    if (counter) {
+                        expr = LogicalExpression.false();
+                        counterThresholds[locationId] = counter;
+                    }
+                }
+
+                if (!expr) {
+                    expr = parseExpr(locationRequirementExpression);
+                }
 
                 const check: LogicalCheck | undefined = checks[locationId];
                 const isPrimaryLocation = check && !location.startsWith('\\');
@@ -831,9 +858,14 @@ export function parseLogic(raw: RawLogic): Logic {
         return acc;
     }, {});
 
+    const wellKnownReqs = {
+        ...getLegacyWellKnownRequirements(),
+        ...raw.well_known_requirements,
+    };
+
     // Now map our area graph to BitLogic
     const newBuilder = new LogicBuilder(rawItems, itemLookup, staticRequirements);
-    mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems);
+    mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems, counterThresholds, Object.values(wellKnownReqs));
 
 
     // check for orphaned locations. This again should probably not be in here
@@ -905,6 +937,10 @@ export function parseLogic(raw: RawLogic): Logic {
         exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph,
+        optionConditions: raw.options ?? getLegacyOptionConditions(options),
+        wellKnownRequirements: wellKnownReqs,
+        counters: raw.counters,
+        counterThresholds,
     };
 }
 
@@ -912,10 +948,12 @@ function mapAreaToBitLogic(
     b: LogicBuilder,
     areaGraph: AreaGraph,
     opaqueItems: BitVector,
+    counters: Logic['counterThresholds'],
+    wellKnown: string[],
     area = areaGraph.rootArea,
 ) {
     for (const subArea of Object.values(area.subAreas)) {
-        mapAreaToBitLogic(b, areaGraph, opaqueItems, subArea);
+        mapAreaToBitLogic(b, areaGraph, opaqueItems, counters, wellKnown, subArea);
     }
 
     if (area.canSleep) {
@@ -930,10 +968,16 @@ function mapAreaToBitLogic(
             case 'mapExit':
                 {
                     const locName = location.id;
-                    // Hack: We keep these virtual locations opaque...
+
                     if (
+                        // Hack: We keep these virtual locations opaque...
                         !locName.endsWith('Gratitude Crystals') &&
-                        !locName.includes("\\Gondo's Upgrades\\Upgrade to")
+                        !locName.includes("\\Gondo's Upgrades\\Upgrade to") && 
+                        // Counters are populated at runtime
+                        !counters[location.id] &&
+                        // Some requirements are populated at runtime
+                        // FIXME these should be identified via "Unknown"
+                        !wellKnown.includes(location.id)
                     ) {
                         opaqueItems.clearBit(b.bit(locName));
                     }

@@ -4,7 +4,7 @@ import BooleanExpression from '../logic/booleanlogic/BooleanExpression';
 import {
     BitLogic,
 } from '../logic/bitlogic/BitLogic';
-import { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import { TypedOptions } from '../permalink/SettingsTypes';
 import { WorkerRequest, WorkerResponse } from './worker/Types';
 import { deserializeBooleanExpression, serializeLogicalExpression } from './worker/Utils';
 import _ from 'lodash';
@@ -25,7 +25,6 @@ export class TooltipComputer {
 
     constructor(
         logic: Logic,
-        options: OptionDefs,
         settings: TypedOptions,
         expertMode: boolean,
         trickLogicTricks: Set<string>,
@@ -36,7 +35,6 @@ export class TooltipComputer {
         this.isWorking = false;
         const opaqueBits = getTooltipOpaqueBits(
             logic,
-            options,
             settings,
             expertMode,
             trickLogicTricks,

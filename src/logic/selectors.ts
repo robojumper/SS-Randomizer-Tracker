@@ -10,7 +10,7 @@ export const optionsSelector = (state: RootState) => state.logic.loaded!.options
 export const isLogicLoadedSelector = (state: RootState) => Boolean(state.logic.loaded);
 
 /** Select parsed logic. Throws if logic hasn't loaded yet (guard with `isLogicLoadedSelector`). */
-export const logicSelector = createSelector([rawLogicSelector], parseLogic);
+export const logicSelector = createSelector([rawLogicSelector, optionsSelector], parseLogic);
 
 export const areaGraphSelector = createSelector(
     [logicSelector],

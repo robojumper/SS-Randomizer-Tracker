@@ -1,9 +1,3 @@
-import {
-    OptionType,
-    OptionValue,
-    TypedOptions,
-} from '../permalink/SettingsTypes';
-
 /** Exits that are not randomized even if ER is on. */
 export const nonRandomizedExits = [
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Gate of Time Exit',
@@ -26,42 +20,6 @@ export const bannedExitsAndEntrances = [
 /** The exit that leads from LMF to the temple of time. */
 export const lmfSecondExit = '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Exit to Temple of Time';
 
-type OptionMapping = [
-    string,
-    keyof TypedOptions,
-    OptionValue | ((val: OptionValue) => boolean),
-];
-const m = <K extends keyof TypedOptions>(
-    item: string,
-    settingsKey: K,
-    value: TypedOptions[K] | ((value: TypedOptions[K]) => boolean),
-): OptionMapping => [item, settingsKey, value as OptionType];
-
-export const runtimeOptions: OptionMapping[] = [
-    m('Open Thunderhead option', 'open-thunderhead', 'Open'),
-    m('Open ET option', 'open-et', true),
-    m('Open LMF option', 'open-lmf', 'Open'),
-    m('LMF Nodes On option', 'open-lmf', 'Main Node'),
-    m('Open Lake Floria option', 'open-lake-floria', 'Open'),
-    m('Talk to Yerbal option', 'open-lake-floria', 'Talk to Yerbal'),
-    m('Vanilla Lake Floria option', 'open-lake-floria', 'Vanilla'),
-    m('Randomized Beedle option', 'shopsanity', (val) => val !== 'Vanilla'),
-    m('Gondo Upgrades On option', 'gondo-upgrades', false),
-    m('No BiT crashes', 'bit-patches', 'Fix BiT Crashes'),
-    m('Nonlethal Hot Cave', 'damage-multiplier', (val) => val < 12),
-    m('Upgraded Skyward Strike option', 'upgraded-skyward-strike', true),
-    m('FS Lava Flow option', 'fs-lava-flow', true),
-
-    // https://github.com/NindyBK/ssrnppbuild/pull/1
-    m('Open Dungeon Shortcuts option', 'open-shortcuts', 'All Dungeons'),
-    m('Open Unrequired Shortcuts option', 'open-shortcuts', 'Unrequired Dungeons Only'),
-    m('Default Dungeon Behavior option', 'open-shortcuts', 'None'),
-];
-
-export const impaSongCheck =
-    '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
-export const completeTriforceReq = '\\Complete Triforce';
-
 export const swordsToAdd = {
     Swordless: 0,
     'Practice Sword': 1,
@@ -80,8 +38,3 @@ export const knownNoGossipStoneHintDistros = [
     'Strong Dowsing All Dungeons',
 ];
 
-// These requirements are populated based on required dungeons
-
-export const gotOpeningReq = 'GoT Opening Requirement';
-export const gotRaisingReq = 'GoT Raising Requirement';
-export const hordeDoorReq = 'Horde Door Requirement';

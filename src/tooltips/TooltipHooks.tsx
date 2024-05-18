@@ -20,7 +20,7 @@ import {
     settingSelector,
     settingsSelector,
 } from '../tracker/selectors';
-import { logicSelector, optionsSelector } from '../logic/selectors';
+import { logicSelector } from '../logic/selectors';
 import {
     RootTooltipExpression,
     booleanExprToTooltipExpr,
@@ -38,7 +38,6 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
     const logic = useSelector(logicSelector);
-    const options = useSelector(optionsSelector);
     const settings = useSelector(settingsSelector);
     const settingsRequirements = useSelector(settingsRequirementsSelector);
     const expertMode = useSelector(trickSemiLogicSelector);
@@ -51,7 +50,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
             settingsRequirements,
         );
         setAnalyzer(
-            new TooltipComputer(logic, options, settings, expertMode, consideredTricks, bitLogic),
+            new TooltipComputer(logic, settings, expertMode, consideredTricks, bitLogic),
         );
         return () => {
             setAnalyzer((oldAnalyzer) => {
@@ -59,7 +58,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
                 return null;
             });
         };
-    }, [settingsRequirements, logic, options, expertMode, consideredTricks, settings]);
+    }, [settingsRequirements, logic, expertMode, consideredTricks, settings]);
 
     return (
         <TooltipsContext.Provider value={analyzer}>
