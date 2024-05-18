@@ -51,6 +51,12 @@ export interface ExitLink {
     exit_from_inside: string;
 }
 
+export interface CombinationQuery {
+    type: 'combination';
+    op: 'and' | 'or';
+    args: SettingsQuery[];
+}
+
 export interface OptionQuery {
     type: 'query';
     option: OptionsCommand;
@@ -65,7 +71,7 @@ export interface DungeonQuery {
     negation: boolean;
 }
 
-export type SettingsQuery = DungeonQuery | OptionQuery;
+export type SettingsQuery = CombinationQuery | DungeonQuery | OptionQuery;
 
 export type CounterExpression =
     | {

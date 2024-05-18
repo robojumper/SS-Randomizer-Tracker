@@ -279,7 +279,18 @@ function evalCondition(
     condition: SettingsQuery,
     settings: TypedOptions,
     requiredDungeons: string[],
-) {
+): boolean {
+
+    if (condition.type === 'combination') {
+        const results = condition.args.map((c) => evalCondition(c, settings, requiredDungeons));
+        if (condition.op === 'and') {
+            return results.every(_.identity);
+        } else if (condition.op === 'or') {
+            return results.some(_.identity);
+        } else {
+            throw new Error("unreachable");
+        }
+    }
 
     const evalInner = () => {
         const ty = condition.type;
@@ -297,7 +308,7 @@ function evalCondition(
                     case 'gt':
                         return (settingsValue as number) > (condition.value as number);
                     default:
-                        console.warn('unknown op', condition.op)
+                        console.warn('unknown op', condition);
                         return false;
                 }
             }
