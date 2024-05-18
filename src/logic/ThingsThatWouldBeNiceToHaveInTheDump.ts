@@ -20,10 +20,6 @@ export const bannedExitsAndEntrances = [
 /** The exit that leads from LMF to the temple of time. */
 export const lmfSecondExit = '\\Lanayru Mining Facility\\Hall of Ancient Robots\\End\\Exit to Temple of Time';
 
-export const impaSongCheck =
-    '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
-export const completeTriforceReq = '\\Complete Triforce';
-
 export const swordsToAdd = {
     Swordless: 0,
     'Practice Sword': 1,
@@ -42,8 +38,3 @@ export const knownNoGossipStoneHintDistros = [
     'Strong Dowsing All Dungeons',
 ];
 
-// These requirements are populated based on required dungeons
-
-export const gotOpeningReq = 'GoT Opening Requirement';
-export const gotRaisingReq = 'GoT Raising Requirement';
-export const hordeDoorReq = 'Horde Door Requirement';

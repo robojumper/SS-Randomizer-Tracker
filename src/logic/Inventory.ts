@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { TypedOptions } from '../permalink/SettingsTypes';
 import { BitVector } from './bitlogic/BitVector';
 import { itemName, Logic } from './Logic';
@@ -159,9 +160,15 @@ export function getTooltipOpaqueBits(
         set(cubeItem);
     }
 
-    // No point in revealing that the math behind 80 crystals is 13*5+15
-    for (const amt of [5, 10, 30, 40, 50, 70, 80]) {
-        set(`\\${amt} Gratitude Crystals`);
+    if (_.isEmpty(logic.counterThresholds)) {
+        // No point in revealing that the math behind 80 crystals is 13*5+15
+        for (const amt of [5, 10, 30, 40, 50, 70, 80]) {
+            set(`\\${amt} Gratitude Crystals`);
+        }
+    } else {
+        for (const counter of Object.keys(logic.counterThresholds)) {
+            set(counter);
+        }
     }
 
     if (settings['gondo-upgrades'] === false) {

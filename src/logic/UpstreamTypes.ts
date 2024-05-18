@@ -1,4 +1,5 @@
 import { OptionValue, OptionsCommand } from '../permalink/SettingsTypes';
+import { InventoryItem } from './Inventory';
 
 export enum TimeOfDay {
     DayOnly = 1,
@@ -66,6 +67,25 @@ export interface DungeonQuery {
 
 export type SettingsQuery = DungeonQuery | OptionQuery;
 
+export type CounterExpression =
+    | {
+          type: 'mul';
+          factor: number;
+      }
+    | {
+          type: 'lookup';
+          dict: Record<number, number>;
+      };
+
+export interface CounterAddend {
+    item: InventoryItem;
+    expression: CounterExpression;
+}
+
+export interface Counter {
+    targets: CounterAddend[];
+}
+
 export interface RawLogic {
     items: string[];
     checks: Record<string, RawCheck>;
@@ -86,7 +106,13 @@ export interface RawLogic {
         [dungeon: string]: string;
     };
     well_known_requirements?: {
-        [key in 'open_got' | 'raise_got' | 'horde_door' | 'impa_song_check' | 'complete_triforce']: string;
+        [key in
+            | 'open_got'
+            | 'raise_got'
+            | 'horde_door'
+            | 'impa_song_check'
+            | 'complete_triforce']: string;
     };
     options?: Record<string, OptionQuery | DungeonQuery>;
+    counters?: Record<string, Counter>;
 }

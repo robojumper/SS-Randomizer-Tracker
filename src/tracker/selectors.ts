@@ -8,11 +8,6 @@ import { TypedOptions } from '../permalink/SettingsTypes';
 import { RootState } from '../store/store';
 import { currySelector } from '../utils/redux';
 import {
-    completeTriforceReq,
-    gotOpeningReq,
-    gotRaisingReq,
-    hordeDoorReq,
-    impaSongCheck,
     knownNoGossipStoneHintDistros,
     swordsToAdd,
 } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
@@ -312,7 +307,7 @@ function evalCondition(
                 console.warn('unknown options type', ty)
                 return false;
         }
-    }    
+    };
 
     return evalInner() !== condition.negation;
 }
@@ -334,14 +329,16 @@ function mapSettings(
         }
     }
 
+    const runtimeReqs = logic.wellKnownRequirements;
+
     const raiseGotExpr =
         settings['got-start'] === 'Raised'
             ? b.true()
-            : b.singleBit(impaSongCheck);
+            : b.singleBit(runtimeReqs.impa_song_check);
     const neededSwords = swordsToAdd[settings['got-sword-requirement']];
     let openGotExpr = b.singleBit(`Progressive Sword x ${neededSwords}`);
     let hordeDoorExpr = settings['triforce-required']
-        ? b.singleBit(completeTriforceReq)
+        ? b.singleBit(runtimeReqs.complete_triforce)
         : b.true();
 
     const allRequiredDungeonsBits = requiredDungeons.reduce((acc, dungeon) => {
@@ -358,9 +355,9 @@ function mapSettings(
         hordeDoorExpr = hordeDoorExpr.and(dungeonsExpr);
     }
 
-    b.set(gotOpeningReq, openGotExpr);
-    b.set(gotRaisingReq, raiseGotExpr);
-    b.set(hordeDoorReq, hordeDoorExpr);
+    b.set(runtimeReqs.open_got, openGotExpr);
+    b.set(runtimeReqs.raise_got, raiseGotExpr);
+    b.set(runtimeReqs.horde_door, hordeDoorExpr);
 
     const mapConnection = (from: string, to: string) => {
         const exitArea = logic.areaGraph.areasByExit[from];
@@ -435,6 +432,30 @@ export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
         } else {
             for (let i = 1; i <= count; i++) {
                 b.set(itemName(item, i), b.true());
+            }
+        }
+    }
+
+    if (logic.counters) {
+        for (const [target, threshold] of Object.entries(logic.counterThresholds)) {
+            const counter = logic.counters[threshold.item];
+            let result = 0;
+            for (const addend of counter.targets) {
+                const itemCount = itemCounts[addend.item];
+                switch (addend.expression.type) {
+                    case 'mul':
+                        result += addend.expression.factor * itemCount;
+                        break;
+                    case 'lookup':
+                        result += addend.expression.dict[itemCount];
+                        break;
+                    default:
+                        console.warn('unknown counter expression', addend.expression)
+                        break;
+                }
+            }
+            if (result >= threshold.count) {
+                b.set(target, b.true());
             }
         }
     }

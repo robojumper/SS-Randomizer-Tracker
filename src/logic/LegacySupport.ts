@@ -8,6 +8,7 @@
 
 import { MultiChoiceOption, OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { dungeonNames } from './Locations';
+import { Logic } from './Logic';
 import { OptionQuery, RawLogic } from './UpstreamTypes';
 
 const m = <K extends keyof TypedOptions>(
@@ -49,10 +50,14 @@ const legacyHardcodedOptions: RawLogic['options'] = {
 /**
  * Get Query conditions (settings value or required dungeon tests, tricks)
  */
-export function getOptionConditions(options: OptionDefs) {
-    const conditions = {...legacyHardcodedOptions};
-    const enabledTricksOption = options.find((v) => v.command === 'enabled-tricks-bitless');
-    const enabledTricksGlitchedOption = options.find((v) => v.command === 'enabled-tricks-glitched');
+export function getLegacyOptionConditions(options: OptionDefs) {
+    const conditions = { ...legacyHardcodedOptions };
+    const enabledTricksOption = options.find(
+        (v) => v.command === 'enabled-tricks-bitless',
+    );
+    const enabledTricksGlitchedOption = options.find(
+        (v) => v.command === 'enabled-tricks-glitched',
+    );
 
     const handleTricks = (option: MultiChoiceOption) => {
         for (const choice of option.choices) {
@@ -86,4 +91,20 @@ export function getOptionConditions(options: OptionDefs) {
     }
 
     return conditions;
+}
+
+const gotOpeningReq = 'GoT Opening Requirement';
+const gotRaisingReq = 'GoT Raising Requirement';
+const hordeDoorReq = 'Horde Door Requirement';
+const impaSongCheck = '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
+const completeTriforceReq = '\\Complete Triforce';
+
+export function getLegacyWellKnownRequirements(): Logic['wellKnownRequirements'] {
+    return {
+        open_got: gotOpeningReq,
+        raise_got: gotRaisingReq,
+        horde_door: hordeDoorReq,
+        impa_song_check: impaSongCheck,
+        complete_triforce: completeTriforceReq,
+    };
 }

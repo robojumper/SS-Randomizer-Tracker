@@ -158,6 +158,11 @@ function getReadableItemName(logic: Logic, item: string) {
         return prettyItemNames[item][1];
     }
 
+    const counter = logic.counterThresholds?.[item];
+    if (counter) {
+        return `${counter.item} ≥ ${counter.count}`;
+    }
+
     const match = item.match(itemCountPat);
     if (match) {
         const [, baseName, count] = match;
