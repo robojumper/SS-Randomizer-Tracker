@@ -858,9 +858,14 @@ export function parseLogic(raw: RawLogic, options: OptionDefs): Logic {
         return acc;
     }, {});
 
+    const wellKnownReqs = {
+        ...getLegacyWellKnownRequirements(),
+        ...raw.well_known_requirements,
+    };
+
     // Now map our area graph to BitLogic
     const newBuilder = new LogicBuilder(rawItems, itemLookup, staticRequirements);
-    mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems, counterThresholds);
+    mapAreaToBitLogic(newBuilder, areaGraph, opaqueItems, counterThresholds, Object.values(wellKnownReqs));
 
 
     // check for orphaned locations. This again should probably not be in here
@@ -933,10 +938,7 @@ export function parseLogic(raw: RawLogic, options: OptionDefs): Logic {
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph,
         optionConditions: raw.options ?? getLegacyOptionConditions(options),
-        wellKnownRequirements: {
-            ...getLegacyWellKnownRequirements(),
-            ...raw.well_known_requirements,
-        },
+        wellKnownRequirements: wellKnownReqs,
         counters: raw.counters,
         counterThresholds,
     };
@@ -947,10 +949,11 @@ function mapAreaToBitLogic(
     areaGraph: AreaGraph,
     opaqueItems: BitVector,
     counters: Logic['counterThresholds'],
+    wellKnown: string[],
     area = areaGraph.rootArea,
 ) {
     for (const subArea of Object.values(area.subAreas)) {
-        mapAreaToBitLogic(b, areaGraph, opaqueItems, counters, subArea);
+        mapAreaToBitLogic(b, areaGraph, opaqueItems, counters, wellKnown, subArea);
     }
 
     if (area.canSleep) {
@@ -971,7 +974,10 @@ function mapAreaToBitLogic(
                         !locName.endsWith('Gratitude Crystals') &&
                         !locName.includes("\\Gondo's Upgrades\\Upgrade to") && 
                         // Counters are populated at runtime
-                        !counters[location.id]
+                        !counters[location.id] &&
+                        // Some requirements are populated at runtime
+                        // FIXME these should be identified via "Unknown"
+                        !wellKnown.includes(location.id)
                     ) {
                         opaqueItems.clearBit(b.bit(locName));
                     }
