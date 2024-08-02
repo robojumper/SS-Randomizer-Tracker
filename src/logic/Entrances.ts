@@ -50,9 +50,14 @@ export function getAllowedStartingEntrances(
     randomizeStart: TypedOptions['random-start-entrance'],
 ): Entrance[] {
     return Object.entries(logic.areaGraph.entrances)
-        .filter(([, def]) => {
+        .filter(([id, def]) => {
             if (def['can-start-at'] === false) {
                 return false;
+            }
+
+            // Vanilla starting entrance is always valid for all settings
+            if (id === logic.areaGraph.vanillaConnections['\\Start']) {
+                return true;
             }
 
             switch (randomizeStart) {
