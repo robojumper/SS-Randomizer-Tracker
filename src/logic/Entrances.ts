@@ -66,6 +66,7 @@ export function getAllowedStartingEntrances(
                 case 'Bird Statues':
                     return def.subtype === 'bird-statue-entrance';
                 case 'Any Surface Region':
+                    return def.province !== 'The Sky';
                 case 'Any':
                     return true;
                 default:
