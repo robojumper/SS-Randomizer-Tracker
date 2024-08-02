@@ -72,21 +72,29 @@ export class LogicalExpression {
      */
     removeDuplicates() {
         const terms: BitVector[] = [];
-        for (let i = 0; i < this.conjunctions.length; i++) {
+        nextTerm: for (let i = 0; i < this.conjunctions.length; i++) {
             const candidate = this.conjunctions[i];
-            const weakerTerm = terms.findIndex((t) => t.isSubsetOf(candidate));
-            if (weakerTerm !== -1) {
-                continue;
+            const toRemove: number[] = [];
+            for (const [existingIdx, existing] of terms.entries()) {
+                if (existing.isSubsetOf(candidate)) {
+                    // existing requires fewer or equal things than candidate
+                    continue nextTerm;
+                } else if (candidate.isSubsetOf(existing)) {
+                    toRemove.push(existingIdx);
+                }
             }
 
-            const strongerTerm = terms.findIndex((t) =>
-                candidate.isSubsetOf(t),
-            );
-            if (strongerTerm !== -1) {
-                terms[strongerTerm] = candidate;
-            } else {
-                terms.push(candidate);
+            for (let j = toRemove.length - 1; j >= 0; j--) {
+                const idx = toRemove[j];
+                // remove element at idx without shifting the rest by
+                // swapping if needed
+                if (idx === terms.length - 1) {
+                    terms.pop()
+                } else {
+                    terms[idx] = terms.pop()!;
+                }
             }
+            terms.push(candidate);
         }
         return new LogicalExpression(terms);
     }
@@ -96,29 +104,25 @@ export class LogicalExpression {
      * the terms of `this` changing.
      */
     orExtended(other: LogicalExpression) {
-        const terms: BitVector[] = [...this.conjunctions];
+        const self: BitVector[] = [...this.conjunctions];
+        const filteredOther: BitVector[] = [];
         let useful = false;
 
-        const otherTerms = other.removeDuplicates().conjunctions;
-        for (let i = 0; i < otherTerms.length; i++) {
+        const otherTerms = other.conjunctions;
+        nextTerm: for (let i = 0; i < otherTerms.length; i++) {
             const candidate = otherTerms[i];
-            const weakerTerm = terms.findIndex((t) => t.isSubsetOf(candidate));
-            if (weakerTerm !== -1) {
-                continue;
+            for (let j = 0; j < self.length; j++) {
+                const existing = self[j];
+                if (existing.isSubsetOf(candidate)) {
+                    continue nextTerm;
+                }
             }
-
+            
+            filteredOther.push(candidate);
             useful = true;
-
-            const strongerTerm = terms.findIndex((t) =>
-                candidate.isSubsetOf(t),
-            );
-            if (strongerTerm !== -1) {
-                terms[strongerTerm] = candidate;
-            } else {
-                terms.push(candidate);
-            }
+            
         }
-        return [useful, new LogicalExpression(terms)] as const;
+        return [useful, new LogicalExpression([...self, ...filteredOther])] as const;
     }
 
     /**

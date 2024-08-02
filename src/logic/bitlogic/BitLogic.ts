@@ -371,7 +371,7 @@ export function bottomUpTooltipPropagation(
             if (useful) {
                 thisRoundChanged.setBit(idx);
                 changed = true;
-                requirements[idx] = newExpr;
+                requirements[idx] = newExpr.removeDuplicates();
                 propagationCandidates.setBit(idx);
             }
         }
