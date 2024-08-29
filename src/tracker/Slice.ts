@@ -139,7 +139,9 @@ const trackerSlice = createSlice({
             action: PayloadAction<{ item: InventoryItem; count: number }[]>,
         ) => {
             for (const { item, count } of action.payload) {
-                state.inventory[item] = count;
+                if (isItem(item)) {
+                    state.inventory[item] = Math.max(Math.min(count, itemMaxes[item]), 0);
+                }
             }
             state.hasBeenModified = true;
         },

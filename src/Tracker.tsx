@@ -14,6 +14,7 @@ import LocationGroupContextMenu from './locationTracker/LocationGroupContextMenu
 import { isLogicLoadedSelector } from './logic/Selectors';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
 import { useTrackerInterfaceReducer } from './tracker/TrackerInterfaceReducer';
+import { useAutoTracker } from './autoTracker/AutoTracker';
 
 export default function TrackerContainer() {
     const logicLoaded = useSelector(isLogicLoadedSelector);
@@ -37,6 +38,7 @@ export default function TrackerContainer() {
 // Split out into separate component to optimize rerenders
 function TrackerStateSaver() {
     useSyncTrackerStateToLocalStorage();
+    useAutoTracker();
     return null;
 }
 
