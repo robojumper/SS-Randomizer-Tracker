@@ -84,6 +84,13 @@ const trackerSlice = createSlice({
             state.hasBeenModified = true;
             state.inventory[item] = newCount;
         },
+        setItemCounts: (state, action: PayloadAction<{item: string, count: number}[]>) => {
+            for (const {item, count} of action.payload) {
+                if (isItem(item)) {
+                    state.inventory[item] = Math.max(Math.min(count, itemMaxes[item]), 0);
+                }
+            }
+        },
         clickCheck: (
             state,
             action: PayloadAction<{ checkId: string; markChecked?: boolean }>,
@@ -186,6 +193,6 @@ const trackerSlice = createSlice({
     },
 });
 
-export const { clickItem, clickCheck, clickDungeonName, bulkEditChecks, mapEntrance, acceptSettings, setCheckHint, reset, setHint, loadTracker } = trackerSlice.actions;
+export const { clickItem, setItemCounts, clickCheck, clickDungeonName, bulkEditChecks, mapEntrance, acceptSettings, setCheckHint, reset, setHint, loadTracker } = trackerSlice.actions;
 
 export default trackerSlice.reducer;

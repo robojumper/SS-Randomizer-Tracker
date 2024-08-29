@@ -23,6 +23,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { isLogicLoadedSelector } from './logic/selectors';
 import { ExportButton } from './ImportExport';
 import { useSyncTrackerStateToLocalStorage } from './LocalStorage';
+import { useAutoTracker } from './autoTracker/AutoTracker';
 
 function subscribeToWindowResize(callback: () => void) {
     window.addEventListener('resize', callback);
@@ -77,6 +78,7 @@ function Tracker() {
     const locationLayout = useSelector(locationLayoutSelector);
 
     useSyncTrackerStateToLocalStorage();
+    useAutoTracker();
 
     let itemTracker;
     if (itemLayout === 'inventory') {
