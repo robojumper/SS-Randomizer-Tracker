@@ -3,6 +3,7 @@ import random
 import json
 
 from websockets.asyncio.server import serve
+from websockets.exceptions import ConnectionClosed
 
 """
 pip install websockets
@@ -43,6 +44,8 @@ async def echo(websocket):
             await asyncio.sleep(0.5)
         except KeyboardInterrupt as e:
             raise e
+        except ConnectionClosed:
+            return
         except Exception as e:
             print(e)
 
