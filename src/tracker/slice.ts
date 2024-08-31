@@ -102,6 +102,15 @@ const trackerSlice = createSlice({
             }
             state.hasBeenModified = true;
         },
+        setItemCounts: (
+            state,
+            action: PayloadAction<{ item: InventoryItem; count: number }[]>,
+        ) => {
+            for (const {item, count} of action.payload) {
+                state.inventory[item] = count;
+            }
+            state.hasBeenModified = true;
+        },
         clickDungeonName: (
             state,
             action: PayloadAction<{ dungeonName: RegularDungeon }>,
@@ -186,6 +195,6 @@ const trackerSlice = createSlice({
     },
 });
 
-export const { clickItem, clickCheck, clickDungeonName, bulkEditChecks, mapEntrance, acceptSettings, setCheckHint, reset, setHint, loadTracker } = trackerSlice.actions;
+export const { clickItem, clickCheck, setItemCounts, clickDungeonName, bulkEditChecks, mapEntrance, acceptSettings, setCheckHint, reset, setHint, loadTracker } = trackerSlice.actions;
 
 export default trackerSlice.reducer;

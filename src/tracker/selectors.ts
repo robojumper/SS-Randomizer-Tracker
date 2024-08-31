@@ -263,6 +263,7 @@ export const exitRulesSelector = createSelector(
         settingSelector('randomize-dungeon-entrances'),
         settingSelector('randomize-trials'),
         settingSelector('random-start-statues'),
+        settingSelector('empty-unrequired-dungeons'),
         requiredDungeonsSelector,
     ],
     getExitRules,
@@ -786,6 +787,7 @@ export const areasSelector = createSelector(
     [
         logicSelector,
         checkedChecksSelector,
+        exitsSelector,
         isCheckBannedSelector,
         getRequirementLogicalStateSelector,
         areaNonprogressSelector,
@@ -796,14 +798,16 @@ export const areasSelector = createSelector(
     (
         logic,
         checkedChecks,
+        allExits,
         isCheckBanned,
         getLogicalState,
         isAreaNonprogress,
         isAreaHidden,
         exitRules,
         counterBasis,
-    ): HintRegion[] =>
-        _.compact(
+    ): HintRegion[] => {
+        const exitsById = _.keyBy(allExits, (e) => e.exit.id);
+        return _.compact(
             logic.hintRegions.map((area): HintRegion | undefined => {
                 const checks = logic.checksByHintRegion[area];
                 const progressChecks = checks.filter(
@@ -839,6 +843,16 @@ export const areasSelector = createSelector(
                     (exit) => exitRules[exit]?.type === 'random',
                 );
 
+                const numExitsAccessible = exits.filter((e) => {
+                    const exitMapping = exitsById[e];
+                    return (
+                        exitMapping.canAssign &&
+                        !exitMapping.entrance &&
+                        !exitMapping.rule.isKnownIrrelevant &&
+                        shouldCount(getLogicalState(e))
+                    );
+                }).length;
+
                 return {
                     checks: regularChecks,
                     exits,
@@ -852,9 +866,11 @@ export const areasSelector = createSelector(
                     name: area,
                     numChecksRemaining: remaining.length,
                     numChecksAccessible: inLogic.length,
+                    numExitsAccessible
                 };
             }),
-        ),
+        );
+    }
 );
 
 export const totalCountersSelector = createSelector(
@@ -866,10 +882,12 @@ export const totalCountersSelector = createSelector(
         );
         const numAccessible = _.sumBy(areas, (a) => a.numChecksAccessible);
         const numRemaining = _.sumBy(areas, (a) => a.numChecksRemaining);
+        const numExitsAccessible = _.sumBy(areas, (a) => a.numExitsAccessible);
         return {
             numChecked,
             numAccessible,
             numRemaining,
+            numExitsAccessible
         };
     },
 );

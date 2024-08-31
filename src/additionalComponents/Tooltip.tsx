@@ -7,14 +7,17 @@ export default function Tooltip({
     children,
     placement,
     followCursor,
+    disabled,
 }: {
     content: React.ReactNode;
     children: React.ReactElement;
     placement?: 'bottom' | 'top';
     followCursor?: boolean;
+    disabled?: boolean;
 }) {
     return (
         <Tippy
+            disabled={disabled}
             placement={placement}
             content={content}
             {...(followCursor

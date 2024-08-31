@@ -1,6 +1,8 @@
 import { setCounterBasis, setEnabledSemilogicTricks, setTrickSemiLogic } from './customization/slice';
 import { RemoteReference, getAndPatchLogic } from './loader/LogicLoader';
+import { InventoryItem, itemMaxes } from './logic/Inventory';
 import { LogicalState } from './logic/Locations';
+import { logicSelector } from './logic/selectors';
 import { loadLogic } from './logic/slice';
 import { defaultSettings } from './permalink/Settings';
 import { AllTypedOptions, TypedOptions } from './permalink/SettingsTypes';
@@ -19,8 +21,10 @@ import {
     clickCheck,
     clickDungeonName,
     clickItem,
+    mapEntrance,
     reset,
     setCheckHint,
+    setItemCounts,
 } from './tracker/slice';
 import fs from 'node:fs';
 
@@ -91,6 +95,7 @@ describe('full logic tests', () => {
     function findExit(areaName: string, exitName: string) {
         const area = findArea(areaName);
         const exitId = area.exits.find((e) => e.includes(exitName));
+        expect(exitId).toBeTruthy();
         const exit = readSelector(exitsSelector).find((e) => e.exit.id === exitId);
         expect(exit).toBeDefined();
         return exit!;
@@ -133,6 +138,18 @@ describe('full logic tests', () => {
         expect(exit.rule.isKnownIrrelevant).toBe(true);
     }
 
+    function findEntranceId(areaName: string, entranceName: string) {
+        const logic = readSelector(logicSelector);
+        const entrance = Object.entries(logic.areaGraph.entrances).find(
+            ([id, e]) =>
+                logic.areaGraph.entranceHintRegions[id] === areaName &&
+                e.short_name.includes(entranceName),
+        );
+        const id = entrance?.[0];
+        expect(id).toBeTruthy();
+        return id;
+    }
+
     /**
      * Check that a check of the given name *does not* exist in the area (most likely is banned).
      * To protect against typos, you should also verify that the check exists with different settings.
@@ -152,6 +169,16 @@ describe('full logic tests', () => {
     function updateSettingsWithReset<K extends keyof TypedOptions>(option: K, value: TypedOptions[K]) {
         const settings = { ...readSelector(allSettingsSelector), [option]: value };
         store.dispatch(reset({ settings }));
+    }
+
+    function updateSettingsWithFullInventory() {
+        const fullInventory = [];
+        for (const [item, count] of Object.entries(itemMaxes)) {
+            for (let i = 0; i < count; i++) {
+                fullInventory.push({ item: item as InventoryItem, count });
+            }
+        }
+        store.dispatch(setItemCounts(fullInventory));
     }
 
     function checkState(checkId: string): LogicalState {
@@ -345,17 +372,20 @@ describe('full logic tests', () => {
     });
 
     it('handles DER = None', () => {
-        updateSettingsWithReset('randomize-entrances', 'None');
+        updateSettingsWithFullInventory();
+        updateSettings('randomize-entrances', 'None');
         expectExitAbsent('Faron Woods', 'Exit to Skyview Temple');
         expectExitAbsent('Central Skyloft', 'Exit to Sky Keep');
 
         // Dungeon requiredness changes nothing
         store.dispatch(clickDungeonName({ dungeonName: 'Skyview' }));
         expectExitAbsent('Faron Woods', 'Exit to Skyview Temple');
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(0);
     });
 
     it('handles DER = Required Dungeons Separately', () => {
-        updateSettingsWithReset('randomize-entrances', 'Required Dungeons Separately');
+        updateSettingsWithFullInventory();
+        updateSettings('randomize-entrances', 'Required Dungeons Separately');
         updateSettings('empty-unrequired-dungeons', false);
         updateSettings('triforce-required', false);
         updateSettings('triforce-shuffle', 'Anywhere');
@@ -363,8 +393,6 @@ describe('full logic tests', () => {
         // Unrequired dungeon together with all other unrequired dungeons (including Sky Keep)
         expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(7);
         expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(7);
-        expectRandomExitIrrelevant('Faron Woods', 'Exit to Skyview Temple');
-        expectRandomExitIrrelevant('Central Skyloft', 'Exit to Sky Keep');
 
         // SV required
         store.dispatch(clickDungeonName({ dungeonName: 'Skyview' }));
@@ -384,11 +412,17 @@ describe('full logic tests', () => {
         expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(2);
 
         // ET marked as uninteresting
+        
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(7);
+        updateSettings('empty-unrequired-dungeons', true);
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(2);
+
         expectRandomExitIrrelevant('Eldin Volcano', 'Exit to Earth Temple');
     });
 
     it('handles DER = All Surface Dungeons', () => {
-        updateSettingsWithReset('randomize-entrances', 'All Surface Dungeons');
+        updateSettingsWithFullInventory();
+        updateSettings('randomize-entrances', 'All Surface Dungeons');
         updateSettings('empty-unrequired-dungeons', true);
         updateSettings('triforce-required', false);
         updateSettings('triforce-shuffle', 'Anywhere');
@@ -411,10 +445,13 @@ describe('full logic tests', () => {
         // Sky Keep still uninteresting
         expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(6);
         expectExitAbsent('Central Skyloft', 'Exit to Sky Keep');
+
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(6);
     });
 
     it('handles DER = All Surface Dungeons + Sky Keep', () => {
-        updateSettingsWithReset('randomize-entrances', 'All Surface Dungeons + Sky Keep');
+        updateSettingsWithFullInventory();
+        updateSettings('randomize-entrances', 'All Surface Dungeons + Sky Keep');
         updateSettings('empty-unrequired-dungeons', true);
         updateSettings('triforce-required', false);
         updateSettings('triforce-shuffle', 'Anywhere');
@@ -437,5 +474,58 @@ describe('full logic tests', () => {
         // Sky Keep still unchanged
         expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(7);
         expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(7);
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(7);
+    });
+
+    it('handles num accessible exits correctly', () => {
+        updateSettings('randomize-entrances', 'All Surface Dungeons + Sky Keep');
+        updateSettings('random-start-statues', false);
+
+        store.dispatch(clickItem({ item: 'Stone of Trials', take: false }));
+        store.dispatch(clickItem({ item: 'Clawshots', take: false }));
+
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(1);
+
+        store.dispatch(clickItem({ item: 'Clawshots', take: true }));
+
+        store.dispatch(clickItem({ item: 'Amber Tablet', take: false }));
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(0);
+
+        store.dispatch(clickItem({ item: 'Emerald Tablet', take: false }));
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(0);
+
+        updateSettings('random-start-statues', true);
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(2);
+
+        store.dispatch(
+            mapEntrance({
+                from: findExit('Sky', 'Faron Pillar\\First Time Dive').exit.id,
+                to: findEntranceId('Sealed Grounds', 'Sealed Grounds Spiral'),
+            }),
+        );
+
+        expect(findExit('Sky', 'Faron Pillar\\First Time Dive').entrance).toBeTruthy();
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(1);
+
+        store.dispatch(clickItem({ item: 'Clawshots', take: false }));
+
+        // Lanayru Pillar, Sky Keep, Skyview Temple
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(3);
+
+        store.dispatch(
+            mapEntrance({
+                from: findExit('Central Skyloft', 'Exit to Sky Keep').exit.id,
+                to: findEntranceId('Sky Keep', 'Bottom Entrance'),
+            }),
+        );
+
+        store.dispatch(
+            mapEntrance({
+                from: findExit('Faron Woods', 'Exit to Skyview Temple').exit.id,
+                to: findEntranceId('Skyview', 'Main Entrance'),
+            }),
+        );
+
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(1);
     });
 });

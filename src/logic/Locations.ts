@@ -8,6 +8,7 @@ export interface HintRegion<N extends string = string> {
     numTotalChecks: number;
     numChecksRemaining: number;
     numChecksAccessible: number;
+    numExitsAccessible: number;
     checks: string[];
     extraChecks: {
         tr_cube?: string[];

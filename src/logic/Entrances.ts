@@ -180,6 +180,7 @@ export function getExitRules(
     randomDungeonEntranceSetting: TypedOptions['randomize-dungeon-entrances'],
     randomTrialsSetting: TypedOptions['randomize-trials'],
     statueSanity: TypedOptions['random-start-statues'],
+    eud: TypedOptions['empty-unrequired-dungeons'],
     requiredDungeons: DungeonName[],
 ) {
     const result: Record<string, ExitRule> = {};
@@ -280,7 +281,7 @@ export function getExitRules(
                         result[exitId] = {
                             type: 'random',
                             pool: 'dungeons_unrequired' satisfies TrackerLinkedEntrancePool,
-                            isKnownIrrelevant: true,
+                            isKnownIrrelevant: eud,
                         };
                     } else {
                         result[exitId] = { type: 'random', pool };
