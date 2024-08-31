@@ -76,6 +76,7 @@ export interface LogicalCheck {
 export type LocationAvailability = TimeOfDay | 'abstract';
 
 export type LinkedEntrancePool = keyof RawLogic['linked_entrances'];
+export type TrackerLinkedEntrancePool = LinkedEntrancePool | 'dungeons_unrequired';
 
 /**
  * Returns whether this is a linked entrance pool or a regular entrance pool.
@@ -135,7 +136,7 @@ export interface AreaGraph {
      * where interior exits follow exterior exit choice.
      */
     linkedEntrancePools: {
-        [key in LinkedEntrancePool]: Record<
+        [key in keyof RawLogic['linked_entrances']]: Record<
             string,
             EntranceLinkage
         >;

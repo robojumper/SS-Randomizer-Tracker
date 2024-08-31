@@ -9,6 +9,8 @@ import {
     allSettingsSelector,
     areasSelector,
     checkSelector,
+    entrancePoolsSelector,
+    exitsSelector,
     rawItemCountSelector,
     totalCountersSelector,
 } from './tracker/selectors';
@@ -81,6 +83,54 @@ describe('full logic tests', () => {
         const area = readSelector(areasSelector).find((a) => a.name === areaName)!;
         expect(area).toBeDefined();
         return area;
+    }
+
+    /**
+     * Asserts that a given exit exists and is randomized.
+     */
+    function findExit(areaName: string, exitName: string) {
+        const area = findArea(areaName);
+        const exitId = area.exits.find((e) => e.includes(exitName));
+        const exit = readSelector(exitsSelector).find((e) => e.exit.id === exitId);
+        expect(exit).toBeDefined();
+        return exit!;
+    }
+
+    /**
+     * Asserts that a given exit is not randomized and thus
+     * doesn't appear in the given area's exits.
+     */
+    function expectExitAbsent(areaName: string, exitName: string) {
+        const area = findArea(areaName);
+        const exitId = area.exits.find((e) => e.includes(exitName));
+        expect(exitId).toBeUndefined();
+    }
+
+    /**
+     * Asserts that a given exit exists, is randomized, can be assigned,
+     * and returns its list of possible entrances.
+     */
+    function getExitPool(areaName: string, exitName: string) {
+        const pools = readSelector(entrancePoolsSelector);
+        const exit = findExit(areaName, exitName);
+        expect(exit.entrance).toBeUndefined();
+        expect(exit.canAssign).toBe(true);
+        expect(exit.rule.type).toBe('random');
+        if (exit.rule.type !== 'random') {
+            throw new Error('unreachable');
+        }
+        return pools[exit.rule.pool];
+    }
+
+    function expectRandomExitIrrelevant(areaName: string, exitName: string) {
+        const exit = findExit(areaName, exitName);
+        expect(exit.entrance).toBeUndefined();
+        expect(exit.canAssign).toBe(true);
+        expect(exit.rule.type).toBe('random');
+        if (exit.rule.type !== 'random') {
+            throw new Error('unreachable');
+        }
+        expect(exit.rule.isKnownIrrelevant).toBe(true);
     }
 
     /**
@@ -292,5 +342,100 @@ describe('full logic tests', () => {
         
         updateSettingsWithReset('hint-distribution', 'Remlits Tournament');
         expectCheckAbsent('Faron Woods', 'Gossip Stone in Deep Woods');
+    });
+
+    it('handles DER = None', () => {
+        updateSettingsWithReset('randomize-entrances', 'None');
+        expectExitAbsent('Faron Woods', 'Exit to Skyview Temple');
+        expectExitAbsent('Central Skyloft', 'Exit to Sky Keep');
+
+        // Dungeon requiredness changes nothing
+        store.dispatch(clickDungeonName({ dungeonName: 'Skyview' }));
+        expectExitAbsent('Faron Woods', 'Exit to Skyview Temple');
+    });
+
+    it('handles DER = Required Dungeons Separately', () => {
+        updateSettingsWithReset('randomize-entrances', 'Required Dungeons Separately');
+        updateSettings('empty-unrequired-dungeons', false);
+        updateSettings('triforce-required', false);
+        updateSettings('triforce-shuffle', 'Anywhere');
+
+        // Unrequired dungeon together with all other unrequired dungeons (including Sky Keep)
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(7);
+        expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(7);
+        expectRandomExitIrrelevant('Faron Woods', 'Exit to Skyview Temple');
+        expectRandomExitIrrelevant('Central Skyloft', 'Exit to Sky Keep');
+
+        // SV required
+        store.dispatch(clickDungeonName({ dungeonName: 'Skyview' }));
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(1);
+
+        // Eldin together with the unrequired dungeons
+        expect(getExitPool('Eldin Volcano', 'Exit to Earth Temple').entrances.length).toBe(6);
+        
+        // Make Sky Keep required
+        updateSettings('triforce-required', true);
+        updateSettings('triforce-shuffle', 'Sky Keep');
+
+        expect(getExitPool('Eldin Volcano', 'Exit to Earth Temple').entrances.length).toBe(5);
+        
+        // Skyview required together with Sky Keep
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(2);
+        expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(2);
+
+        // ET marked as uninteresting
+        expectRandomExitIrrelevant('Eldin Volcano', 'Exit to Earth Temple');
+    });
+
+    it('handles DER = All Surface Dungeons', () => {
+        updateSettingsWithReset('randomize-entrances', 'All Surface Dungeons');
+        updateSettings('empty-unrequired-dungeons', true);
+        updateSettings('triforce-required', false);
+        updateSettings('triforce-shuffle', 'Anywhere');
+
+        // Unrequired dungeon together with all other unrequired dungeons (excluding Sky Keep)
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(6);
+        expectExitAbsent('Central Skyloft', 'Exit to Sky Keep');
+
+        // SV required
+        store.dispatch(clickDungeonName({ dungeonName: 'Skyview' }));
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(6);
+
+        // Eldin together with the unrequired dungeons
+        expect(getExitPool('Eldin Volcano', 'Exit to Earth Temple').entrances.length).toBe(6);
+        
+        // Make Sky Keep required
+        updateSettings('triforce-required', true);
+        updateSettings('triforce-shuffle', 'Sky Keep');
+
+        // Sky Keep still uninteresting
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(6);
+        expectExitAbsent('Central Skyloft', 'Exit to Sky Keep');
+    });
+
+    it('handles DER = All Surface Dungeons + Sky Keep', () => {
+        updateSettingsWithReset('randomize-entrances', 'All Surface Dungeons + Sky Keep');
+        updateSettings('empty-unrequired-dungeons', true);
+        updateSettings('triforce-required', false);
+        updateSettings('triforce-shuffle', 'Anywhere');
+
+        // Unrequired dungeon together with all other unrequired dungeons (including Sky Keep)
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(7);
+        expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(7);
+
+        // SV required
+        store.dispatch(clickDungeonName({ dungeonName: 'Skyview' }));
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(7);
+
+        // Eldin together with the other dungeons
+        expect(getExitPool('Eldin Volcano', 'Exit to Earth Temple').entrances.length).toBe(7);
+        
+        // Make Sky Keep required
+        updateSettings('triforce-required', true);
+        updateSettings('triforce-shuffle', 'Sky Keep');
+
+        // Sky Keep still unchanged
+        expect(getExitPool('Faron Woods', 'Exit to Skyview Temple').entrances.length).toBe(7);
+        expect(getExitPool('Central Skyloft', 'Exit to Sky Keep').entrances.length).toBe(7);
     });
 });

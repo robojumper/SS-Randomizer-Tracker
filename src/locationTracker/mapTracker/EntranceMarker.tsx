@@ -13,6 +13,7 @@ import { ExitMapping } from '../../logic/Locations';
 import { useTooltipExpr } from '../../tooltips/TooltipHooks';
 import RequirementsTooltip from '../RequirementsTooltip';
 import Tooltip from '../../additionalComponents/Tooltip';
+import { LocationGroupContextMenuProps } from '../LocationGroupHeader';
 
 type EntranceMarkerProps = {
     markerX: number;
@@ -63,23 +64,44 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
         markerColor = 'checked';
     }
 
+    const isUnrequiredDungeon =
+        isDungeon &&
+        exit.rule.type === 'random' &&
+        Boolean(exit.rule.isKnownIrrelevant);
+
     const showUnbound = useContextMenu<MapExitContextMenuProps>({
-        id: (isDungeon ? 'unbound-dungeon-context' :  'unbound-trial-context'),
+        id: isDungeon
+            ? isUnrequiredDungeon
+                ? 'unbound-dungeon-unrequired-context'
+                : 'unbound-dungeon-context'
+            : 'unbound-trial-context',
     }).show;
 
     const showBound = useContextMenu<MapExitContextMenuProps>({
-        id: (isDungeon ? 'dungeon-context' :  'trial-context'),
+        id: isDungeon
+            ? isUnrequiredDungeon
+                ? 'dungeon-unrequired-context'
+                : 'dungeon-context'
+            : 'trial-context',
+    }).show;
+
+    const showGroup = useContextMenu<LocationGroupContextMenuProps>({
+        id: 'group-context',
     }).show;
 
     const destinationRegionName = exit.entrance && logic.areaGraph.entranceHintRegions[exit.entrance.id];
 
     const displayMenu = useCallback((e: TriggerEvent) => {
-        if (hasConnection) {
+        if (!exit.canAssign) {
+            if (exit.entrance) {
+                showGroup({event: e, props: { area: exit.entrance?.region }})
+            }
+        } else if (hasConnection) {
             showBound({ event: e, props: { exitMapping: exit, area: destinationRegionName } });
         } else {
             showUnbound({ event: e, props: { exitMapping: exit, area: destinationRegionName } });
         }
-    }, [destinationRegionName, exit, hasConnection, showBound, showUnbound]);
+    }, [destinationRegionName, exit, hasConnection, showBound, showGroup, showUnbound]);
 
     const areaHint = useSelector(areaHintSelector(destinationRegionName ?? ''));
 

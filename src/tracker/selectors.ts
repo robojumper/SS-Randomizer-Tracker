@@ -26,11 +26,7 @@ import {
     isDungeon,
     LogicalState,
 } from '../logic/Locations';
-import {
-    Logic,
-    LogicalCheck,
-    itemName,
-} from '../logic/Logic';
+import { Logic, LogicalCheck, itemName } from '../logic/Logic';
 import {
     cubeCheckToCubeCollected,
     cubeCheckToGoddessChestCheck,
@@ -44,20 +40,38 @@ import {
 import _ from 'lodash';
 import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 import { TimeOfDay } from '../logic/UpstreamTypes';
-import { Requirements, computeLeastFixedPoint, mergeRequirements } from '../logic/bitlogic/BitLogic';
+import {
+    Requirements,
+    computeLeastFixedPoint,
+    mergeRequirements,
+} from '../logic/bitlogic/BitLogic';
 import { validateSettings } from '../permalink/Settings';
 import { LogicBuilder } from '../logic/LogicBuilder';
 import { exploreAreaGraph } from '../logic/Pathfinding';
 import { keyData } from '../logic/KeyLogic';
 import { BitVector } from '../logic/bitlogic/BitVector';
 import { InventoryItem, itemMaxes } from '../logic/Inventory';
-import { getAllowedStartingEntrances, getEntrancePools, getExitRules, getExits, getUsedEntrances } from '../logic/Entrances';
-import { computeSemiLogic, getAllTricksEnabledRequirements } from '../logic/SemiLogic';
-import { counterBasisSelector, trickSemiLogicSelector, trickSemiLogicTrickListSelector } from '../customization/selectors';
+import {
+    getAllowedStartingEntrances,
+    getEntrancePools,
+    getExitRules,
+    getExits,
+    getUsedEntrances,
+} from '../logic/Entrances';
+import {
+    computeSemiLogic,
+    getAllTricksEnabledRequirements,
+} from '../logic/SemiLogic';
+import {
+    counterBasisSelector,
+    trickSemiLogicSelector,
+    trickSemiLogicTrickListSelector,
+} from '../customization/selectors';
 
 const bitVectorMemoizeOptions = {
     memoizeOptions: {
-        resultEqualityCheck: (a: BitVector, b: BitVector) => (a instanceof BitVector && b instanceof BitVector && a.equals(b)),
+        resultEqualityCheck: (a: BitVector, b: BitVector) =>
+            a instanceof BitVector && b instanceof BitVector && a.equals(b),
     },
 };
 
@@ -71,7 +85,8 @@ export const areaHintSelector = currySelector(
 /**
  * All hinted items.
  */
-export const checkHintsSelector = (state: RootState) => state.tracker.checkHints;
+export const checkHintsSelector = (state: RootState) =>
+    state.tracker.checkHints;
 
 /**
  * Selects the hinted item for a given check
@@ -198,35 +213,6 @@ export const allowedStartingEntrancesSelector = createSelector(
     getAllowedStartingEntrances,
 );
 
-/**
- * Describes which entrances are available for a given pool (dungeons, silent realms, starting, ...)
- */
-export const entrancePoolsSelector = createSelector(
-    [areaGraphSelector, allowedStartingEntrancesSelector],
-    getEntrancePools,
-);
-
-const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
-
-
-/** Defines how exits should be resolved. */
-export const exitRulesSelector = createSelector(
-    [
-        logicSelector,
-        settingSelector('random-start-entrance'),
-        settingSelector('randomize-entrances'),
-        settingSelector('randomize-dungeon-entrances'),
-        settingSelector('randomize-trials'),
-        settingSelector('random-start-statues'),
-    ],
-    getExitRules,
-);
-
-export const exitsSelector = createSelector(
-    [logicSelector, exitRulesSelector, mappedExitsSelector],
-    getExits,
-);
-
 const skyKeepRequiredSelector = (state: RootState) => {
     const settings = settingsSelector(state);
     if (!settings['triforce-required']) {
@@ -250,6 +236,41 @@ export const requiredDungeonsSelector = createSelector(
                   selectedRequiredDungeons.includes(d),
         );
     },
+);
+
+/**
+ * Describes which entrances are available for a given pool (dungeons, silent realms, starting, ...)
+ */
+export const entrancePoolsSelector = createSelector(
+    [
+        areaGraphSelector,
+        allowedStartingEntrancesSelector,
+        settingSelector('randomize-entrances'),
+        settingSelector('randomize-dungeon-entrances'),
+        requiredDungeonsSelector,
+    ],
+    getEntrancePools,
+);
+
+const mappedExitsSelector = (state: RootState) => state.tracker.mappedExits;
+
+/** Defines how exits should be resolved. */
+export const exitRulesSelector = createSelector(
+    [
+        logicSelector,
+        settingSelector('random-start-entrance'),
+        settingSelector('randomize-entrances'),
+        settingSelector('randomize-dungeon-entrances'),
+        settingSelector('randomize-trials'),
+        settingSelector('random-start-statues'),
+        requiredDungeonsSelector,
+    ],
+    getExitRules,
+);
+
+export const exitsSelector = createSelector(
+    [logicSelector, exitRulesSelector, mappedExitsSelector],
+    getExits,
 );
 
 /**
@@ -397,7 +418,11 @@ export function mapInventory(logic: Logic, itemCounts: Record<string, number>) {
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
 
     for (const [item, count] of Object.entries(itemCounts)) {
-        if (count === undefined || item === 'Sailcloth' || item === 'Tumbleweed') {
+        if (
+            count === undefined ||
+            item === 'Sailcloth' ||
+            item === 'Tumbleweed'
+        ) {
             continue;
         }
         if (item === sothItemReplacement) {
@@ -446,11 +471,7 @@ export const inLogicBitsSelector = createSelector(
 
 const optimisticInventoryItemRequirementsSelector = createSelector(
     [logicSelector],
-    (logic) =>
-        mapInventory(
-            logic,
-            itemMaxes,
-        ),
+    (logic) => mapInventory(logic, itemMaxes),
 );
 
 /**
@@ -613,7 +634,7 @@ const isCheckBannedSelector = createSelector(
             (banBeedle && check.type === 'beedle_shop') ||
             (banGearShop && check.type === 'gear_shop') ||
             (banPotionShop && check.type === 'potion_shop') ||
-            (!tadtoneSanity && check.type === 'tadtone') || 
+            (!tadtoneSanity && check.type === 'tadtone') ||
             (gossipStonesBanned && check.type === 'gossip_stone');
     },
 );
@@ -855,7 +876,7 @@ export const totalCountersSelector = createSelector(
 
 export const usedEntrancesSelector = createSelector(
     [entrancePoolsSelector, exitsSelector],
-    getUsedEntrances
+    getUsedEntrances,
 );
 
 export const inLogicPathfindingSelector = createSelector(

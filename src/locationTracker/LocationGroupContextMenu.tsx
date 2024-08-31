@@ -15,16 +15,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
     areasSelector,
     checkSelector,
+    entrancePoolsSelector,
     settingSelector,
     usedEntrancesSelector,
 } from '../tracker/selectors';
-import { AreaGraph, LinkedEntrancePool } from '../logic/Logic';
+import { TrackerLinkedEntrancePool } from '../logic/Logic';
 import { areaGraphSelector } from '../logic/selectors';
 import { bosses } from './Hints';
 import { ThunkResult, useAppDispatch } from '../store/store';
 import { BirdStatueContextMenuProps } from './mapTracker/Submap';
 import hintItems from '../data/hintItems.json';
 import { HintItem } from './LocationContextMenu';
+import { EntrancePool } from '../logic/Entrances';
 
 type AreaCtxProps<T = void> = ItemParams<LocationGroupContextMenuProps, T>;
 type ExitCtxProps<T = void> = ItemParams<MapExitContextMenuProps, T>;
@@ -236,6 +238,12 @@ function LocationGroupContextMenu() {
             />
             <UnboundEntranceMenu id="unbound-dungeon-context" pool="dungeons" />
             <BoundEntranceMenu
+                id="dungeon-unrequired-context"
+                pool="dungeons_unrequired"
+                canChooseEntrance={areDungeonEntrancesRandomized}
+            />
+            <UnboundEntranceMenu id="unbound-dungeon-unrequired-context" pool="dungeons_unrequired" />
+            <BoundEntranceMenu
                 id="trial-context"
                 pool="silent_realms"
                 canChooseEntrance={randomSilentRealms}
@@ -254,30 +262,34 @@ function LocationGroupContextMenu() {
 
 // contexify breaks down if items are wrapped in nodes, so this is not a component!!!
 function createBindSubmenu(
-    areaGraph: AreaGraph,
+    entrancePools: Record<string, EntrancePool>,
     usedEntrances: Set<string>,
-    pool: LinkedEntrancePool,
+    pool: TrackerLinkedEntrancePool,
     chooseEntrance: (exitId: string, entranceId: string) => void,
     disabled: boolean,
 ) {
-    const name = pool === 'dungeons' ? 'Dungeon' : 'Silent Realm';
+
+    if (!entrancePools[pool]) {
+        return undefined;
+    }
+
+    const name = pool === 'silent_realms' ? 'Silent Realm' : 'Dungeon';
     return (
         <Submenu disabled={disabled} label={`Bind ${name} to Entrance`}>
-            {Object.entries(areaGraph.linkedEntrancePools[pool]).map(
-                ([readableName, exits]) => {
-                    const entrance = exits.entrances[0];
+            {entrancePools[pool].entrances.map(
+                ({id, name}) => {
                     return (
                         <Item
-                            key={readableName}
-                            disabled={usedEntrances.has(entrance)}
+                            key={name}
+                            disabled={usedEntrances.has(id)}
                             onClick={(params: ExitCtxProps) =>
                                 chooseEntrance(
                                     params.props!.exitMapping.exit.id,
-                                    entrance,
+                                    id,
                                 )
                             }
                         >
-                            {readableName}
+                            {name}
                         </Item>
                     );
                 },
@@ -292,14 +304,13 @@ function BoundEntranceMenu({
     canChooseEntrance,
 }: {
     id: string;
-    pool: LinkedEntrancePool;
+    pool: TrackerLinkedEntrancePool;
     canChooseEntrance: boolean;
 }) {
     const dispatch = useAppDispatch();
-    const areaGraph = useSelector(areaGraphSelector);
     const usedEntrances = useSelector(usedEntrancesSelector);
-
     const areaMenuItems = useAreaContextMenuItems();
+    const entrancePools = useSelector(entrancePoolsSelector);
 
     const handleMapEntrance = useCallback(
         (exit: string, entrance: string) =>
@@ -312,16 +323,26 @@ function BoundEntranceMenu({
         [dispatch],
     );
 
+    const unbindEntrance = useCallback(
+        (params: ExitCtxProps) =>
+            dispatch(mapEntrance({
+                from: params.props!.exitMapping.exit.id,
+                to: undefined,
+            })),
+        [dispatch],
+    );
+
     return (
         <Menu id={id}>
             {areaMenuItems}
             {createBindSubmenu(
-                areaGraph,
+                entrancePools,
                 new Set(usedEntrances[pool]),
                 pool,
                 handleMapEntrance,
                 !canChooseEntrance,
             )}
+            <Item key="unbindEntrance" onClick={unbindEntrance}>Unbind Entrance</Item>
         </Menu>
     );
 }
@@ -331,11 +352,11 @@ function UnboundEntranceMenu({
     pool,
 }: {
     id: string;
-    pool: LinkedEntrancePool;
+    pool: TrackerLinkedEntrancePool;
 }) {
     const dispatch = useDispatch();
-    const areaGraph = useSelector(areaGraphSelector);
     const usedEntrances = useSelector(usedEntrancesSelector);
+    const entrancePools = useSelector(entrancePoolsSelector);
 
     const handleMapEntrance = useCallback(
         (exit: string, entrance: string) =>
@@ -351,7 +372,7 @@ function UnboundEntranceMenu({
     return (
         <Menu id={id}>
             {createBindSubmenu(
-                areaGraph,
+                entrancePools,
                 new Set(usedEntrances[pool]),
                 pool,
                 handleMapEntrance,
