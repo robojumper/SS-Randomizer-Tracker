@@ -874,20 +874,26 @@ export const areasSelector = createSelector(
 );
 
 export const totalCountersSelector = createSelector(
-    [areasSelector],
-    (areas) => {
+    [areasSelector, exitsSelector],
+    (areas, exits) => {
         const numChecked = _.sumBy(
             areas,
             (a) => a.numTotalChecks - a.numChecksRemaining,
         );
         const numAccessible = _.sumBy(areas, (a) => a.numChecksAccessible);
         const numRemaining = _.sumBy(areas, (a) => a.numChecksRemaining);
-        const numExitsAccessible = _.sumBy(areas, (a) => a.numExitsAccessible);
+        let numExitsAccessible = _.sumBy(areas, (a) => a.numExitsAccessible);
+
+        const startMapping = exits.find((e) => e.exit.id === '\\Start')!;
+        const needsStartingEntrance = !startMapping.entrance;
+        if (needsStartingEntrance) {
+            numExitsAccessible++;
+        }
         return {
             numChecked,
             numAccessible,
             numRemaining,
-            numExitsAccessible
+            numExitsAccessible,
         };
     },
 );

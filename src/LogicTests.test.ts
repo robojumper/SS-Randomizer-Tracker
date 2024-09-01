@@ -528,4 +528,11 @@ describe('full logic tests', () => {
 
         expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(1);
     });
+
+    it('handles random starting entrance in accessible exits count', () => {
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(0);
+        
+        updateSettings('random-start-entrance', 'Any');
+        expect(readSelector(totalCountersSelector).numExitsAccessible).toBe(1);
+    });
 });
