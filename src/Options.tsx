@@ -272,14 +272,23 @@ function useRemoteOptions() {
     const githubReleases = useReleases();
 
     return useMemo(() => {
-        const remotes = wellKnownRemotes
-            .map((remote) => ({
-                value: parseRemote(remote)!,
-                label:
-                    remote === LATEST_STRING && githubReleases
-                        ? `Latest (${githubReleases.latest})`
-                        : remote,
-            }));
+
+        const niceRemoteName = (remote: string) => {
+            if (remote === LATEST_STRING) {
+                return githubReleases
+                    ? `${githubReleases.latest} (Latest Stable Release)`
+                    : `Latest Stable Release`;
+            } else if (remote === 'ssrando/main') {
+                return `${remote} (Latest Development Build)`;
+            }
+    
+            return remote;
+        };
+
+        const remotes = wellKnownRemotes.map((remote) => ({
+            value: parseRemote(remote)!,
+            label: niceRemoteName(remote),
+        }));
 
         if (githubReleases) {
             const supportedReleases = githubReleases.releases.filter((r) => semverSatisfies(r, leastSupportedRelease));
