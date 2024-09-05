@@ -76,7 +76,7 @@ function EntranceSelectionDialog({
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" style={{ width: '90%' }}>
+        <Modal show={show} onHide={onHide} size="lg">
             <Modal.Header closeButton>
                 <Modal.Title id="contained-modal-title-vcenter">
                     Select Entrance
