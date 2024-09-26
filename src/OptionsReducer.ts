@@ -237,6 +237,7 @@ export function useOptionsState() {
         try {
             counters = totalCountersSelector(mergedState);
         } catch (e) {
+            console.error(e);
             evalError = convertError(e);
         }
 
