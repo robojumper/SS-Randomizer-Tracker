@@ -52,6 +52,7 @@ export function ImportButton({ setLogicBranch }: { setLogicBranch: (branch: Remo
         const importVal = JSON.parse(text) as ExportState;
         if (importVal.version !== version) {
             alert('This export was made with an incompatible version of the Tracker and cannot be imported here.');
+            return;
         }
         dispatch(loadTracker(importVal.state));
         if (importVal.logicBranch) {
