@@ -48,6 +48,6 @@ npm start
 Also see the [Acknowledgements](https://robojumper.github.io/SS-Randomizer-Tracker/acknowledgement) page.
 
 - [lepelog](https://github.com/lepelog), [peppernicus](https://github.com/Peppernicus2000), [azer67](https://github.com/azer67) - Creating the [randomizer](https://github.com/ssrando/ssrando)
-- [Floha](https://github.com/Floha258), [Kuinino](https://github.com/Kuonino), Extodasher, [CapitanBublo](https://github.com/CapitanBublo), [CovenEsme](https://github.com/covenesme), [YourAverageLink](https://github.com/youraveragelink) - Fellow devs on the tracker
+- [Floha](https://github.com/Floha258), [Kuonino](https://github.com/Kuonino), Extodasher, [CapitanBublo](https://github.com/CapitanBublo), [CovenEsme](https://github.com/covenesme), [YourAverageLink](https://github.com/youraveragelink) - Fellow devs on the tracker
 - [wooferzfg](https://github.com/wooferzfg) - Creating [the tracker for The Wind Waker Randomizer](https://github.com/wooferzfg/tww-rando-tracker), from which much of the original logic subsystem in this tracker was derived
 - [cjs](https://github.com/cjs8487/) - Creating [the original Skyward Sword Randomizer tracker](https://github.com/cjs8487/SS-Randomizer-Tracker), from which this tracker was originally forked
