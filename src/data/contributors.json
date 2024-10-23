@@ -23,9 +23,9 @@
             ]
         },
         {
-            "name": "muzugalium",
+            "name": "Kuonino",
             "links": {
-                "github": "https://github.com/muzugalium"
+                "github": "https://github.com/Kuonino"
             },
             "attributions": [
                 "Counters",
@@ -71,6 +71,7 @@
                 "twitch": "https://twitch.tv/youraveragelink"
             },
             "attributions": [
+                "Map Tracker",
                 "Bug Fixes",
                 "Miscellaneous Additions"
             ]
