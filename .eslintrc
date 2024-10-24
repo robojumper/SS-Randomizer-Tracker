@@ -1,13 +1,13 @@
 {
     "parser": "@typescript-eslint/parser",
     "extends": [
-        "react-app",
         "eslint:recommended",
         "plugin:react/recommended",
         "plugin:react/jsx-runtime",
         "plugin:@typescript-eslint/recommended-requiring-type-checking",
         "prettier",
-        "plugin:sonarjs/recommended"
+        "plugin:sonarjs/recommended",
+        "plugin:vitest-globals/recommended"
       ],
     "parserOptions": {
         "ecmaFeatures": {
@@ -21,7 +21,8 @@
         "react",
         "react-hooks",
         "@typescript-eslint",
-        "sonarjs"
+        "sonarjs",
+        "vitest-globals"
       ],
     "settings": {
         "react": {
@@ -39,7 +40,6 @@
         // It also may make code less readable in a lot of places where we use both props and state in the same functions
         // (although this may be symptomatic of a bigger issue with naming things)
         "max-len": 0,
-        "react/destructuring-assignment": ["off", "never"],
         "no-plusplus": ["off"],
         "operator-linebreak": ["error", "after", {
             "overrides": {
@@ -51,16 +51,12 @@
             "multiline": true,
             "consistent": true 
         }],
-        "no-param-reassign": ["error", {
-            "props": false
-        }],
+        "no-param-reassign": ["error"],
         "react/prefer-stateless-function": ["off"],
         "no-mixed-operators": ["off"],
         "linebreak-style": ["off"],
         "no-bitwise": ["off"],
-        "react/no-unused-class-component-methods": ["off"],
         "react/require-default-props": ["off"],
-        "react/function-component-definition": ["off"] ,
         "lines-between-class-members": ["error", "always", { "exceptAfterSingleLine": true }],
         "@typescript-eslint/no-unsafe-argument": "error",
         "@typescript-eslint/no-unsafe-assignment": "error",
@@ -78,6 +74,6 @@
     },
     "env": {
         "browser": true,
-        "jest": true
+        "vitest-globals/env": true
     }
 }
