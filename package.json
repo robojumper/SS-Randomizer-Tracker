@@ -40,18 +40,18 @@
     "lint:eslint": "eslint --max-warnings 0 \"src/**/*.ts\" \"src/**/*.js\" \"src/**/*.tsx\"",
     "lint:ts": "tsc --noEmit"
   },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
-  },
+  "browserslist": [
+    ">= 0.2%",
+    "Chrome >= 103",
+    "Edge >= 103",
+    "last 2 ChromeAndroid versions",
+    "last 2 FirefoxAndroid versions",
+    "last 2 Firefox versions",
+    "Firefox ESR",
+    "last 2 Safari versions",
+    "iOS >= 16",
+    "last 2 Opera versions"
+  ],
   "devDependencies": {
     "@eslint/compat": "^1.2.1",
     "@eslint/eslintrc": "^3.1.0",

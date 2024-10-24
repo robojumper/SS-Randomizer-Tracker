@@ -3,8 +3,7 @@
       "target": "es6",
       "lib": [
         "dom",
-        "dom.iterable",
-        "esnext"
+        "ES2015"
       ],
       "types": [
         "vite/client",

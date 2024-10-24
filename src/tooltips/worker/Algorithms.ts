@@ -61,7 +61,7 @@ export function dnfToRequirementExpr(
     // simplification doesn't get funny ideas like pulling out irrelevant terms
     // that we later can't easily simplify in a multi level form.
     for (const conj of conjunctions) {
-        for (const bit of [...conj.iter()]) {
+        for (const bit of conj.iter()) {
             for (const dominator of logic.impliedBy[logic.allItems[bit]] ??
                 []) {
                 const dominatorBit = logic.itemBits[dominator];
