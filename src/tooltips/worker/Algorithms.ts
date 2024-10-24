@@ -77,7 +77,6 @@ export function dnfToRequirementExpr(
     let commonFactors = new Set<number>(conjunctions[0].iter());
     for (const conj of conjunctions) {
         commonFactors = new Set(
-            // eslint-disable-next-line no-loop-func
             [...conj.iter()].filter((b) => commonFactors.has(b)),
         );
     }
