@@ -40,10 +40,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/new-logic-tracker'
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js 21.x
+      - name: Use Node.js 23.x
         uses: actions/setup-node@v4
         with:
-          node-version: 21.x
+          node-version: 23.x
           cache: 'npm'
       - run: npm install
       - run: git apply ./deploy_to_subdir.patch
