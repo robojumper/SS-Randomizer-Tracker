@@ -40,7 +40,12 @@ import {
     computeSemiLogic,
     getVisibleTricksEnabledRequirements,
 } from '../logic/SemiLogic';
-import { doesHintDistroUseGossipStone } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
+import {
+    defaultBatreauxRequiredCrystals,
+    doesHintDistroUseGossipStone,
+    halfBatreauxRequiredCrystals,
+    numBatreauxRewardLevels,
+} from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
     cubeCheckToGoddessChestCheck,
     dungeonCompletionItems,
@@ -188,6 +193,47 @@ export const totalGratitudeCrystalsSelector = createSelector(
     },
 );
 
+export const stillNeedToEnterCrystalCountsSelector = createSelector(
+    [
+        settingSelector('batreaux-counts'),
+        (state: RootState) => state.tracker.requiredBatreauxCrystals,
+    ],
+    (setting, counts) => {
+        if (setting !== 'Random') {
+            return false;
+        }
+        return (
+            counts.length < numBatreauxRewardLevels ||
+            counts.some(
+                (count, idx) =>
+                    idx < numBatreauxRewardLevels && count < 1 && count > 80,
+            )
+        );
+    },
+);
+
+export const requiredCrystalCountsSelector = createSelector(
+    [
+        settingSelector('batreaux-counts'),
+        (state: RootState) => state.tracker.requiredBatreauxCrystals,
+    ],
+    (setting, counts) => {
+        if (setting === 'Vanilla') {
+            return defaultBatreauxRequiredCrystals;
+        } else if (setting === 'Half') {
+            return halfBatreauxRequiredCrystals;
+        } else {
+            return defaultBatreauxRequiredCrystals.map((_value, idx) =>
+                counts[idx] !== undefined &&
+                counts[idx] >= 1 &&
+                counts[idx] <= 80
+                    ? counts[idx]
+                    : 0,
+            );
+        }
+    },
+);
+
 const allowedStartingEntrancesSelector = createSelector(
     [logicSelector, settingSelector('random-start-entrance')],
     getAllowedStartingEntrances,
@@ -273,6 +319,7 @@ export const settingsRequirementsSelector = createSelector(
         settingsSelector,
         exitsSelector,
         requiredDungeonsSelector,
+        requiredCrystalCountsSelector,
     ],
     mapSettings,
 );

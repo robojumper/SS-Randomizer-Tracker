@@ -85,6 +85,9 @@ export interface AllTypedOptions
         | 'Normal'
         | 'Beatable Only'
         | 'Beatable Then Banned';
+
+    // Random Batreaux Crystal Counts
+    'batreaux-counts': 'Vanilla' | 'Half' | 'Random';
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOption>;

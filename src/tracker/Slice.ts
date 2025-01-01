@@ -50,6 +50,12 @@ export interface TrackerState {
      * The last tracked location, for auto item-at-location tracking.
      */
     lastCheckedLocation: string | undefined;
+    /**
+     * If the settings have randomized batreaux counts,
+     * this is what the user entered after discovering
+     * the required counts.
+     */
+    requiredBatreauxCrystals: number[];
 }
 
 const initialState: TrackerState = {
@@ -63,6 +69,7 @@ const initialState: TrackerState = {
     settings: {},
     userHintsText: '',
     lastCheckedLocation: undefined,
+    requiredBatreauxCrystals: [],
 };
 
 export function preloadedTrackerState(): TrackerState {
@@ -213,6 +220,10 @@ const trackerSlice = createSlice({
         cancelItemAssignment: (state) => {
             state.lastCheckedLocation = undefined;
         },
+        setRequiredCrystalCounts: (state, action: PayloadAction<number[]>) => {
+            state.requiredBatreauxCrystals = action.payload;
+            state.hasBeenModified = true;
+        },
         acceptSettings: (
             state,
             action: PayloadAction<{ settings: AllTypedOptions }>,
@@ -250,6 +261,7 @@ export const {
     reset,
     setHint,
     setHintsText,
+    setRequiredCrystalCounts,
     loadTracker,
 } = trackerSlice.actions;
 

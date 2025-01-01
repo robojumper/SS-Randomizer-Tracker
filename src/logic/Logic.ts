@@ -21,6 +21,7 @@ import {
     cubeCheckToCubeCollected,
     cubeCollectedToCubeCheck,
     dungeonCompletionItems,
+    needEnterBatreauxCountsItem,
 } from './TrackerModifications';
 import {
     type RawArea,
@@ -51,6 +52,7 @@ export interface Logic {
     checksByHintRegion: Record<string, string[]>;
     exitsByHintRegion: Record<string, string[]>;
     dungeonCompletionRequirements: { [dungeon: string]: string };
+    needsDynamicBatreauxCrystalCounts: boolean;
 }
 
 export interface LogicalCheck {
@@ -326,6 +328,7 @@ export function parseLogic(raw: RawLogic): Logic {
         ...newItems,
         ...Object.keys(cubeCollectedToCubeCheck),
         ...Object.values(dungeonCompletionItems),
+        needEnterBatreauxCountsItem,
     ];
 
     // Pessimistically, all items are opaque
@@ -960,6 +963,10 @@ export function parseLogic(raw: RawLogic): Logic {
         exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph,
+        // Check if this is a dump that requires additional crystal logic
+        needsDynamicBatreauxCrystalCounts: Boolean(
+            itemLookup['\\31 Gratitude Crystals'],
+        ),
     };
 }
 
@@ -988,7 +995,8 @@ function mapAreaToBitLogic(
                     // Hack: We keep these virtual locations opaque...
                     if (
                         !locName.endsWith('Gratitude Crystals') &&
-                        !locName.includes("\\Gondo's Upgrades\\Upgrade to")
+                        !locName.includes("\\Gondo's Upgrades\\Upgrade to") &&
+                        !locName.includes('Can Receive Batreaux Level')
                     ) {
                         opaqueItems.clearBit(b.bit(locName));
                     }

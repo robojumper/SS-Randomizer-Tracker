@@ -107,3 +107,10 @@ export const doesHintDistroUseGossipStone: Record<
 export const gotOpeningReq = 'GoT Opening Requirement';
 export const gotRaisingReq = 'GoT Raising Requirement';
 export const hordeDoorReq = 'Horde Door Requirement';
+
+export const defaultBatreauxRequiredCrystals = [5, 10, 30, 40, 50, 70, 80];
+export const numBatreauxRewardLevels = defaultBatreauxRequiredCrystals.length;
+
+export const halfBatreauxRequiredCrystals = defaultBatreauxRequiredCrystals.map(
+    (amt) => Math.floor(amt / 2),
+);

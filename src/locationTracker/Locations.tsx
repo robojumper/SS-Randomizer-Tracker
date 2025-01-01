@@ -1,5 +1,8 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import type { HintRegion } from '../logic/Locations';
+import { settingSelector } from '../tracker/Selectors';
+import { CrystalAmountsChooser } from './CrystalAmountsChooser';
 import LocationGroup from './LocationGroup';
 
 export function Locations({
@@ -11,8 +14,16 @@ export function Locations({
     hintRegion: HintRegion<string>;
     onChooseEntrance: (exitId: string) => void;
 }) {
+    const randomCrystals =
+        useSelector(settingSelector('batreaux-counts')) === 'Random';
     return (
         <>
+            {randomCrystals && hintRegion.name === "Batreaux's House" && (
+                <>
+                    <CrystalAmountsChooser />
+                    <hr />
+                </>
+            )}
             <LocationGroup
                 wide={wide}
                 onChooseEntrance={onChooseEntrance}

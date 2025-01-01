@@ -8,7 +8,11 @@ import {
 import { decodeHint } from '../../hints/Hints';
 import { hintsToSubmarkers } from '../../hints/HintsParser';
 import type { RootState } from '../../store/Store';
-import { areaHintSelector, areasSelector } from '../../tracker/Selectors';
+import {
+    areaHintSelector,
+    areasSelector,
+    stillNeedToEnterCrystalCountsSelector,
+} from '../../tracker/Selectors';
 import HintDescription from '../HintsDescription';
 import type { LocationGroupContextMenuProps } from '../LocationGroupContextMenu';
 import { useContextMenu } from '../context-menu';
@@ -79,6 +83,14 @@ function MapMarker({
         }
     };
 
+    const needsEnterBatCounts = useSelector(
+        stillNeedToEnterCrystalCountsSelector,
+    );
+    const showEnterBatCounts =
+        needsEnterBatCounts &&
+        title === "Batreaux's House" &&
+        data.checks.numAccessible === 0;
+
     return (
         <Marker
             ref={setNodeRef}
@@ -100,6 +112,7 @@ function MapMarker({
             ]}
         >
             {Boolean(data.checks.numAccessible) && data.checks.numAccessible}
+            {showEnterBatCounts && '?'}
         </Marker>
     );
 }

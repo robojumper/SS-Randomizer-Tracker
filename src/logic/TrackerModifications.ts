@@ -6,7 +6,10 @@ import { BitVector } from './bitlogic/BitVector';
 import { type InventoryItem, isItem, itemMaxes, itemName } from './Inventory';
 import type { DungeonName } from './Locations';
 import type { Logic } from './Logic';
-import { swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
+import {
+    defaultBatreauxRequiredCrystals,
+    swordsToAdd,
+} from './ThingsThatWouldBeNiceToHaveInTheDump';
 
 const collectedCubeSuffix = '_TR_Cube_Collected';
 
@@ -61,6 +64,11 @@ export const dungeonCompletionItems: Record<string, string> = {
     'Fire Sanctuary': '\\Tracker\\Fire Sanctuary Completed',
     'Sky Keep': '\\Tracker\\Sky Keep Completed',
 } satisfies Record<DungeonName, string>;
+
+// A fake item that's required by dynamic Batreaux rewards until we know
+// how many crystals are required.
+export const needEnterBatreauxCountsItem =
+    '\\Tracker\\Enter required crystal count';
 
 export function getInitialItems(
     settings: TypedOptions,
@@ -176,8 +184,14 @@ export function getTooltipOpaqueBits(
     }
 
     // No point in revealing that the math behind 80 crystals is 13*5+15
-    for (const amt of [5, 10, 30, 40, 50, 70, 80]) {
-        set(`\\${amt} Gratitude Crystals`);
+    if (logic.needsDynamicBatreauxCrystalCounts) {
+        for (let amt = 1; amt <= 80; amt++) {
+            set(`\\${amt} Gratitude Crystals`);
+        }
+    } else {
+        for (const amt of defaultBatreauxRequiredCrystals) {
+            set(`\\${amt} Gratitude Crystals`);
+        }
     }
 
     if (settings['gondo-upgrades'] === false) {

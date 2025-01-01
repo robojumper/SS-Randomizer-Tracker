@@ -12,11 +12,13 @@ import {
     gotRaisingReq,
     hordeDoorReq,
     impaSongCheck,
+    numBatreauxRewardLevels,
     runtimeOptions,
     swordsToAdd,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import {
     dungeonCompletionItems,
+    needEnterBatreauxCountsItem,
     sothItemReplacement,
     sothItems,
     triforceItemReplacement,
@@ -30,6 +32,7 @@ export function mapSettings(
     settings: TypedOptions,
     exits: ExitMapping[],
     requiredDungeons: string[],
+    requiredCrystalCounts: number[],
 ) {
     const requirements: Requirements = {};
     const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
@@ -66,6 +69,22 @@ export function mapSettings(
             const vals = settings[option.command];
             for (const option of vals) {
                 b.set(`${option} Trick`, b.true());
+            }
+        }
+    }
+
+    if (logic.needsDynamicBatreauxCrystalCounts) {
+        for (let i = 0; i < numBatreauxRewardLevels; i++) {
+            const reqName = `\\Can Receive Batreaux Level ${i + 1} Rewards`;
+            if (requiredCrystalCounts[i] !== 0) {
+                b.set(
+                    reqName,
+                    b.singleBit(
+                        `\\${requiredCrystalCounts[i]} Gratitude Crystals`,
+                    ),
+                );
+            } else {
+                b.set(reqName, b.singleBit(needEnterBatreauxCountsItem));
             }
         }
     }
