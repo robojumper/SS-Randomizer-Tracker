@@ -8,7 +8,7 @@ const version = 'SSRANDO-TRACKER-NG-V2';
 
 export interface ExportState {
     version: string;
-    state: TrackerState;
+    state: Partial<TrackerState>;
     logicBranch: RemoteReference | undefined;
 }
 
