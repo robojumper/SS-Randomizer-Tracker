@@ -29,7 +29,7 @@ export function CrystalAmountsChooser() {
                 <div key={level}>
                     <input
                         className="form-control"
-                        type="number"
+                        type="text"
                         value={counts[level]}
                         onChange={(e) => updateCount(e.target.value, level)}
                     />

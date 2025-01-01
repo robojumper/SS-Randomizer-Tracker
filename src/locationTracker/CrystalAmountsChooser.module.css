@@ -1,7 +1,8 @@
 .chooser {
     padding: 4px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+    gap: 4px;
 
     align-items: center;
 

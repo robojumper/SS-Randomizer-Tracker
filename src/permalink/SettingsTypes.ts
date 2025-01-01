@@ -87,7 +87,8 @@ export interface AllTypedOptions
         | 'Beatable Then Banned';
 
     // Random Batreaux Crystal Counts
-    'batreaux-counts': 'Vanilla' | 'Half' | 'Random';
+    // https://github.com/ssrando/ssrando/pull/587
+    'batreaux-counts': 'Vanilla' | 'Half' | 'Random' | undefined;
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOption>;
