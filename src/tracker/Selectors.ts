@@ -206,7 +206,7 @@ export const stillNeedToEnterCrystalCountsSelector = createSelector(
             counts.length < numBatreauxRewardLevels ||
             counts.some(
                 (count, idx) =>
-                    idx < numBatreauxRewardLevels && count < 1 && count > 80,
+                    idx < numBatreauxRewardLevels && (count < 1 || count > 80),
             )
         );
     },

@@ -24,17 +24,19 @@ export function CrystalAmountsChooser() {
     };
     return (
         <div className={styles.chooser}>
-            <span>Enter Crystal Counts:</span>
-            {range(numBatreauxRewardLevels).map((level) => (
-                <div key={level}>
-                    <input
-                        className="form-control"
-                        type="text"
-                        value={counts[level]}
-                        onChange={(e) => updateCount(e.target.value, level)}
-                    />
-                </div>
-            ))}
+            <div>Enter Crystal Counts:</div>
+            <div className={styles.inputs}>
+                {range(numBatreauxRewardLevels).map((level) => (
+                    <div key={level}>
+                        <input
+                            className="form-control"
+                            type="text"
+                            value={counts[level]}
+                            onChange={(e) => updateCount(e.target.value, level)}
+                        />
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

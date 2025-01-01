@@ -62,6 +62,13 @@ function MapMarker({
     if (dragPreviewHint && isOver) {
         hints = [...hints, dragPreviewHint];
     }
+    const needsEnterBatCounts = useSelector(
+        stillNeedToEnterCrystalCountsSelector,
+    );
+    const showEnterBatCounts =
+        needsEnterBatCounts &&
+        title === "Batreaux's House" &&
+        data.checks.numAccessible === 0;
 
     const tooltip = (
         <center>
@@ -71,6 +78,7 @@ function MapMarker({
             {hints.map((hint, idx) => (
                 <HintDescription key={idx} hint={decodeHint(hint)} />
             ))}
+            {showEnterBatCounts && 'Click to enter required Gratitude Crystals'}
         </center>
     );
 
@@ -82,14 +90,6 @@ function MapMarker({
             onGlickGroup(title);
         }
     };
-
-    const needsEnterBatCounts = useSelector(
-        stillNeedToEnterCrystalCountsSelector,
-    );
-    const showEnterBatCounts =
-        needsEnterBatCounts &&
-        title === "Batreaux's House" &&
-        data.checks.numAccessible === 0;
 
     return (
         <Marker
