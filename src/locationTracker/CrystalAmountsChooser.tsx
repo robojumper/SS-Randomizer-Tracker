@@ -6,6 +6,10 @@ import { setRequiredCrystalCounts } from '../tracker/Slice';
 import styles from './CrystalAmountsChooser.module.css';
 
 export function CrystalAmountsChooser() {
+    // TODO: This setup is pretty bad because every number typed
+    // commits the result directly to Redux and that causes the
+    // tooltips worker to restart etc. Doesn't seem to be a huge
+    // problem yet but maybe there's a more efficient design.
     const dispatch = useDispatch();
     const counts = useSelector(requiredCrystalCountsSelector);
     const updateCount = (val: string, idx: number) => {
