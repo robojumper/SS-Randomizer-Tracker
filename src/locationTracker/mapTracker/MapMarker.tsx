@@ -80,7 +80,7 @@ const MapMarker = (props: MapMarkerProps) => {
                     hint: { type: 'item', item: params.item },
                 }),
             ),
-        [dispatch],
+        [dispatch, area],
     );
 
     return (

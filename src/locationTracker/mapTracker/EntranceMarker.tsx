@@ -190,7 +190,7 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
                     hint: { type: 'item', item: params.item },
                 }),
             ),
-        [dispatch],
+        [dispatch, area],
     );
 
     return (

@@ -92,7 +92,7 @@ function CheckLocation({ id }: { id: string }) {
                     hint: params.item,
                 }),
             ),
-        [dispatch],
+        [dispatch, id],
     );
 
     const expr = useTooltipExpr(id);
