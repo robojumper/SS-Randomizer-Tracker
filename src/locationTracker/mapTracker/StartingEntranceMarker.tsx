@@ -42,6 +42,7 @@ function StartingEntranceMarker({
                 tooltip={tooltip}
                 onClick={() => onClick(startMapping.exit.id)}
                 onContextMenu={() => onClick(startMapping.exit.id)}
+                onItemDrag={() => {}}
                 selected={selected}
             >
                 {!hasSelectedEntrance && '?'}
