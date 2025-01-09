@@ -75,13 +75,13 @@ function CheckLocation({ id }: { id: string }) {
 
     const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
-      };
-    
+        event.dataTransfer.dropEffect = 'move';
+    };
+
     const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        const itemName = event.dataTransfer.getData("text/plain");
-        handleItemDrag({item: itemName});
+        const itemName = event.dataTransfer.getData('text/plain');
+        handleItemDrag({ item: itemName });
     };
 
     const handleItemDrag = useCallback(

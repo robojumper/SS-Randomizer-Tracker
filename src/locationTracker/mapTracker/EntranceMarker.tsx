@@ -13,8 +13,10 @@ import {
     exitsByIdSelector,
     inLogicBitsSelector,
 } from '../../tracker/Selectors';
+import { setHint } from '../../tracker/Slice';
 import { useContextMenu } from '../context-menu';
 import HintDescription from '../HintsDescription';
+import type { ItemData } from '../Location';
 import type {
     LocationGroupContextMenuProps,
     MapExitContextMenuProps,
@@ -22,8 +24,6 @@ import type {
 import RequirementsTooltip from '../RequirementsTooltip';
 import { getMarkerColor, getRegionData, getSubmarkerData } from './MapUtils';
 import { Marker } from './Marker';
-import type { ItemData } from '../Location';
-import { setHint } from '../../tracker/Slice';
 
 type EntranceMarkerProps = {
     markerX: number;
@@ -184,7 +184,8 @@ const EntranceMarker = (props: EntranceMarkerProps) => {
 
     const handleItemDrag = useCallback(
         (params: ItemData) =>
-            area && dispatch(
+            area &&
+            dispatch(
                 setHint({
                     areaId: area.name,
                     hint: { type: 'item', item: params.item },

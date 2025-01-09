@@ -5,13 +5,13 @@ import { decodeHint } from '../../hints/Hints';
 import { hintsToSubmarkers } from '../../hints/HintsParser';
 import type { RootState } from '../../store/Store';
 import { areaHintSelector, areasSelector } from '../../tracker/Selectors';
+import { setHint } from '../../tracker/Slice';
 import HintDescription from '../HintsDescription';
+import type { ItemData } from '../Location';
 import type { LocationGroupContextMenuProps } from '../LocationGroupContextMenu';
 import { useContextMenu } from '../context-menu';
 import { getMarkerColor, getRegionData, getSubmarkerData } from './MapUtils';
 import { Marker } from './Marker';
-import type { ItemData } from '../Location';
-import { setHint } from '../../tracker/Slice';
 
 type MapMarkerProps = {
     markerX: number;

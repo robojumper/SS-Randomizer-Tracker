@@ -6,16 +6,16 @@ import Tooltip from '../additionalComponents/Tooltip';
 import { decodeHint } from '../hints/Hints';
 import type { HintRegion } from '../logic/Locations';
 import { areaHintSelector } from '../tracker/Selectors';
+import { setHint } from '../tracker/Slice';
 import keyDownWrapper from '../utils/KeyDownWrapper';
 import AreaCounters from './AreaCounters';
 import { useContextMenu } from './context-menu';
 import type { LocationGroupContextMenuProps } from './LocationGroupContextMenu';
 import styles from './LocationGroupHeader.module.css';
-import { setHint } from '../tracker/Slice';
 
 interface ItemRegionHint {
-    region: string,
-    item: string,
+    region: string;
+    item: string;
 }
 
 export default function LocationGroupHeader({
@@ -35,13 +35,13 @@ export default function LocationGroupHeader({
 
     const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
+        event.dataTransfer.dropEffect = 'move';
     };
-    
+
     const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        const itemName = event.dataTransfer.getData("text/plain");
-        handleItemDrag({region: area.name, item: itemName});
+        const itemName = event.dataTransfer.getData('text/plain');
+        handleItemDrag({ region: area.name, item: itemName });
     };
 
     const handleItemDrag = useCallback(

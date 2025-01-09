@@ -15,8 +15,8 @@ export default function SwordBlock({ width }: { width: number }) {
 
     const handleExtraWalletDrag = (event: React.DragEvent<HTMLDivElement>) => {
         // This doesn't seem to work
-        event.dataTransfer.setData("text/plain", 'Extra Wallet');
-        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData('text/plain', 'Extra Wallet');
+        event.dataTransfer.effectAllowed = 'move';
         const dragIcon = new Image(36, 36);
         dragIcon.src = findRepresentativeIcon('Extra Wallet');
         event.dataTransfer.setDragImage(dragIcon, 18, 18);

@@ -47,8 +47,8 @@ export function BasicItem({
     };
 
     const handleDragStart = (event: React.DragEvent<HTMLDivElement>) => {
-        event.dataTransfer.setData("text/plain", dragItemName);
-        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData('text/plain', dragItemName);
+        event.dataTransfer.effectAllowed = 'move';
         const dragIcon = new Image(36, 36);
         dragIcon.src = findRepresentativeIcon(dragItemName);
         event.dataTransfer.setDragImage(dragIcon, 18, 18);

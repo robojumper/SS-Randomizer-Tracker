@@ -3,8 +3,8 @@ import { type CSSProperties } from 'react';
 import type { TriggerEvent } from 'react-contexify';
 import Tooltip from '../../additionalComponents/Tooltip';
 import type { ColorScheme } from '../../customization/ColorScheme';
-import styles from './Marker.module.css';
 import type { ItemData } from '../Location';
+import styles from './Marker.module.css';
 
 export type MarkerVariant = 'square' | 'rounded' | 'circle';
 export type SubmarkerPlacement = 'left' | 'right';
@@ -61,14 +61,14 @@ export function Marker({
 
     const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        event.dataTransfer.dropEffect = "move";
+        event.dataTransfer.dropEffect = 'move';
     };
-    
+
     const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
-        const itemName = event.dataTransfer.getData("text/plain");
+        const itemName = event.dataTransfer.getData('text/plain');
         console.log(itemName);
-        onItemDrag({item: itemName});
+        onItemDrag({ item: itemName });
     };
 
     return (

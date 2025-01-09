@@ -15,7 +15,6 @@ import type { ItemData, LocationContextMenuProps } from './Location';
 
 type CtxProps<T = void> = ItemParams<LocationContextMenuProps, T>;
 
-
 export default function LocationContextMenu() {
     const dispatch = useAppDispatch();
 
