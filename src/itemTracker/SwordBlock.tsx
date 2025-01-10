@@ -14,7 +14,6 @@ export default function SwordBlock({ width }: { width: number }) {
     };
 
     const handleExtraWalletDrag = (event: React.DragEvent<HTMLDivElement>) => {
-        // This doesn't seem to work
         event.dataTransfer.setData('text/plain', 'Extra Wallet');
         event.dataTransfer.effectAllowed = 'move';
         const dragIcon = new Image(36, 36);
@@ -66,7 +65,7 @@ export default function SwordBlock({ width }: { width: number }) {
 
     return (
         <div>
-            <img src={swordBlock} alt="" width={width} />
+            <img src={swordBlock} alt="" width={width} draggable={false}/>
             <div style={swordStyle}>
                 <Item itemName="Progressive Sword" imgWidth={swordWidth} />
             </div>
@@ -98,6 +97,7 @@ export default function SwordBlock({ width }: { width: number }) {
                 style={{ ...extraWalletStyle, fontSize: width * 0.12 }}
                 onClick={handleExtraWalletClick}
                 onDragStart={handleExtraWalletDrag}
+                draggable
                 onKeyDown={keyDownWrapper(handleExtraWalletClick)}
                 tabIndex={0}
                 role="button"

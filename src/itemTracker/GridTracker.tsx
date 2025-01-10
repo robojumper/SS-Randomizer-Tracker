@@ -22,7 +22,6 @@ export default function GridTracker({ width }: { width: number }) {
     };
 
     const handleExtraWalletDrag = (event: React.DragEvent<HTMLDivElement>) => {
-        // This doesn't seem to work
         event.dataTransfer.setData('text/plain', 'Extra Wallet');
         event.dataTransfer.effectAllowed = 'move';
         const dragIcon = new Image(36, 36);
@@ -142,6 +141,7 @@ export default function GridTracker({ width }: { width: number }) {
                     }}
                     onClick={handleExtraWalletClick}
                     onDragStart={handleExtraWalletDrag}
+                    draggable
                     onKeyDown={handleExtraWalletClick}
                     tabIndex={0}
                     role="button"

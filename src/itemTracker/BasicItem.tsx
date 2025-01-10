@@ -37,6 +37,19 @@ export function BasicItem({
     dragItemName: string;
     children?: React.ReactNode;
 } & Omit<React.HTMLProps<HTMLDivElement>, 'onClick'>) {
+    // We need to create a canvas for the image so it is a consistent width
+    const dragIcon = new Image();
+    dragIcon.src = findRepresentativeIcon(dragItemName);
+    const ctx = document.createElement("canvas").getContext("2d");
+
+    dragIcon.onload = () => {
+        const width = 108;
+        const height = dragIcon.height * (width / dragIcon.width);
+        ctx!.canvas.width = width;
+        ctx!.canvas.height = height;
+        ctx!.drawImage(dragIcon, 0, 0, width, height);
+    }
+
     const handleClick = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
             onClick(true);
@@ -49,9 +62,7 @@ export function BasicItem({
     const handleDragStart = (event: React.DragEvent<HTMLDivElement>) => {
         event.dataTransfer.setData('text/plain', dragItemName);
         event.dataTransfer.effectAllowed = 'move';
-        const dragIcon = new Image(36, 36);
-        dragIcon.src = findRepresentativeIcon(dragItemName);
-        event.dataTransfer.setDragImage(dragIcon, 18, 18);
+        event.dataTransfer.setDragImage(ctx!.canvas, 24, 24);
     };
 
     return (

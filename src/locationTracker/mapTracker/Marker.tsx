@@ -44,7 +44,7 @@ export function Marker({
     tooltip?: React.ReactNode;
     onClick: (ev: TriggerEvent) => void;
     onContextMenu?: (ev: React.MouseEvent) => void;
-    onItemDrag: (params: ItemData) => void;
+    onItemDrag?: (params: ItemData) => void;
     selected: boolean;
 }) {
     const positionVars = {
@@ -67,8 +67,7 @@ export function Marker({
     const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         const itemName = event.dataTransfer.getData('text/plain');
-        console.log(itemName);
-        onItemDrag({ item: itemName });
+        onItemDrag && onItemDrag({ item: itemName });
     };
 
     return (
