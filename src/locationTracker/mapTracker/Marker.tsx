@@ -67,7 +67,7 @@ export function Marker({
     const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault();
         const itemName = event.dataTransfer.getData('text/plain');
-        onItemDrag && onItemDrag({ item: itemName });
+        onItemDrag?.({ item: itemName });
     };
 
     return (
