@@ -8,4 +8,12 @@
     gap: 4px;
 
     align-items: center;
+
+    > div {
+        display: flex;
+        > input {
+            flex: 1;
+            min-width: 0;
+        }
+    }
 }

@@ -33,7 +33,7 @@ export function CrystalAmountsChooser() {
                 {range(numBatreauxRewardLevels).map((level) => (
                     <div key={level}>
                         <input
-                            className="form-control"
+                            className="tracker-input"
                             type="text"
                             value={counts[level]}
                             onChange={(e) => updateCount(e.target.value, level)}

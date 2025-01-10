@@ -193,6 +193,7 @@ export function getTooltipOpaqueBits(
             set(`\\${amt} Gratitude Crystals`);
         }
     }
+    set(needEnterBatreauxCountsItem);
 
     if (settings['gondo-upgrades'] === false) {
         set(
