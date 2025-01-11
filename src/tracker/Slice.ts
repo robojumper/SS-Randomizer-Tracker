@@ -6,6 +6,7 @@ import { type InventoryItem, isItem, itemMaxes } from '../logic/Inventory';
 import type { RegularDungeon } from '../logic/Locations';
 import { getInitialItems } from '../logic/TrackerModifications';
 import type { AllTypedOptions } from '../permalink/SettingsTypes';
+import { isEqual } from 'es-toolkit';
 
 export interface TrackerState {
     /**
@@ -221,8 +222,10 @@ const trackerSlice = createSlice({
             state.lastCheckedLocation = undefined;
         },
         setRequiredCrystalCounts: (state, action: PayloadAction<number[]>) => {
-            state.requiredBatreauxCrystals = action.payload;
-            state.hasBeenModified = true;
+            if (!isEqual(state.requiredBatreauxCrystals, action.payload)) {
+                state.requiredBatreauxCrystals = action.payload;
+                state.hasBeenModified = true;
+            }
         },
         acceptSettings: (
             state,
