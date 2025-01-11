@@ -1,4 +1,5 @@
 import { type PayloadAction, createSlice } from '@reduxjs/toolkit';
+import { isEqual } from 'es-toolkit';
 import { getStoredTrackerState } from '../LocalStorage';
 import { migrateTrackerState } from '../TrackerStateMigrations';
 import type { Hint } from '../hints/Hints';
@@ -6,7 +7,6 @@ import { type InventoryItem, isItem, itemMaxes } from '../logic/Inventory';
 import type { RegularDungeon } from '../logic/Locations';
 import { getInitialItems } from '../logic/TrackerModifications';
 import type { AllTypedOptions } from '../permalink/SettingsTypes';
-import { isEqual } from 'es-toolkit';
 
 export interface TrackerState {
     /**

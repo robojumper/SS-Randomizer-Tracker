@@ -21,7 +21,7 @@ export function CrystalAmountsChooser() {
                 return setRequiredCrystalCounts(newCounts);
             },
         );
-    
+
     // Pull new state from Redux if it changes for some other reason
     const [prevCounts, setPrevCounts] = useState(reduxCounts);
     if (reduxCounts !== prevCounts) {
