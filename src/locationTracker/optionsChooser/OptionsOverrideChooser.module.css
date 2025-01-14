@@ -1,0 +1,28 @@
+.optionsChooser {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-flow: column nowrap;
+
+    .options {
+        flex-grow: 1;
+        overflow: visible scroll;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        padding: 0 4px;
+    }
+
+    .query {
+        font-size: 1.75rem;
+        margin: 2%;
+    }
+
+    .buttons {
+        display: flex;
+        flex-flow: row nowrap;
+        place-content: center space-around;
+        width: 100%;
+        margin-bottom: 8px;
+    }
+}

@@ -7,8 +7,8 @@ import type BooleanExpression from '../logic/booleanlogic/BooleanExpression';
 import { logicSelector, optionsSelector } from '../logic/Selectors';
 import { createTestLogic } from '../testing/TestingUtils';
 import {
-    allSettingsSelector,
     getRequirementLogicalStateSelector,
+    initialSettingsSelector,
     settingsRequirementsSelector,
     settingsSelector,
 } from '../tracker/Selectors';
@@ -94,7 +94,7 @@ describe('tooltips', () => {
         beforeAll(() => {
             tester.beforeEach();
 
-            const settings = tester.readSelector(allSettingsSelector);
+            const settings = tester.readSelector(initialSettingsSelector);
             tester.dispatch(
                 acceptSettings({
                     settings: { ...settings, 'excluded-locations': [] },

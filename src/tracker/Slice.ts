@@ -39,9 +39,13 @@ export interface TrackerState {
      */
     checkHints: Record<string, string | undefined>;
     /**
-     * Fully decoded settings.
+     * The initial settings for this seed.
      */
     settings: Partial<AllTypedOptions>;
+    /**
+     * Settings entered by the user during a seed for Random Settings runs
+     */
+    settingsOverrides: Partial<AllTypedOptions>;
     /**
      * A plaintext text area for the user to track hints.
      */
@@ -61,6 +65,7 @@ const initialState: TrackerState = {
     hints: {},
     checkHints: {},
     settings: {},
+    settingsOverrides: {},
     userHintsText: '',
     lastCheckedLocation: undefined,
 };
@@ -220,6 +225,13 @@ const trackerSlice = createSlice({
             const { settings } = action.payload;
             state.settings = settings;
         },
+        acceptSettingsOverrides: (
+            state,
+            action: PayloadAction<{ settings: Partial<AllTypedOptions> }>,
+        ) => {
+            const { settings } = action.payload;
+            state.settingsOverrides = settings;
+        },
         reset: (
             _state,
             action: PayloadAction<{ settings: AllTypedOptions }>,
@@ -246,6 +258,7 @@ export const {
     mapEntrance,
     cancelItemAssignment,
     acceptSettings,
+    acceptSettingsOverrides,
     setCheckHint,
     reset,
     setHint,

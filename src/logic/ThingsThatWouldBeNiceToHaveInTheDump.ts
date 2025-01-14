@@ -1,4 +1,5 @@
 import type {
+    OptionsCommand,
     OptionType,
     OptionValue,
     TypedOptions,
@@ -107,3 +108,35 @@ export const doesHintDistroUseGossipStone: Record<
 export const gotOpeningReq = 'GoT Opening Requirement';
 export const gotRaisingReq = 'GoT Raising Requirement';
 export const hordeDoorReq = 'Horde Door Requirement';
+
+const nonRandomizedSettings_ = [
+    // "If permalink is false, it is not randomized"
+    'random-settings',
+    'random-settings-weighting',
+    'random-progression-groups',
+    // 'disabled-progression-groups',
+    'no-spoiler-log',
+    'bit-patches',
+    'logic-mode',
+    'excluded-locations',
+    'enabled-tricks-glitched',
+    'enabled-tricks-bitless',
+    // "Not implemented yet"
+    'got-start',
+    'got-dungeon-requirement',
+] as const satisfies OptionsCommand[];
+
+export const hiddenRandomSettings: OptionsCommand[] = [
+    // Tracker: We don't need to bother the user with starting items
+    // if they can just enter those themselves
+    'starting-items',
+    'starting-bottles',
+    'starting-crystal-packs',
+    'starting-sword',
+    'starting-tablet-count',
+    'starting-tadtones',
+];
+
+export type NeverRandomizedSetting = (typeof nonRandomizedSettings_)[number];
+export const nonRandomizedSettings: readonly OptionsCommand[] =
+    nonRandomizedSettings_;
