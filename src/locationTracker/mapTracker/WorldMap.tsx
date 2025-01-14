@@ -82,7 +82,9 @@ function WorldMap({
     const currentRegionOrExit =
         interfaceState.type === 'choosingEntrance'
             ? interfaceState.exitId
-            : interfaceState.hintRegion;
+            : interfaceState.type === 'viewingChecks'
+              ? interfaceState.hintRegion
+              : undefined;
 
     return (
         <div
