@@ -5,7 +5,7 @@ import {
     Separator,
     Submenu,
     type ItemParams,
-} from 'react-contexify';
+} from '../additionalComponents/contextMenu/ContextMenu';
 import hintItems from '../data/hintItems.json';
 import { findRepresentativeIcon } from '../itemTracker/Images';
 import { useAppDispatch } from '../store/Store';
@@ -25,7 +25,7 @@ export default function LocationContextMenu() {
         (params: CtxProps) =>
             dispatch(
                 clickCheck({
-                    checkId: params.props!.checkId,
+                    checkId: params.props.checkId,
                     markChecked: true,
                 }),
             ),
@@ -36,7 +36,7 @@ export default function LocationContextMenu() {
         (params: CtxProps) =>
             dispatch(
                 clickCheck({
-                    checkId: params.props!.checkId,
+                    checkId: params.props.checkId,
                     markChecked: false,
                 }),
             ),
@@ -47,7 +47,7 @@ export default function LocationContextMenu() {
         (params: CtxProps<ItemData>) =>
             dispatch(
                 setCheckHint({
-                    checkId: params.props!.checkId,
+                    checkId: params.props.checkId,
                     hint: params.data!.item,
                 }),
             ),
@@ -58,7 +58,7 @@ export default function LocationContextMenu() {
         (params: CtxProps<ItemData>) =>
             dispatch(
                 setCheckHint({
-                    checkId: params.props!.checkId,
+                    checkId: params.props.checkId,
                     hint: undefined,
                 }),
             ),
@@ -92,7 +92,7 @@ export default function LocationContextMenu() {
 
 export function HintIcon({ src, alt }: { src: string; alt: string }) {
     return (
-        <span style={{ display: 'flex', flexFlow: 'row nowrap' }}>
+        <>
             <div style={{ width: '36px', height: '36px', paddingRight: '6px' }}>
                 <img
                     style={{
@@ -105,7 +105,7 @@ export function HintIcon({ src, alt }: { src: string; alt: string }) {
                 />
             </div>
             {alt}
-        </span>
+        </>
     );
 }
 

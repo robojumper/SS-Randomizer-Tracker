@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import type { TriggerEvent } from 'react-contexify';
 import { useSelector } from 'react-redux';
+import type { TriggerEvent } from '../additionalComponents/contextMenu/ContextMenu';
 import { decodeHint } from '../hints/Hints';
 import { areaGraphSelector } from '../logic/Selectors';
 import type { RootState } from '../store/Store';

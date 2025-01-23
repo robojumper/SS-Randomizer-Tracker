@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, Navigate } from 'react-router-dom';
+import { ContextMenuContext } from './additionalComponents/contextMenu/ContextMenu';
 import CustomizationModal from './customization/CustomizationModal';
 import { hasCustomLayoutSelector } from './customization/Selectors';
 import { DragAndDropContext } from './dragAndDrop/DragAndDrop';
@@ -84,7 +85,7 @@ function TrackerContents() {
     const hasCustomLayout = useSelector(hasCustomLayoutSelector);
 
     return (
-        <>
+        <ContextMenuContext>
             <LocationContextMenu />
             <LocationGroupContextMenu
                 interfaceDispatch={trackerInterfaceDispatch}
@@ -100,7 +101,7 @@ function TrackerContents() {
                     interfaceState={trackerInterfaceState}
                 />
             )}
-        </>
+        </ContextMenuContext>
     );
 }
 

@@ -1,6 +1,5 @@
-import { useCallback } from 'react';
-import type { TriggerEvent } from 'react-contexify';
 import { useSelector } from 'react-redux';
+import { useContextMenu } from '../../additionalComponents/contextMenu/ContextMenu';
 import type { ColorScheme } from '../../customization/ColorScheme';
 import {
     draggableToRegionHint,
@@ -17,7 +16,6 @@ import {
     exitsByIdSelector,
     getRequirementLogicalStateSelector,
 } from '../../tracker/Selectors';
-import { useContextMenu } from '../context-menu';
 import HintDescription from '../HintsDescription';
 import type {
     LocationGroupContextMenuProps,
@@ -81,50 +79,19 @@ function EntranceMarker({
         markerColor = 'checked';
     }
 
-    const showBound = useContextMenu<MapExitContextMenuProps>({
-        id: isDungeon
+    const showBound = useContextMenu<MapExitContextMenuProps>(
+        isDungeon
             ? isUnrequiredDungeon
                 ? 'dungeon-unrequired-context'
                 : 'dungeon-context'
             : 'trial-context',
-    }).show;
+    );
 
-    const showGroup = useContextMenu<LocationGroupContextMenuProps>({
-        id: 'group-context',
-    }).show;
+    const showGroup =
+        useContextMenu<LocationGroupContextMenuProps>('group-context');
 
     const destinationRegionName =
         exit.entrance && logic.areaGraph.entranceHintRegions[exit.entrance.id];
-
-    const displayMenu = useCallback(
-        (e: TriggerEvent) => {
-            e.preventDefault();
-            if (!exit.canAssign) {
-                if (exit.entrance) {
-                    showGroup({
-                        event: e,
-                        props: { area: exit.entrance?.region },
-                    });
-                }
-            } else if (hasConnection) {
-                showBound({
-                    event: e,
-                    props: { exitMapping: exit, area: destinationRegionName },
-                });
-            } else {
-                onChooseEntrance(exitId);
-            }
-        },
-        [
-            destinationRegionName,
-            exit,
-            exitId,
-            hasConnection,
-            onChooseEntrance,
-            showBound,
-            showGroup,
-        ],
-    );
 
     let hints = useSelector(areaHintSelector(destinationRegionName ?? ''));
     const {
@@ -185,19 +152,29 @@ function EntranceMarker({
         );
     }
 
-    const handleClick = (e: TriggerEvent) => {
-        if (e instanceof KeyboardEvent && e.key !== ' ') {
-            return;
-        }
-        if (e.type === 'contextmenu') {
-            if (region) {
-                onGlickGroup(region);
-            }
-            e.preventDefault();
-        } else if (region) {
+    const onClick = () => {
+        if (region) {
             onGlickGroup(region);
         } else {
-            displayMenu(e);
+            onChooseEntrance(exitId);
+        }
+    };
+
+    const onContextMenu = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (region) {
+            if (exit.canAssign) {
+                showBound(e, {
+                    exitMapping: exit,
+                    area: destinationRegionName,
+                });
+            } else if (destinationRegionName) {
+                showGroup(e, {
+                    area: destinationRegionName,
+                });
+            }
+        } else if (exit.canAssign) {
+            onChooseEntrance(exitId);
         }
     };
 
@@ -209,8 +186,8 @@ function EntranceMarker({
             variant={title.includes('Trial Gate') ? 'circle' : 'square'}
             color={markerColor}
             tooltip={tooltip}
-            onClick={handleClick}
-            onContextMenu={displayMenu}
+            onClick={onClick}
+            onContextMenu={onContextMenu}
             selected={selected}
             previewStyle={
                 dragPreviewHint ? (isOver ? 'hover' : 'droppable') : undefined

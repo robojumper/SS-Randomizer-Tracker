@@ -1,6 +1,9 @@
-import { type MouseEvent, useCallback } from 'react';
-import type { TriggerEvent } from 'react-contexify';
+import { useCallback, type MouseEvent } from 'react';
 import { useSelector } from 'react-redux';
+import {
+    useContextMenu,
+    type TriggerEvent,
+} from '../../additionalComponents/contextMenu/ContextMenu';
 import {
     draggableToRegionHint,
     useDroppable,
@@ -11,7 +14,6 @@ import type { RootState } from '../../store/Store';
 import { areaHintSelector, areasSelector } from '../../tracker/Selectors';
 import HintDescription from '../HintsDescription';
 import type { LocationGroupContextMenuProps } from '../LocationGroupContextMenu';
-import { useContextMenu } from '../context-menu';
 import { getMarkerColor, getRegionData, getSubmarkerData } from './MapUtils';
 import { Marker } from './Marker';
 
@@ -36,13 +38,11 @@ function MapMarker({
     const data = getRegionData(area);
     const markerColor = getMarkerColor(data.checks);
 
-    const { show } = useContextMenu<LocationGroupContextMenuProps>({
-        id: 'group-context',
-    });
+    const show = useContextMenu<LocationGroupContextMenuProps>('group-context');
 
     const displayMenu = useCallback(
         (e: MouseEvent) => {
-            show({ event: e, props: { area: area.name } });
+            show(e, { area: area.name });
         },
         [area, show],
     );

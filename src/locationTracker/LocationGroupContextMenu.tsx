@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import {
     Item,
     Menu,
     Separator,
     Submenu,
     type ItemParams,
-} from 'react-contexify';
-import { useSelector } from 'react-redux';
+} from '../additionalComponents/contextMenu/ContextMenu';
 import hintItems from '../data/hintItems.json';
 import { bosses, pathImages } from '../hints/Hints';
 import type { ExitMapping } from '../logic/Locations';
@@ -44,8 +44,8 @@ function useGroupContextMenuHandlers() {
 
     const checkAll = useCallback(
         (params: AreaCtxProps | ExitCtxProps) => {
-            if (params.props!.area) {
-                dispatch(checkOrUncheckAll(params.props!.area, true));
+            if (params.props.area) {
+                dispatch(checkOrUncheckAll(params.props.area, true));
             }
         },
         [dispatch],
@@ -53,10 +53,10 @@ function useGroupContextMenuHandlers() {
 
     const checkAllInLogic = useCallback(
         (params: AreaCtxProps | ExitCtxProps) => {
-            if (params.props!.area) {
+            if (params.props.area) {
                 dispatch(
                     checkOrUncheckAll(
-                        params.props!.area,
+                        params.props.area,
                         true,
                         /* onlyInLogic */ true,
                     ),
@@ -68,8 +68,8 @@ function useGroupContextMenuHandlers() {
 
     const uncheckAll = useCallback(
         (params: AreaCtxProps | ExitCtxProps) => {
-            if (params.props!.area) {
-                dispatch(checkOrUncheckAll(params.props!.area, false));
+            if (params.props.area) {
+                dispatch(checkOrUncheckAll(params.props.area, false));
             }
         },
         [dispatch],
@@ -77,10 +77,10 @@ function useGroupContextMenuHandlers() {
 
     const handlePathClick = useCallback(
         (params: AreaCtxProps<BossData> | ExitCtxProps<BossData>) =>
-            params.props!.area &&
+            params.props.area &&
             dispatch(
                 setHint({
-                    areaId: params.props!.area,
+                    areaId: params.props.area,
                     hint: { type: 'path', index: params.data!.boss },
                 }),
             ),
@@ -89,10 +89,10 @@ function useGroupContextMenuHandlers() {
 
     const handleSetItemClick = useCallback(
         (params: AreaCtxProps<ItemData> | ExitCtxProps<ItemData>) =>
-            params.props!.area &&
+            params.props.area &&
             dispatch(
                 setHint({
-                    areaId: params.props!.area,
+                    areaId: params.props.area,
                     hint: { type: 'item', item: params.data!.item },
                 }),
             ),
@@ -101,10 +101,10 @@ function useGroupContextMenuHandlers() {
 
     const handleSotsClick = useCallback(
         (params: AreaCtxProps | ExitCtxProps) =>
-            params.props!.area &&
+            params.props.area &&
             dispatch(
                 setHint({
-                    areaId: params.props!.area,
+                    areaId: params.props.area,
                     hint: { type: 'sots' },
                 }),
             ),
@@ -113,10 +113,10 @@ function useGroupContextMenuHandlers() {
 
     const handleBarrenClick = useCallback(
         (params: AreaCtxProps | ExitCtxProps) =>
-            params.props!.area &&
+            params.props.area &&
             dispatch(
                 setHint({
-                    areaId: params.props!.area,
+                    areaId: params.props.area,
                     hint: { type: 'barren' },
                 }),
             ),
@@ -125,10 +125,10 @@ function useGroupContextMenuHandlers() {
 
     const handleClearClick = useCallback(
         (params: AreaCtxProps | ExitCtxProps) =>
-            params.props!.area &&
+            params.props.area &&
             dispatch(
                 setHint({
-                    areaId: params.props!.area,
+                    areaId: params.props.area,
                     hint: undefined,
                 }),
             ),
@@ -270,7 +270,7 @@ function BoundEntranceMenu({
         (params: ExitCtxProps) =>
             interfaceDispatch({
                 type: 'chooseEntrance',
-                exitId: params.props!.exitMapping.exit.id,
+                exitId: params.props.exitMapping.exit.id,
             }),
         [interfaceDispatch],
     );

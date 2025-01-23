@@ -1,7 +1,10 @@
 import clsx from 'clsx';
 import { useCallback, type CSSProperties } from 'react';
-import type { TriggerEvent } from 'react-contexify';
 import { useDispatch, useSelector } from 'react-redux';
+import {
+    useContextMenu,
+    type TriggerEvent,
+} from '../additionalComponents/contextMenu/ContextMenu';
 import Tooltip from '../additionalComponents/Tooltip';
 import exitImg from '../assets/dungeons/entrance.png';
 import goddessCubeImg from '../assets/sidequests/goddess_cube.png';
@@ -22,7 +25,6 @@ import {
 } from '../tracker/Selectors';
 import { mapEntrance } from '../tracker/Slice';
 import keyDownWrapper from '../utils/KeyDownWrapper';
-import { useContextMenu } from './context-menu';
 import styles from './Location.module.css';
 import PathTooltip from './PathTooltip';
 import RequirementsTooltip from './RequirementsTooltip';
@@ -62,13 +64,11 @@ function CheckLocation({ id }: { id: string }) {
             : `var(--scheme-${check.logicalState})`,
     } satisfies CSSProperties;
 
-    const { show } = useContextMenu<LocationContextMenuProps>({
-        id: 'location-context',
-    });
+    const show = useContextMenu<LocationContextMenuProps>('location-context');
 
     const displayMenu = useCallback(
         (e: TriggerEvent) => {
-            show({ event: e, props: { checkId: id } });
+            show(e, { checkId: id });
         },
         [id, show],
     );
