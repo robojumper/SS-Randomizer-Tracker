@@ -1,6 +1,6 @@
 import { act } from '@testing-library/react';
 import { createTestLogic } from '../testing/TestingUtils';
-import { allSettingsSelector } from './Selectors';
+import { initialSettingsSelector } from './Selectors';
 import { acceptSettings } from './Slice';
 import { useTrackerInterfaceReducer } from './TrackerInterfaceReducer';
 
@@ -24,7 +24,7 @@ describe('tracker interface reducer', () => {
     });
 
     it('initializes with entrance chooser', () => {
-        const settings = tester.readSelector(allSettingsSelector);
+        const settings = tester.readSelector(initialSettingsSelector);
         tester.dispatch(
             acceptSettings({
                 settings: { ...settings, 'random-start-entrance': 'Any' },
@@ -62,7 +62,7 @@ describe('tracker interface reducer', () => {
     });
 
     it('goes back to correct hint region', () => {
-        const settings = tester.readSelector(allSettingsSelector);
+        const settings = tester.readSelector(initialSettingsSelector);
         tester.dispatch(
             acceptSettings({
                 settings: {

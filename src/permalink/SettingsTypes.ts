@@ -1,5 +1,5 @@
-import type { LogicOption } from '../options/Options';
 import type { GeneratedOptions } from './GeneratedOptions';
+import type { LogicOption } from './Settings';
 
 export type BaseOption = {
     permalink: boolean | undefined;
@@ -85,6 +85,14 @@ export interface AllTypedOptions
         | 'Normal'
         | 'Beatable Only'
         | 'Beatable Then Banned';
+
+    // Random Settings
+    // https://github.com/ssrando/ssrando/pull/527
+    'random-settings': boolean | undefined;
+    'random-cosmetics': boolean | undefined;
+    'random-settings-weighting': string | undefined;
+    'random-progression-groups': string[] | undefined;
+    // disabled-progression-groups
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOption>;

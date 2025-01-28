@@ -28,6 +28,14 @@ export type InterfaceState =
           type: 'viewingChecks';
           hintRegion: string | undefined;
           mapView: string | undefined;
+      }
+    | {
+          /**
+           * Random Settings are enabled and the user is choosing discovered settings
+           */
+          type: 'choosingSettingsOverrides';
+          previousHintRegion: string | undefined;
+          mapView: string | undefined;
       };
 
 type InterfaceStateInternal =
@@ -65,6 +73,14 @@ export type InterfaceAction =
           /** Selected an entrance, or canceled the dialog */
           type: 'cancelChooseEntrance';
           selectedEntrance: string | undefined;
+      }
+    | {
+          /** Wants to update settings for Random Settings */
+          type: 'updateSettings';
+      }
+    | {
+          /** Cancels Random Settings */
+          type: 'cancelUpdateSettings';
       };
 
 function getHintRegionForEntrance(
@@ -174,14 +190,15 @@ function interfaceReducer(
                             : undefined,
                 };
             case 'cancelChooseEntrance': {
+                if (state.type !== 'choosingEntrance') {
+                    return state;
+                }
                 const hintRegion = action.selectedEntrance
                     ? getHintRegionForEntrance(
                           action.selectedEntrance,
                           areaGraph,
                       )
-                    : state.type === 'choosingEntrance'
-                      ? state.previousHintRegion
-                      : undefined;
+                    : state.previousHintRegion;
                 const owningProvince = hintRegion
                     ? getOwningProvince(mapModel, hintRegion)
                     : undefined;
@@ -192,6 +209,29 @@ function interfaceReducer(
                         owningProvince?.type === 'ok'
                             ? owningProvince.result
                             : state.mapView,
+                };
+            }
+            case 'updateSettings': {
+                if (state.type === 'choosingSettingsOverrides') {
+                    return state;
+                }
+                return {
+                    type: 'choosingSettingsOverrides',
+                    mapView: state.mapView,
+                    previousHintRegion:
+                        state.type === 'viewingChecks'
+                            ? state.hintRegion
+                            : undefined,
+                };
+            }
+            case 'cancelUpdateSettings': {
+                if (state.type !== 'choosingSettingsOverrides') {
+                    return state;
+                }
+                return {
+                    type: 'viewingChecks',
+                    hintRegion: state.previousHintRegion,
+                    mapView: state.mapView,
                 };
             }
         }

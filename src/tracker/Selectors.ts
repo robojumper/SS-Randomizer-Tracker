@@ -51,7 +51,11 @@ import {
     mergeRequirements,
 } from '../logic/bitlogic/BitLogic';
 import { BitVector } from '../logic/bitlogic/BitVector';
-import { validateSettings } from '../permalink/Settings';
+import {
+    mapToAssumedSettings,
+    validateSettings,
+    validateSettingsOverrides,
+} from '../permalink/Settings';
 import type { TypedOptions } from '../permalink/SettingsTypes';
 import type { RootState } from '../store/Store';
 import { emptyArray, mapValues } from '../utils/Collections';
@@ -121,19 +125,33 @@ export const checkHintSelector = currySelector(
 );
 
 /**
- * Selects ALL settings, even the ones not logically relevant.
+ * Selects ALL initial settings for the seed, even the ones not logically relevant.
+ * You never want to use this in tracker code since the user may discover certain
+ * settings later and save them in a separate object - use `setting(s)Selector` instead
  */
-export const allSettingsSelector = createSelector(
+export const initialSettingsSelector = createSelector(
     [optionsSelector, (state: RootState) => state.tracker.settings],
     validateSettings,
 );
 
+export const overriddenSettingsOnlySelector = createSelector(
+    [optionsSelector, (state: RootState) => state.tracker.settingsOverrides],
+    validateSettingsOverrides,
+);
+
 /**
- * Selects the current logical settings. This is basically the same
- * thing but differently typed to only provide the subset of logically relevant settings.
+ * Selects the current logical settings. These include user-discovered
+ * random settings or assumed settings.
  */
 export const settingsSelector: (state: RootState) => TypedOptions =
-    allSettingsSelector;
+    createSelector(
+        [
+            optionsSelector,
+            initialSettingsSelector,
+            overriddenSettingsOnlySelector,
+        ],
+        mapToAssumedSettings,
+    );
 
 /**
  * Selects a particular logical settings value.

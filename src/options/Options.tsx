@@ -27,13 +27,16 @@ import {
 } from '../loader/LogicLoader';
 import { useReleases } from '../loader/ReleasesLoader';
 import { type LogicBundle, loadLogic } from '../logic/Slice';
-import { decodePermalink, encodePermalink } from '../permalink/Settings';
+import {
+    decodePermalink,
+    encodePermalink,
+    optionCategorization,
+} from '../permalink/Settings';
 import type {
     AllTypedOptions,
     Option,
     OptionDefs,
     OptionValue,
-    OptionsCommand,
 } from '../permalink/SettingsTypes';
 import { useAppDispatch } from '../store/Store';
 import { acceptSettings, reset } from '../tracker/Slice';
@@ -46,71 +49,6 @@ import {
     type OptionsAction,
     useOptionsState,
 } from './OptionsReducer';
-
-/** The tracker will only show these options, and tracker logic code is only allowed to access these! */
-const optionCategorization_ = {
-    Shuffles: [
-        'rupeesanity',
-        'shopsanity',
-        'beedle-shopsanity',
-        'luv-shopsanity',
-        'rupin-shopsanity',
-        'gondo-upgrades',
-        'tadtonesanity',
-        'treasuresanity-in-silent-realms',
-        'trial-treasure-amount',
-        'small-key-mode',
-        'boss-key-mode',
-        'empty-unrequired-dungeons',
-    ],
-    'Starting Items': [
-        'starting-sword',
-        'upgraded-skyward-strike',
-        'starting-tablet-count',
-        'starting-bottles',
-        'starting-crystal-packs',
-        'starting-tadtones',
-        'starting-items',
-    ],
-    Entrances: [
-        'random-start-entrance',
-        'random-start-statues',
-        'randomize-entrances',
-        'randomize-dungeon-entrances',
-        'randomize-trials',
-        'random-puzzles',
-    ],
-    Convenience: [
-        'open-lake-floria',
-        'open-et',
-        'open-lmf',
-        'open-thunderhead',
-        'fs-lava-flow',
-        'open-shortcuts',
-    ],
-    Victory: [
-        'got-start',
-        'got-sword-requirement',
-        'got-dungeon-requirement',
-        'required-dungeon-count',
-        'triforce-required',
-        'triforce-shuffle',
-    ],
-    Miscellaneous: [
-        'logic-mode',
-        'bit-patches',
-        'damage-multiplier',
-        'enabled-tricks-bitless',
-        'enabled-tricks-glitched',
-        'excluded-locations',
-        'hint-distribution',
-    ],
-} as const satisfies Record<string, readonly OptionsCommand[]>;
-
-export type LogicOption =
-    (typeof optionCategorization_)[keyof typeof optionCategorization_][number];
-const optionCategorization: Record<string, readonly LogicOption[]> =
-    optionCategorization_;
 
 const wellKnownRemotes: {
     prettyName: string;

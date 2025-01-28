@@ -11,10 +11,10 @@ import type { AppAction, RootState, SyncThunkResult } from './store/Store';
 import { createTestLogic } from './testing/TestingUtils';
 import { checkOrUncheckAll, clickCheck } from './tracker/Actions';
 import {
-    allSettingsSelector,
     areasSelector,
     checkHintSelector,
     checkSelector,
+    initialSettingsSelector,
     rawItemCountSelector,
     totalCountersSelector,
 } from './tracker/Selectors';
@@ -62,7 +62,7 @@ describe('full logic tests', () => {
         value: TypedOptions[K],
     ) {
         const settings = {
-            ...readSelector(allSettingsSelector),
+            ...readSelector(initialSettingsSelector),
             [option]: value,
         };
         dispatch(acceptSettings({ settings }));
@@ -74,7 +74,7 @@ describe('full logic tests', () => {
         value: TypedOptions[K],
     ) {
         const settings = {
-            ...readSelector(allSettingsSelector),
+            ...readSelector(initialSettingsSelector),
             [option]: value,
         };
         dispatch(reset({ settings }));

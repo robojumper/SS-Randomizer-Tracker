@@ -151,6 +151,8 @@ async function loadRemote(
 
 export function useOptionsState() {
     const reduxLoaded = useSelector((state: RootState) => state.logic.loaded);
+    // Not using any selector here since settings values can't be
+    // validated when logic hasn't been committed to Redux yet
     const reduxSettings = useSelector(
         (state: RootState) => state.tracker.settings,
     );

@@ -7,6 +7,7 @@ import type {
 import EntranceChooser from './EntranceChooser';
 import LocationGroupHeader from './LocationGroupHeader';
 import { Locations } from './Locations';
+import OptionsOverrideChooser from './optionsChooser/OptionsOverrideChooser';
 
 export function LocationsEntrancesList({
     includeHeader,
@@ -71,6 +72,9 @@ export function LocationsEntrancesList({
                         })
                     }
                 />
+            )}
+            {interfaceState.type === 'choosingSettingsOverrides' && (
+                <OptionsOverrideChooser interfaceDispatch={interfaceDispatch} />
             )}
         </>
     );

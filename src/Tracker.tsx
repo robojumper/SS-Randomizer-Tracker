@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useImperativeHandle, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, Navigate } from 'react-router-dom';
 import CustomizationModal from './customization/CustomizationModal';
@@ -13,6 +13,7 @@ import LocationContextMenu from './locationTracker/LocationContextMenu';
 import LocationGroupContextMenu from './locationTracker/LocationGroupContextMenu';
 import { isLogicLoadedSelector } from './logic/Selectors';
 import { MakeTooltipsAvailable } from './tooltips/TooltipHooks';
+import { settingSelector } from './tracker/Selectors';
 import { useTrackerInterfaceReducer } from './tracker/TrackerInterfaceReducer';
 
 export default function TrackerContainer() {
@@ -41,6 +42,7 @@ function TrackerStateSaver() {
 }
 
 function Tracker() {
+    const [handle, setHandle] = useState<ContentsRef | null>(null);
     return (
         <>
             <div
@@ -59,7 +61,7 @@ function Tracker() {
                         flexFlow: 'row nowrap',
                     }}
                 >
-                    <TrackerContents />
+                    <TrackerContents ref={setHandle} />
                 </div>
                 <div
                     style={{
@@ -70,18 +72,35 @@ function Tracker() {
                         height: '5%',
                     }}
                 >
-                    <TrackerFooter />
+                    <TrackerFooter
+                        onChooseSettingsOverrides={
+                            handle?.onChooseSettingsOverrides
+                        }
+                    />
                 </div>
             </div>
         </>
     );
 }
 
-function TrackerContents() {
+interface ContentsRef {
+    onChooseSettingsOverrides: () => void;
+}
+
+function TrackerContents({ ref }: { ref: React.ForwardedRef<ContentsRef> }) {
     const [trackerInterfaceState, trackerInterfaceDispatch] =
         useTrackerInterfaceReducer();
 
     const hasCustomLayout = useSelector(hasCustomLayoutSelector);
+    // I don't like this but don't want to lift all this state up
+    useImperativeHandle(
+        ref,
+        () => ({
+            onChooseSettingsOverrides: () =>
+                trackerInterfaceDispatch({ type: 'updateSettings' }),
+        }),
+        [trackerInterfaceDispatch],
+    );
 
     return (
         <>
@@ -104,10 +123,15 @@ function TrackerContents() {
     );
 }
 
-function TrackerFooter() {
+function TrackerFooter({
+    onChooseSettingsOverrides,
+}: {
+    onChooseSettingsOverrides: (() => void) | undefined;
+}) {
     const [showCustomizationDialog, setShowCustomizationDialog] =
         useState(false);
     const [showEntranceDialog, setShowEntranceDialog] = useState(false);
+    const randomSettings = useSelector(settingSelector('random-settings'));
 
     return (
         <>
@@ -131,6 +155,17 @@ function TrackerFooter() {
                 <div>
                     <ExportButton />
                 </div>
+                {randomSettings && (
+                    <div>
+                        <button
+                            type="button"
+                            className="tracker-button"
+                            onClick={onChooseSettingsOverrides}
+                        >
+                            Set Random Settings
+                        </button>
+                    </div>
+                )}
                 <div>
                     <button
                         type="button"

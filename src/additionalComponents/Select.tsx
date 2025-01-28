@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import ReactSelect, {
     type ActionMeta,
+    type MenuPlacement,
     type MultiValue,
     type SingleValue,
 } from 'react-select';
@@ -33,6 +34,7 @@ export function Select<T>({
     searchable = false,
     clearable = false,
     id,
+    menuPlacement,
 }: {
     label: string;
     disabled?: boolean;
@@ -43,6 +45,7 @@ export function Select<T>({
     searchable?: boolean;
     clearable?: boolean;
     id?: string;
+    menuPlacement?: MenuPlacement;
 }) {
     const actualOptions: SelectValue<T>[] = useMemo(() => {
         if (clearable && selectedValue) {
@@ -84,6 +87,7 @@ export function Select<T>({
             id={id}
             placeholder={placeholder}
             onChange={onChange}
+            menuPlacement={menuPlacement}
         />
     );
 }
