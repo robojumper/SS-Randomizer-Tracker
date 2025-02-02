@@ -159,12 +159,12 @@ export function Menu({
                             display:
                                 'none' /* , top: state?.y, left: state?.x */,
                         }}
-                    ></div>
+                    />
                 </ContextMenu.Trigger>
                 <ContextMenu.Portal>
                     <ContextMenu.Content
                         onCloseAutoFocus={(e) => e.preventDefault()}
-                        className={styles.Content}
+                        className={styles.content}
                         // style={{ top: state?.y, left: state?.x }}
                     >
                         {children}
@@ -176,7 +176,7 @@ export function Menu({
 }
 
 export function Separator() {
-    return <ContextMenu.Separator className={styles.Separator} />;
+    return <ContextMenu.Separator className={styles.separator} />;
 }
 
 export function Submenu({
@@ -188,12 +188,12 @@ export function Submenu({
 }) {
     return (
         <ContextMenu.Sub>
-            <ContextMenu.SubTrigger className={styles.SubTrigger}>
+            <ContextMenu.SubTrigger className={styles.subTrigger}>
                 {label}
-                <div className={styles.RightSlot}>›</div>
+                <div className={styles.rightSlot}>›</div>
             </ContextMenu.SubTrigger>
             <ContextMenu.Portal>
-                <ContextMenu.SubContent className={styles.SubContent}>
+                <ContextMenu.SubContent className={styles.subContent}>
                     {children}
                 </ContextMenu.SubContent>
             </ContextMenu.Portal>
@@ -215,7 +215,7 @@ export function Item<T, P>({
     const props = useContext(ItemProps);
     return (
         <ContextMenu.Item
-            className={styles.Item}
+            className={styles.item}
             onClick={() => {
                 onClick({ data, props: props as P });
             }}
