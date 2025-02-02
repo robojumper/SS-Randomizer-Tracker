@@ -1,4 +1,3 @@
-import type { TriggerEvent } from 'react-contexify';
 import { useSelector } from 'react-redux';
 import leaveEldin from '../../assets/maps/leaveEldin.png';
 import leaveFaron from '../../assets/maps/leaveFaron.png';
@@ -49,7 +48,7 @@ function Submap({
 }) {
     const areaGraph = useSelector(areaGraphSelector);
 
-    const handleBack = (e: TriggerEvent | React.UIEvent) => {
+    const handleBack = (e: React.UIEvent) => {
         if (e.type === 'contextmenu') {
             e.preventDefault();
             onSubmapChange(undefined);

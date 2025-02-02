@@ -1,7 +1,10 @@
 import clsx from 'clsx';
 import { useCallback } from 'react';
-import type { TriggerEvent } from 'react-contexify';
 import { useSelector } from 'react-redux';
+import {
+    useContextMenu,
+    type TriggerEvent,
+} from '../additionalComponents/contextMenu/ContextMenu';
 import Tooltip from '../additionalComponents/Tooltip';
 import {
     draggableToRegionHint,
@@ -12,7 +15,6 @@ import type { HintRegion } from '../logic/Locations';
 import { areaHintSelector } from '../tracker/Selectors';
 import keyDownWrapper from '../utils/KeyDownWrapper';
 import AreaCounters from './AreaCounters';
-import { useContextMenu } from './context-menu';
 import type { LocationGroupContextMenuProps } from './LocationGroupContextMenu';
 import styles from './LocationGroupHeader.module.css';
 
@@ -34,16 +36,11 @@ export default function LocationGroupHeader({
 
     const areaHint = useSelector(areaHintSelector(area.name));
 
-    const { show } = useContextMenu<LocationGroupContextMenuProps>({
-        id: 'group-context',
-    });
+    const show = useContextMenu<LocationGroupContextMenuProps>('group-context');
 
     const displayMenu = useCallback(
         (e: TriggerEvent) => {
-            show({
-                event: e,
-                props: { area: area.name },
-            });
+            show(e, { area: area.name });
         },
         [area, show],
     );

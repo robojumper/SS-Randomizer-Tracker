@@ -1,0 +1,95 @@
+.content,
+.subContent {
+    min-width: 220px;
+    background-color: var(--scheme-background);
+    border-radius: 6px;
+    overflow: hidden;
+    padding: 5px;
+    box-shadow:
+        0px 10px 38px -10px rgba(22, 23, 24, 0.35),
+        0px 10px 20px -15px rgba(22, 23, 24, 0.2);
+
+    &[data-state='open'] {
+        animation: slideBottom 200ms ease-in-out;
+    }
+
+    &[data-state='closed'] {
+        animation: slideTop 200ms ease-in-out;
+    }
+}
+
+@keyframes slideBottom {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideTop {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+}
+
+.rightSlot {
+    font-size: 200%;
+    padding-bottom: 8px;
+    margin-left: auto;
+    padding-left: 20px;
+    [data-highlighted] > & {
+        color: white;
+    }
+    [data-disabled] & {
+        color: grey;
+    }
+}
+
+.item,
+.subTrigger {
+    font-size: 17px;
+    line-height: 1;
+    color: var(--scheme-text);
+    background-color: var(--scheme-background);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 5px;
+    position: relative;
+    padding-left: 10px;
+    padding-right: 10px;
+    user-select: none;
+    outline: none;
+    cursor: pointer;
+
+    &[data-disabled] {
+        color: grey;
+        pointer-events: 'none';
+        cursor: not-allowed;
+    }
+
+    &[data-highlighted] {
+        background-color: var(--scheme-interact);
+        color: white;
+    }
+}
+
+.subTrigger[data-state='open']:not([data-highlighted], [data-disabled]) {
+    background-color: var(--scheme-interact);
+    color: white;
+}
+
+.separator {
+    height: 1px;
+    background-color: grey;
+    margin: 5px;
+}
