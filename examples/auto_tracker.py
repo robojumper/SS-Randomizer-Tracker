@@ -1,3 +1,9 @@
+# /// script
+# dependencies = [
+#   "websockets",
+# ]
+# ///
+
 import asyncio
 import random
 import json
@@ -25,20 +31,15 @@ ITEMS = [
     ("Whip", 1),
 ]
 
+
 async def echo(websocket):
     print("connected")
     while True:
         try:
             counts = []
             for item, max in ITEMS:
-                counts.append({
-                    "item": item,
-                    "count": random.randint(0, max)
-                })
-            payload = {
-                "type": "item_counts",
-                "counts": counts
-            }
+                counts.append({"item": item, "count": random.randint(0, max)})
+            payload = {"type": "item_counts", "counts": counts}
             print("sent " + json.dumps(payload))
             await websocket.send(json.dumps(payload))
             await asyncio.sleep(0.5)
@@ -50,12 +51,10 @@ async def echo(websocket):
             print(e)
 
 
-
 async def main():
     async with serve(echo, "localhost", 9238):
         await asyncio.get_running_loop().create_future()  # run forever
 
-        
 
 if __name__ == "__main__":
     asyncio.run(main())
