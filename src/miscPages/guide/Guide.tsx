@@ -120,7 +120,8 @@ export default function Guide() {
                     Plenty of players do not use a tracker, or do not use every
                     feature of this tracker. However, experience has shown that
                     this tracker is great for first-time players, or players who
-                    try out unfamiliar settings.
+                    try out unfamiliar settings, and many of them will keep
+                    using it for all of the aforementioned benefits.
                 </Section>
                 <Heading level={2} id="your-first-seed">
                     Your First Seed
