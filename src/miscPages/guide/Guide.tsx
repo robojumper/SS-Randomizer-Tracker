@@ -1,5 +1,5 @@
+import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import DiscordButton from '../../additionalComponents/DiscordButton';
 import Tooltip, { FakeTooltip } from '../../additionalComponents/Tooltip';
 import CustomizationModal from '../../customization/CustomizationModal';
@@ -37,6 +37,9 @@ export default function Guide() {
                 <Heading level={2}>Table of Contents</Heading>
                 <Section>
                     <ul>
+                        <li>
+                            <a href="#why-use-tracker">Why use a Tracker?</a>
+                        </li>
                         <li>
                             <a href="#your-first-seed">Your First Seed</a>
                         </li>
@@ -79,6 +82,46 @@ export default function Guide() {
                             </li>
                         </ul>
                     </ul>
+                </Section>
+                <Heading level={2} id="why-use-tracker">
+                    Why use a Tracker?
+                </Heading>
+                <Section>
+                    A tracker allows you to, well, track everything that
+                    happened in your seed:
+                    <ul>
+                        <li>
+                            You can mark your collected <b>Items</b> so that you
+                            always have an overview over your current inventory.
+                        </li>
+                        <li>
+                            You can mark your collected <b>Checks</b> so that
+                            you never miss or double-check a location.
+                        </li>
+                        <li>
+                            The <b>Logic Integration</b> means the tracker will
+                            always show you exactly which checks are currently
+                            reachable, so that you can optimize your routing.
+                        </li>
+                        <li>
+                            The <b>Settings Integration</b> means the tracker
+                            will always show you only those things that are
+                            relevant in your current settings - nothing less,
+                            nothing more.
+                        </li>
+                        <li>
+                            Its advanced <b>Requirement Tooltips</b> can answer
+                            pretty much every question you could ever have about
+                            randomizer logic and the interactions between
+                            various settings, entrance randomizations, and so
+                            on.
+                        </li>
+                    </ul>
+                    Plenty of players do not use a tracker, or do not use every
+                    feature of this tracker. However, experience has shown that
+                    this tracker is great for first-time players, or players who
+                    try out unfamiliar settings, and many of them will keep
+                    using it for all of the aforementioned benefits.
                 </Section>
                 <Heading level={2} id="your-first-seed">
                     Your First Seed

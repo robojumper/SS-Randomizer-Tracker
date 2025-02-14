@@ -1,7 +1,12 @@
+import {
+    RouterProvider,
+    createRootRoute,
+    createRoute,
+    createRouter,
+} from '@tanstack/react-router';
 import { useLayoutEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useStore } from 'react-redux';
-import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import type { ColorScheme } from './customization/ColorScheme';
 import { colorSchemeSelector } from './customization/Selectors';
 import ErrorPage from './miscPages/ErrorPage';
@@ -10,6 +15,45 @@ import Guide from './miscPages/guide/Guide';
 import Options from './options/Options';
 import type { RootState } from './store/Store';
 import Tracker from './Tracker';
+
+const rootRoute = createRootRoute();
+
+const optionsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/',
+    component: Options,
+});
+
+const acknowledgementsRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: 'acknowledgement',
+    component: FullAcknowledgement,
+});
+
+const guideRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: 'guide',
+    component: Guide,
+});
+
+const trackerRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: 'tracker',
+    component: Tracker,
+});
+
+const routeTree = rootRoute.addChildren([
+    optionsRoute,
+    acknowledgementsRoute,
+    guideRoute,
+    trackerRoute,
+]);
+
+const router = createRouter({
+    routeTree,
+    scrollRestoration: true,
+    scrollRestorationBehavior: 'instant',
+});
 
 function createApplyColorSchemeListener() {
     let prevScheme: ColorScheme | undefined = undefined;
@@ -53,17 +97,7 @@ function App() {
 
     return (
         <ErrorBoundary FallbackComponent={ErrorPage}>
-            <Router basename={$PUBLIC_URL}>
-                <Routes>
-                    <Route path="/" element={<Options />} />
-                    <Route path="/tracker" element={<Tracker />} />
-                    <Route
-                        path="/acknowledgement"
-                        element={<FullAcknowledgement />}
-                    />
-                    <Route path="/guide" element={<Guide />} />
-                </Routes>
-            </Router>
+            <RouterProvider basepath={$PUBLIC_URL} router={router} />
         </ErrorBoundary>
     );
 }

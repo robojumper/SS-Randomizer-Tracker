@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import Contributor from '../additionalComponents/Contributor';
 import DiscordButton from '../additionalComponents/DiscordButton';
 import contributors from '../data/contributors.json';
