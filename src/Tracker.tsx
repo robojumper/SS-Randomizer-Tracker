@@ -1,6 +1,6 @@
+import { Link, Navigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link, Navigate } from 'react-router-dom';
 import CustomizationModal from './customization/CustomizationModal';
 import { hasCustomLayoutSelector } from './customization/Selectors';
 import { DragAndDropContext } from './dragAndDrop/DragAndDrop';

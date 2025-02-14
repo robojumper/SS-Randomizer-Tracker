@@ -1,3 +1,4 @@
+import { useNavigate } from '@tanstack/react-router';
 import clsx from 'clsx';
 import { range } from 'es-toolkit';
 import React, {
@@ -8,7 +9,6 @@ import React, {
     useRef,
     useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
 import semverSatisfies from 'semver/functions/satisfies';
 import { Checkbox } from '../additionalComponents/Checkbox';
 import DiscordButton from '../additionalComponents/DiscordButton';
@@ -163,7 +163,7 @@ export default function Options() {
             } else {
                 appDispatch(acceptSettings({ settings: settings! }));
             }
-            navigate('/tracker');
+            navigate({ to: '/tracker' });
         },
         [appDispatch, loaded, navigate, settings],
     );
