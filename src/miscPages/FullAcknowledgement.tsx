@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import Contributor from '../additionalComponents/Contributor';
-import DiscordButton from '../additionalComponents/DiscordButton';
+import { ExternalLinks } from '../additionalComponents/ExternalLinks';
 import contributors from '../data/contributors.json';
 import styles from './FullAcknowledgement.module.css';
 
@@ -55,20 +55,7 @@ export default function FullAcknowledgement() {
                     </div>
                 );
             })}
-            <div>
-                <span style={{ paddingRight: '1%' }}>
-                    <a href="https://github.com/robojumper/SS-Randomizer-Tracker/tree/new-logic-tracker">
-                        View the Source Code
-                        <i
-                            style={{ paddingLeft: '0.3%' }}
-                            className="fab fa-github"
-                        />
-                    </a>
-                </span>
-                <span>
-                    <DiscordButton />
-                </span>
-            </div>
+            <ExternalLinks />
         </div>
     );
 }

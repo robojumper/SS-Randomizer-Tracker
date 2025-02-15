@@ -99,22 +99,21 @@ export default function Guide() {
                             you never miss or double-check a location.
                         </li>
                         <li>
-                            The <b>Logic Integration</b> means the tracker will
+                            The <b>Logic Integration</b> allows the tracker to
                             always show you exactly which checks are currently
                             reachable, so that you can optimize your routing.
                         </li>
                         <li>
-                            The <b>Settings Integration</b> means the tracker
+                            With the <b>Settings Integration</b>, the tracker
                             will always show you only those things that are
-                            relevant in your current settings - nothing less,
+                            relevant in your current settings — nothing less,
                             nothing more.
                         </li>
                         <li>
                             Its advanced <b>Requirement Tooltips</b> can answer
                             pretty much every question you could ever have about
-                            randomizer logic and the interactions between
-                            various settings, entrance randomizations, and so
-                            on.
+                            randomizer logic and how it changes with settings
+                            and randomized entrances.
                         </li>
                     </ul>
                     Plenty of players do not use a tracker, or do not use every
@@ -260,7 +259,7 @@ export default function Guide() {
                     <p>
                         The <b>Track Tim</b> customization option adds Tim the
                         Tumbleweed, the tracker's mascot and the community's
-                        beloved junk item to the Item Tracker. This item never
+                        beloved junk item, to the Item Tracker. This item never
                         unlocks anything; the option is provided purely as fan
                         service.
                     </p>
@@ -470,10 +469,11 @@ export default function Guide() {
                         and drop an item to assign an imprecise item hint.
                     </p>
                     <p>
-                        <b>Location hints</b> (location X has item Y) can be
-                        assigned by right-clicking a location and choosing the
-                        item. Alternatively, you can drag and drop an item onto
-                        a location to mark the location as containing that item.
+                        <b>Location hints</b> and <b>precise item hints</b> can
+                        be assigned by right-clicking a location and choosing
+                        the item. Alternatively, you can drag and drop an item
+                        onto a location to mark the location as containing that
+                        item.
                     </p>
                     <p>
                         Dragging and item and dropping it onto the location you
@@ -528,16 +528,17 @@ export default function Guide() {
                     </ul>
                     <GuideTooltip requirements={semiLogicTooltip} />
                     <p>
-                        The customization option <b>Show Trick Logic</b> can
-                        mark locations with a green color (or another color if
-                        the color was customized). These locations are
-                        accessible with additional tricks beyond those enabled
-                        by the seed's settings. If no tricks are selected in the
-                        customization option, the tracker will consider all
-                        tricks it knows about. If tricks are selected, only the
-                        selected tricks will be considered. If a location
-                        requires both semi-logic assumptions and tricks, the
-                        location will be shown as accessible in trick logic.
+                        If you like going out of logic, <b>Show Trick Logic</b>{' '}
+                        can be enabled. Locations that are accessible with
+                        additional tricks beyond those enabled by the seed's
+                        settings will be shown in a green color (or another
+                        color if the color was customized). If no tricks are
+                        selected in the customization option, the tracker will
+                        consider all tricks it knows about. If tricks are
+                        selected, only the selected tricks will be considered.
+                        If a location requires both semi-logic assumptions and
+                        tricks, the location will be shown as accessible in
+                        trick logic.
                     </p>
                     <GuideTooltip requirements={trickLogicTooltip} />
                     <p>

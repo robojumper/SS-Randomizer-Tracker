@@ -8,7 +8,7 @@ export default function ImageLink({
     src: string;
 }) {
     return (
-        <a href={href}>
+        <a href={href} style={{ display: 'inline' }}>
             <img src={src} alt={alt} />
         </a>
     );

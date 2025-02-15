@@ -400,9 +400,9 @@ function LogicChooser({
                     />
                 </Tabs.Content>
                 <Tabs.Content value="raw">
-                    <span>
+                    <div>
                         Find cool beta features on the Discord <DiscordButton />
-                    </span>
+                    </div>
                     <PlaintextLogicInput
                         ref={inputRef}
                         selectedRemote={selectedRemote}
