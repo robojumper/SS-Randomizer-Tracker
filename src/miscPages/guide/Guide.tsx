@@ -81,6 +81,18 @@ export default function Guide() {
                                 </a>
                             </li>
                         </ul>
+                        <li>
+                            <a href="#frequently-asked-questions">
+                                Frequently Asked Questions
+                            </a>
+                        </li>
+                        <ul>
+                            <li>
+                                <a href="#sphere-tracking">
+                                    Is Sphere Tracking supported?
+                                </a>
+                            </li>
+                        </ul>
                     </ul>
                 </Section>
                 <Heading level={2} id="why-use-tracker">
@@ -546,6 +558,29 @@ export default function Guide() {
                         to choose whether only checks that are in logic should
                         be counted as accessible (default), or whether
                         semi-logic (and trick logic) checks should be included.
+                    </p>
+                </Section>
+                <Heading level={2} id="frequently-asked-questions">
+                    Frequently Asked Questions
+                </Heading>
+                <Heading level={3} id="sphere-tracking">
+                    Is Sphere Tracking supported?
+                </Heading>
+                <Section>
+                    <p>
+                        Some other randomizer trackers support Sphere Tracking:
+                        Everything you can collect from the start is Sphere 0,
+                        everything you can collect with those items is Sphere 1,
+                        and so on, and by telling a tracker where you found each
+                        item, a tracker can expose these sphere numbers.
+                        However, the Randomizer does not place its items in
+                        spheres, so showing sphere numbers would be misleading.
+                    </p>
+                    <p>
+                        This tracker's logic tooltips already expose precise
+                        requirements, and if you'd like to track where you found
+                        an item, <a href="#hint-tracking">Hint Tracking</a> can
+                        be used.
                     </p>
                 </Section>
             </div>
