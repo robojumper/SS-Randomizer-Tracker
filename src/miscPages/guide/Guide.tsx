@@ -92,6 +92,17 @@ export default function Guide() {
                                     Is Sphere Tracking supported?
                                 </a>
                             </li>
+                            <li>
+                                <a href="#how-to-access-location">
+                                    How do I get to location X?
+                                </a>
+                            </li>
+                            <li>
+                                <a href="#zero-locations-accessible">
+                                    I am out of locations to check, what do I
+                                    do?
+                                </a>
+                            </li>
                         </ul>
                     </ul>
                 </Section>
@@ -463,7 +474,7 @@ export default function Guide() {
                             target="_blank"
                             href="https://docs.google.com/document/d/197EDWKE3HWtx_uYhF44_Iv2xSzY2B9pjUtejvvbNRWs/view"
                         >
-                            Skyward Sword Randomizer Hints Guide
+                            Skyward Sword Randomizer Hint Guide
                         </a>
                         . This section covers how hints can be recorded in the
                         tracker.
@@ -581,6 +592,51 @@ export default function Guide() {
                         requirements, and if you'd like to track where you found
                         an item, <a href="#hint-tracking">Hint Tracking</a> can
                         be used.
+                    </p>
+                </Section>
+                <Heading level={3} id="how-to-access-location">
+                    How do I get to location X?
+                </Heading>
+                <Section>
+                    <p>
+                        Check the{' '}
+                        <a
+                            rel="noreferrer noopener"
+                            target="_blank"
+                            href="https://docs.google.com/document/d/1F8AmQccCvtblnRhw_kEAVTME_xX1-O_9Ln16TVDPx6w/view"
+                        >
+                            Skyward Sword Randomizer Location Guide
+                        </a>
+                        .
+                    </p>
+                </Section>
+                <Heading level={3} id="zero-locations-accessible">
+                    I am out of locations to check, what do I do?
+                </Heading>
+                <Section>
+                    <p>
+                        If the tracker says <b>0 Locations Accessible</b> and
+                        you are not yet able to beat the game, it may seem like
+                        you are stuck. Here are some things you can try:
+                        <ul>
+                            <li>
+                                Check if there are <b>Entrances Accessible</b>.
+                                Discovering the entrance to a given exit can
+                                make additional checks available.
+                            </li>
+                            <li>
+                                Check if there are <b>loose crystals</b> or{' '}
+                                <b>goddess cubes</b> to collect. The map layout
+                                makes these more obvious.
+                            </li>
+                            <li>
+                                You may have mis-tracked something. The
+                                Randomizer may have created a <b>Spoiler Log</b>{' '}
+                                that contains all item locations, so you can
+                                check that or let someone else <DiscordButton />{' '}
+                                check it for you.
+                            </li>
+                        </ul>
                     </p>
                 </Section>
             </div>
