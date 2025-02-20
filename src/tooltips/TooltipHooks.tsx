@@ -1,8 +1,8 @@
 import {
     type ReactNode,
     createContext,
+    use,
     useCallback,
-    useContext,
     useEffect,
     useMemo,
     useState,
@@ -85,7 +85,7 @@ export function useTooltipExpr(
     checkId: string,
     active = true,
 ): RootTooltipExpression | undefined {
-    const store = useContext(TooltipsContext);
+    const store = use(TooltipsContext);
     const logic = useSelector(logicSelector);
     const getRequirementLogicalState = useSelector(
         getRequirementLogicalStateSelector,
