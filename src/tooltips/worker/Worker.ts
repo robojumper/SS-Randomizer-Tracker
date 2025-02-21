@@ -145,8 +145,12 @@ function bottomUpTooltipPropagation(
     const { mapExits, logicalExits } = getSearchExits(logic, exitsMappings);
     const startMapping = mapExits['\\Start']!;
     exitsToTry.add(startMapping);
-    for (const event of logic.areas[''].events) {
-        eventsToTry.add(event);
+    for (const area of Object.values(logic.areas)) {
+        if (area.abstract) {
+            for (const event of area.events) {
+                eventsToTry.add(event);
+            }
+        }
     }
 
     function visitor(thing: UnifiedExit2 | EventAccess2) {

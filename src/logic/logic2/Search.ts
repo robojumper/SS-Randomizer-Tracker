@@ -64,7 +64,7 @@ export function search(
 
     function visitAreaForTheFirstTime(
         area: Area2,
-        tod: TTimeOfDay['DayOnly'] | TTimeOfDay['NightOnly'],
+        tod: TTimeOfDay[keyof TTimeOfDay],
     ) {
         for (const exit of area.exits) {
             const exitObj = mapExits[exit.id];
@@ -92,9 +92,12 @@ export function search(
         const nextEventsToTry = new Set<EventAccess2>();
         for (const event of eventsToTry) {
             const parentArea = event.parentArea;
+            if (newState.events.has(event.eventId)) {
+                continue;
+            }
             if (
-                !newState.events.has(event.eventId) &&
-                areaAtTod[parentArea] !== 0 &&
+                (logic.areas[parentArea].abstract ||
+                    areaAtTod[parentArea] !== 0) &&
                 evaluateRequirement(
                     newState,
                     logic.requirements[event.requirementsIdx],
@@ -155,7 +158,11 @@ export function search(
         exitsToTry = nextExitsToTry;
     }
 
-    visitAreaForTheFirstTime(logic.areas[''], TimeOfDay.DayOnly);
+    for (const area of Object.values(logic.areas)) {
+        if (area.abstract) {
+            visitAreaForTheFirstTime(area, TimeOfDay.Both);
+        }
+    }
 
     while (newThingsFound) {
         newThingsFound = false;
@@ -201,7 +208,7 @@ const walletCapacities = [300, 500, 1000, 5000, 9000];
 export function evaluateRequirement(
     state: SearchState2,
     requirement: Requirement2,
-    timeOfDay: TTimeOfDay[keyof TTimeOfDay],
+    timeOfDay: TTimeOfDay[keyof TTimeOfDay] | 0,
 ): boolean {
     switch (requirement.type) {
         case 'and':
