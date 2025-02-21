@@ -23,7 +23,8 @@ import {
     type HintRegion,
     isDungeon,
 } from '../logic/Locations';
-import { areasSelector, settingSelector } from '../tracker/Selectors';
+import { areasSelector } from '../tracker/Selectors';
+import { settingSelector } from '../tracker/SettingsSelector';
 import type { InterfaceAction } from '../tracker/TrackerInterfaceReducer';
 import styles from './DungeonTracker.module.css';
 import Item from './Item';

@@ -3,6 +3,7 @@
 
 import type { ExitMapping } from '../../logic/Locations';
 import type { Logic2 } from '../../logic/logic2/Logic';
+import type { RecursiveTooltipRequirement2 } from './BitIndex';
 
 /** The part of Logic that we can send across to a web worker, only the parts we need for tooltips. */
 export type LeanLogic = Pick<
@@ -22,15 +23,8 @@ export type WorkerRequest =
           checkId: string;
       };
 
-export type SerializedItem = string | SerializedBooleanExpression;
-
-export type SerializedBooleanExpression = {
-    type: 'and' | 'or';
-    items: SerializedItem[];
-};
-
 /** A message from the worker. */
 export type WorkerResponse = {
     checkId: string;
-    expression: SerializedBooleanExpression;
+    expression: RecursiveTooltipRequirement2;
 };

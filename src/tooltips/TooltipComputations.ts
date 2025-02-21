@@ -1,9 +1,8 @@
 import { pick } from 'es-toolkit';
-import BooleanExpression from '../logic/booleanlogic/BooleanExpression';
 import type { ExitMapping } from '../logic/Locations';
 import type { Logic2 } from '../logic/logic2/Logic';
+import type { RecursiveTooltipRequirement2 } from './worker/BitIndex';
 import type { WorkerRequest, WorkerResponse } from './worker/Types';
-import { deserializeBooleanExpression } from './worker/Utils';
 
 /**
  * The TooltipComputer acts as:
@@ -13,7 +12,7 @@ import { deserializeBooleanExpression } from './worker/Utils';
  */
 export class TooltipComputer {
     subscriptions: Set<{ checkId: string; callback: () => void }>;
-    results: Record<string, BooleanExpression>;
+    results: Record<string, RecursiveTooltipRequirement2>;
 
     isWorking: boolean;
     cleanup: () => void;
@@ -40,10 +39,7 @@ export class TooltipComputer {
             exits,
         } satisfies WorkerRequest);
         worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
-            this.acceptTaskResult(
-                ev.data.checkId,
-                deserializeBooleanExpression(ev.data.expression),
-            );
+            this.acceptTaskResult(ev.data.checkId, ev.data.expression);
             this.isWorking = false;
             this.checkForTask();
         };
@@ -70,7 +66,7 @@ export class TooltipComputer {
         return () => this.subscriptions.delete(entry);
     }
 
-    getSnapshot(checkId: string): BooleanExpression | undefined {
+    getSnapshot(checkId: string): RecursiveTooltipRequirement2 | undefined {
         return this.results[checkId];
     }
 
@@ -88,7 +84,7 @@ export class TooltipComputer {
         return undefined;
     }
 
-    acceptTaskResult(checkId: string, result: BooleanExpression) {
+    acceptTaskResult(checkId: string, result: RecursiveTooltipRequirement2) {
         this.results[checkId] = result;
         this.notify(checkId);
     }

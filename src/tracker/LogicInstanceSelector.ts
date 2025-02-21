@@ -1,12 +1,15 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { trickSemiLogicTrickListSelector } from '../customization/Selectors';
+import {
+    trickSemiLogicSelector,
+    trickSemiLogicTrickListSelector,
+} from '../customization/Selectors';
 import { dungeonNames } from '../logic/Locations';
 import { optionsSelector, preInstanceLogicSelector } from '../logic/Selectors';
 import { getVisibleTricks } from '../logic/SemiLogic';
 import type { Logic2 } from '../logic/logic2/Logic';
 import { instantiateRequirements } from '../logic/logic2/Requirement';
 import type { RootState } from '../store/Store';
-import { settingSelector, settingsSelector } from './Selectors';
+import { settingSelector, settingsSelector } from './SettingsSelector';
 
 const skyKeepRequiredSelector = (state: RootState) => {
     const settings = settingsSelector(state);
@@ -37,6 +40,7 @@ export const visibleTricksSelector = createSelector(
     [
         optionsSelector,
         settingsSelector,
+        trickSemiLogicSelector,
         trickSemiLogicTrickListSelector,
         requiredDungeonsSelector,
     ],

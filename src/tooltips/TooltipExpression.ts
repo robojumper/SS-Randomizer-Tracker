@@ -1,12 +1,12 @@
 import { last, sumBy } from 'es-toolkit';
 import prettyItemNames_ from '../data/prettyItemNames.json';
-import BooleanExpression, {
-    type Item,
-    type Op,
-} from '../logic/booleanlogic/BooleanExpression';
 import type { LogicalState } from '../logic/Locations';
 import type { Logic2 } from '../logic/logic2/Logic';
 import { chainComparators, compareBy } from '../utils/Compare';
+import type {
+    RecursiveTooltipRequirement2,
+    TooltipRequirement2,
+} from './worker/BitIndex';
 
 const prettyItemNames: Record<
     string,
@@ -22,7 +22,7 @@ export interface TerminalRequirement {
 export interface NonterminalRequirement {
     type: 'expr';
     items: TooltipExpression[];
-    op: Op;
+    op: 'and' | 'or';
 }
 
 export type TooltipExpression = TerminalRequirement | NonterminalRequirement;
@@ -78,11 +78,13 @@ function getName(item: TooltipExpression): string {
 
 function booleanExprToTooltipExprRecursive(
     logic: Logic2,
-    expr: BooleanExpression,
-    getRequirementLogicalState: (requirement: string) => LogicalState,
+    expr: RecursiveTooltipRequirement2,
+    getRequirementLogicalState: (
+        requirement: TooltipRequirement2,
+    ) => LogicalState,
 ): NonterminalRequirement {
-    const mapItem = (item: Item): TooltipExpression => {
-        if (BooleanExpression.isExpression(item)) {
+    const mapItem = (item: RecursiveTooltipRequirement2): TooltipExpression => {
+        if (item.type === 'and' || item.type === 'or') {
             return booleanExprToTooltipExprRecursive(
                 logic,
                 item,
@@ -91,12 +93,15 @@ function booleanExprToTooltipExprRecursive(
         } else {
             return {
                 type: 'item',
-                item: getReadableItemName(logic, item),
+                item: getReadableItemName(item),
                 logicalState: getRequirementLogicalState(item),
             };
         }
     };
-    const items = expr.items
+    if (expr.type !== 'and' && expr.type !== 'or') {
+        throw new Error('expected top level tooltips expr to be and/or');
+    }
+    const items = expr.terms
         .map(mapItem)
         .sort(chainComparators(compareBy(getLength), compareBy(getName)));
     return {
@@ -108,8 +113,10 @@ function booleanExprToTooltipExprRecursive(
 
 export function booleanExprToTooltipExpr(
     logic: Logic2,
-    expr: BooleanExpression,
-    getRequirementLogicalState: (requirement: string) => LogicalState,
+    expr: RecursiveTooltipRequirement2,
+    getRequirementLogicalState: (
+        requirement: TooltipRequirement2,
+    ) => LogicalState,
 ): RootTooltipExpression {
     const ntExpr = booleanExprToTooltipExprRecursive(
         logic,
@@ -136,28 +143,21 @@ export function booleanExprToTooltipExpr(
     }
 }
 
-const itemCountPat = /^(.+) x (\d+)$/;
-
-function getReadableItemName(logic: Logic2, item: string) {
-    if (item in prettyItemNames) {
-        return prettyItemNames[item][1];
-    }
-
-    const match = item.match(itemCountPat);
-    if (match) {
-        const [, baseName, count] = match;
-        if (baseName in prettyItemNames) {
-            const pretty = prettyItemNames[baseName][parseInt(count, 10)];
-            if (pretty) {
-                return pretty;
+function getReadableItemName(item: TooltipRequirement2): string {
+    switch (item.type) {
+        case 'item':
+            if (item.name in prettyItemNames) {
+                return prettyItemNames[item.name][item.count];
             }
-        }
+            // TODO?
+            return item.name;
+        case 'rupeeCapacity':
+            return `Wallet Capacity >= ${item.amount}`;
+        case 'gratitudeCrystals':
+            return `${item.amount} Gratitude Crystals`;
+        case 'trick':
+            return item.name;
+        case 'auxItem':
+            return last(item.name.split('\\'))!;
     }
-
-    const check = logic.locations[item];
-    if (check) {
-        return check.name;
-    }
-
-    return last(item.split('\\'))!;
 }

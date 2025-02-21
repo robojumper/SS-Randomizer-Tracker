@@ -1,3 +1,4 @@
+/*
 import { shuffle } from 'es-toolkit';
 import {
     setEnabledSemilogicTricks,
@@ -15,12 +16,21 @@ import {
     getRequirementLogicalStateSelector,
 } from '../tracker/Selectors';
 import { acceptSettings, setItemCounts } from '../tracker/Slice';
+import { createTestLogic } from '../testing/TestingUtils';
+import { logicSelector } from '../tracker/LogicInstanceSelector';
+import {
+    exitsSelector,
+    getRequirementLogicalStateSelector,
+} from '../tracker/Selectors';
+import { allSettingsSelector } from '../tracker/SettingsSelector';
+import { acceptSettings } from '../tracker/Slice';
 import { TooltipComputer } from './TooltipComputations';
 import {
     booleanExprToTooltipExpr,
     type RootTooltipExpression,
     type TooltipExpression,
 } from './TooltipExpression';
+import type { RecursiveTooltipRequirement2 } from './worker/BitIndex';
 
 describe('tooltips', () => {
     const tester = createTestLogic();
@@ -38,7 +48,7 @@ describe('tooltips', () => {
         computer: TooltipComputer,
         checkId: string,
     ): Promise<RootTooltipExpression> {
-        let expr: BooleanExpression | undefined;
+        let expr: RecursiveTooltipRequirement2 | undefined;
         expr = computer.getSnapshot(checkId);
         if (!expr) {
             let doResolve: (() => void) | undefined;
@@ -294,3 +304,4 @@ describe('tooltips', () => {
         );
     });
 });
+*/

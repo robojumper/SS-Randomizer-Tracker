@@ -31,7 +31,6 @@ export interface RawEntrance {
 
 export interface RawExit {
     type: 'exit';
-    allowed_time_of_day: TimeOfDayInt;
     vanilla: string | undefined;
     stage: string | undefined;
     short_name: string;

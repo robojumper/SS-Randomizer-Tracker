@@ -1,7 +1,7 @@
 import type { TypedOptions } from '../../permalink/SettingsTypes';
 import type { AppAction, RootState } from '../../store/Store';
 import { createTestLogic } from '../../testing/TestingUtils';
-import { allSettingsSelector } from '../../tracker/Selectors';
+import { allSettingsSelector } from '../../tracker/SettingsSelector';
 import { acceptSettings, mapEntrance } from '../../tracker/Slice';
 import { getOwningProvince } from './MapModel';
 import { mapModelSelector } from './Selectors';

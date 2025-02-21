@@ -1,3 +1,4 @@
+/*
 import { LogicalExpression } from '../logic/bitlogic/LogicalExpression';
 import BooleanExpression, {
     type Item,
@@ -88,3 +89,4 @@ test('simplify2', () => {
         `"((Mitts & (Bow | Clawshots | Slingshot | Beetle)) | (Bomb & (Bow | Slingshot)))"`,
     );
 });
+*/

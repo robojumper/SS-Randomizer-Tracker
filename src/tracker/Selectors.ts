@@ -22,8 +22,8 @@ import {
     isDungeon,
     type LogicalState,
 } from '../logic/Locations';
+import { TimeOfDay } from '../logic/Mappers';
 import { getAdditionalItems } from '../logic/Misc';
-import { optionsSelector } from '../logic/Selectors';
 import { computeSemiLogic } from '../logic/SemiLogic';
 import { doesHintDistroUseGossipStone } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
@@ -33,13 +33,13 @@ import {
 } from '../logic/TrackerModifications';
 import type { Location2 } from '../logic/logic2/Location';
 import {
+    evaluateRequirement,
     getInitialSearchState,
     search,
     type SearchState2,
 } from '../logic/logic2/Search';
-import { validateSettings } from '../permalink/Settings';
-import type { TypedOptions } from '../permalink/SettingsTypes';
 import type { RootState } from '../store/Store';
+import type { TooltipRequirement2 } from '../tooltips/worker/BitIndex';
 import { emptyArray, mapValues } from '../utils/Collections';
 import { stubTrue } from '../utils/Function';
 import { currySelector } from '../utils/Redux';
@@ -47,6 +47,7 @@ import {
     logicSelector,
     requiredDungeonsSelector,
 } from './LogicInstanceSelector';
+import { settingSelector, settingsSelector } from './SettingsSelector';
 
 const parsedHintsSelector = createSelector(
     [(state: RootState) => state.tracker.userHintsText, logicSelector],
@@ -104,33 +105,6 @@ export const checkHintSelector = currySelector(
     (state: RootState, checkId: string) => state.tracker.checkHints[checkId],
 );
 
-/**
- * Selects ALL settings, even the ones not logically relevant.
- */
-export const allSettingsSelector = createSelector(
-    [optionsSelector, (state: RootState) => state.tracker.settings],
-    validateSettings,
-);
-
-/**
- * Selects the current logical settings. This is basically the same
- * thing but differently typed to only provide the subset of logically relevant settings.
- */
-export const settingsSelector: (state: RootState) => TypedOptions =
-    allSettingsSelector;
-
-/**
- * Selects a particular logical settings value.
- */
-export const settingSelector: <K extends keyof TypedOptions>(
-    setting: K,
-) => (state: RootState) => TypedOptions[K] = currySelector(
-    <K extends keyof TypedOptions>(
-        state: RootState,
-        setting: K,
-    ): TypedOptions[K] => settingsSelector(state)[setting],
-);
-
 const rawItemCountsSelector = (state: RootState) => state.tracker.inventory;
 
 /** A map of all actual items to their counts. Since redux only stores partial counts, this ensures all items are present. */
@@ -160,7 +134,7 @@ const checkItemsSelector = createSelector(
 export const totalGratitudeCrystalsSelector = createSelector(
     [checkItemsSelector, rawItemCountSelector('Gratitude Crystal Pack')],
     (checkItems, packCount) => {
-        return packCount * 5 + checkItems['Gratitude Crystal'];
+        return packCount * 5 + (checkItems['Gratitude Crystal'] ?? 0);
     },
 );
 
@@ -393,6 +367,7 @@ export const locationsForItemSelector = currySelector(
 const semiLogicSearchSelector = createSelector(
     [
         logicSelector,
+        exitsSelector,
         isCheckBannedSelector,
         checkedChecksSelector,
         inLogicSearchSelector,
@@ -404,12 +379,55 @@ const semiLogicSearchSelector = createSelector(
 );
 
 export const getRequirementLogicalStateSelector = createSelector(
-    [logicSelector, inLogicSearchSelector, semiLogicSearchSelector],
-    (_logic, _inLogicBits, _semiLogicBits) =>
-        (_requirement: string): LogicalState => {
-            // TODO: Probably need to change the interface to
-            // be able to figure out what a given requirement is
-            return 'trickLogic';
+    [inLogicSearchSelector, semiLogicSearchSelector],
+    (inLogicState, semiLogicState) =>
+        (requirement: TooltipRequirement2): LogicalState => {
+            const checkWith = (state: SearchState2): boolean =>
+                evaluateRequirement(state, requirement, TimeOfDay.Both);
+
+            return checkWith(inLogicState)
+                ? 'inLogic'
+                : checkWith(semiLogicState.semiLogicSearchState)
+                  ? 'semiLogic'
+                  : checkWith(semiLogicState.trickLogicSearchState)
+                    ? 'trickLogic'
+                    : 'outLogic';
+        },
+);
+
+export const getLocationLogicalStateSelector = createSelector(
+    [inLogicSearchSelector, semiLogicSearchSelector],
+    (inLogicState, semiLogicState) =>
+        (location: string): LogicalState => {
+            return inLogicState.reachableChecks.has(location)
+                ? 'inLogic'
+                : semiLogicState.semiLogicSearchState.reachableChecks.has(
+                        location,
+                    )
+                  ? 'semiLogic'
+                  : semiLogicState.trickLogicSearchState.reachableChecks.has(
+                          location,
+                      )
+                    ? 'trickLogic'
+                    : 'outLogic';
+        },
+);
+
+export const getExitLogicalStateSelector = createSelector(
+    [inLogicSearchSelector, semiLogicSearchSelector],
+    (inLogicState, semiLogicState) =>
+        (location: string): LogicalState => {
+            return inLogicState.reachableExits.has(location)
+                ? 'inLogic'
+                : semiLogicState.semiLogicSearchState.reachableExits.has(
+                        location,
+                    )
+                  ? 'semiLogic'
+                  : semiLogicState.trickLogicSearchState.reachableExits.has(
+                          location,
+                      )
+                    ? 'trickLogic'
+                    : 'outLogic';
         },
 );
 
@@ -429,18 +447,18 @@ export const checkSelector = currySelector(
         [
             (_state: RootState, checkId: string) => checkId,
             logicSelector,
-            getRequirementLogicalStateSelector,
+            getLocationLogicalStateSelector,
             checkedChecksSelector,
             mappedExitsSelector,
         ],
         (
             checkId,
             logic,
-            getRequirementLogicalState,
+            getLocationLogicalState,
             checkedChecks,
             mappedExits,
         ): Check => {
-            const logicalState = getRequirementLogicalState(checkId);
+            const logicalState = getLocationLogicalState(checkId);
 
             if (logic.locations[checkId]) {
                 const checkName = logic.locations[checkId].name;
@@ -477,7 +495,8 @@ export const areasSelector = createSelector(
         checkedChecksSelector,
         exitsSelector,
         isCheckBannedSelector,
-        getRequirementLogicalStateSelector,
+        getLocationLogicalStateSelector,
+        getExitLogicalStateSelector,
         areaNonprogressSelector,
         areaHiddenSelector,
         counterBasisSelector,
@@ -487,7 +506,8 @@ export const areasSelector = createSelector(
         checkedChecks,
         allExits,
         isCheckBanned,
-        getLogicalState,
+        getLocationLogicalState,
+        getExitLogicalState,
         isAreaNonprogress,
         isAreaHidden,
         counterBasis,
@@ -529,7 +549,7 @@ export const areasSelector = createSelector(
                             (c) => !checkedChecks.has(c),
                         );
                         const accessible = remaining.filter((c) =>
-                            shouldCount(getLogicalState(c)),
+                            shouldCount(getLocationLogicalState(c)),
                         );
                         return {
                             // Intentionally include banned but shown checks in the list
@@ -573,7 +593,7 @@ export const areasSelector = createSelector(
                         return (
                             exitMapping.rule.type === 'random' &&
                             !exitMapping.rule.isKnownIrrelevant &&
-                            shouldCount(getLogicalState(e))
+                            shouldCount(getExitLogicalState(e))
                         );
                     });
 

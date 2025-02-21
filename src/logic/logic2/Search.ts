@@ -1,8 +1,8 @@
-import { keyBy } from 'es-toolkit';
 import type { InventoryItem } from '../Inventory';
 import type { ExitMapping } from '../Locations';
 import { TimeOfDay, type TTimeOfDay } from '../Mappers';
 import type { Area2 } from './Area';
+import { getSearchExits, type UnifiedExit2 } from './Entrance';
 import type { EventAccess2, LocationAccess2 } from './Location';
 import type { Logic2 } from './Logic';
 import type { Requirement2 } from './Requirement';
@@ -42,17 +42,6 @@ export function getInitialSearchState(
     };
 }
 
-/**
- * Unifying map exits and logical exits for purposes of search
- */
-interface UnifiedExit2 {
-    type: 'mapExit' | 'logicalExit';
-    parentArea: Area2;
-    connectedArea: Area2;
-    requirement: Requirement2;
-    validTod: TTimeOfDay[keyof TTimeOfDay];
-}
-
 export function search(
     logic: Logic2<Requirement2>,
     exitsMappings: ExitMapping[],
@@ -65,32 +54,11 @@ export function search(
         areaAtTod[area] = 0;
     }
 
-    const connections = keyBy(exitsMappings, (mapping) => mapping.exit.id);
-
     let eventsToTry = new Set<EventAccess2>();
     const locationsToTryLast = new Set<LocationAccess2>();
 
-    const mapExits: Record<string, UnifiedExit2 | undefined> = {};
-    for (const [exitId, exit] of Object.entries(logic.exits)) {
-        const connectedEntranceId = connections[exitId].entrance?.id;
-        if (connectedEntranceId) {
-            const entrance = logic.entrances[connectedEntranceId];
-            const sourceArea = logic.areas[exit.parentArea];
-            const destArea = logic.areas[entrance.parentArea];
-            const validTod = (exit.allowedTimeOfDay &
-                entrance.allowedTimeOfDay &
-                sourceArea.allowedTimeOfDay &
-                destArea.allowedTimeOfDay) as TTimeOfDay[keyof TTimeOfDay];
-            mapExits[exitId] = {
-                connectedArea: destArea,
-                parentArea: sourceArea,
-                requirement: logic.requirements[exit.requirementsIdx],
-                type: 'mapExit',
-                validTod,
-            };
-        }
-    }
-    let exitsToTry = new Set<UnifiedExit2>([mapExits['\\Start']!]);
+    const { mapExits, logicalExits } = getSearchExits(logic, exitsMappings);
+    let exitsToTry = new Set<UnifiedExit2>();
 
     const newState = cloneSearchState(initialState);
 
@@ -104,18 +72,8 @@ export function search(
                 exitsToTry.add(exitObj);
             }
         }
-
-        for (const exit of area.logicalExits) {
-            const destArea = logic.areas[exit.connectedArea];
-
-            exitsToTry.add({
-                type: 'logicalExit',
-                connectedArea: destArea,
-                parentArea: area,
-                requirement: logic.requirements[exit.requirementsIdx],
-                validTod: (area.allowedTimeOfDay &
-                    destArea.allowedTimeOfDay) as TTimeOfDay[keyof TTimeOfDay],
-            });
+        for (const exit of logicalExits[area.id]) {
+            exitsToTry.add(exit);
         }
         for (const event of area.events) {
             eventsToTry.add(event);
@@ -124,6 +82,9 @@ export function search(
             locationsToTryLast.add(location);
         }
         areaAtTod[area.id] = tod;
+        if (area.canSleep) {
+            areaAtTod[area.id] = TimeOfDay.Both;
+        }
         newThingsFound = true;
     }
 
@@ -165,6 +126,8 @@ export function search(
                 if (evaluateRequirement(newState, exit.requirement, tod)) {
                     if (areaAtTod[exit.connectedArea.id] === 0) {
                         visitAreaForTheFirstTime(exit.connectedArea, tod);
+                    } else {
+                        areaAtTod[exit.connectedArea.id] |= tod;
                     }
                 }
             }
@@ -192,6 +155,8 @@ export function search(
         exitsToTry = nextExitsToTry;
     }
 
+    visitAreaForTheFirstTime(logic.areas[''], TimeOfDay.DayOnly);
+
     while (newThingsFound) {
         newThingsFound = false;
         tryExits();
@@ -213,12 +178,27 @@ export function search(
         }
     }
 
+    for (const exit of Object.values(logic.exits)) {
+        const parentArea = exit.parentArea;
+        if (
+            !newState.reachableExits.has(exit.id) &&
+            areaAtTod[parentArea] !== 0 &&
+            evaluateRequirement(
+                newState,
+                logic.requirements[exit.requirementsIdx],
+                areaAtTod[parentArea],
+            )
+        ) {
+            newState.reachableExits.add(exit.id);
+        }
+    }
+
     return newState;
 }
 
 const walletCapacities = [300, 500, 1000, 5000, 9000];
 
-function evaluateRequirement(
+export function evaluateRequirement(
     state: SearchState2,
     requirement: Requirement2,
     timeOfDay: TTimeOfDay[keyof TTimeOfDay],

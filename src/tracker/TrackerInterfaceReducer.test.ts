@@ -1,6 +1,6 @@
 import { act } from '@testing-library/react';
 import { createTestLogic } from '../testing/TestingUtils';
-import { allSettingsSelector } from './Selectors';
+import { allSettingsSelector } from './SettingsSelector';
 import { acceptSettings } from './Slice';
 import { useTrackerInterfaceReducer } from './TrackerInterfaceReducer';
 

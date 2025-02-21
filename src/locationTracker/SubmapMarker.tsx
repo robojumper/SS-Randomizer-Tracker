@@ -9,8 +9,8 @@ import {
     areasSelector,
     checkSelector,
     exitsByIdSelector,
-    settingSelector,
 } from '../tracker/Selectors';
+import { settingSelector } from '../tracker/SettingsSelector';
 import HintDescription from './HintsDescription';
 import type { MapHintRegion } from './mapTracker/MapModel';
 import {

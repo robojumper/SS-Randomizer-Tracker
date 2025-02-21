@@ -13,7 +13,7 @@ import type { ExitMapping } from '../logic/Locations';
 import type { TrackerLinkedEntrancePool } from '../logic/Logic';
 import { useAppDispatch } from '../store/Store';
 import { checkOrUncheckAll } from '../tracker/Actions';
-import { settingSelector } from '../tracker/Selectors';
+import { settingSelector } from '../tracker/SettingsSelector';
 import { setHint } from '../tracker/Slice';
 import type { InterfaceAction } from '../tracker/TrackerInterfaceReducer';
 import { HintIcon, HintItem } from './LocationContextMenu';

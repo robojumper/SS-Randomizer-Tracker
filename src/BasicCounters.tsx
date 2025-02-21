@@ -5,7 +5,7 @@ import { counterBasisSelector } from './customization/Selectors';
 import type { ExitMapping, LogicalState } from './logic/Locations';
 import {
     exitsSelector,
-    getRequirementLogicalStateSelector,
+    getExitLogicalStateSelector,
     totalCountersSelector,
 } from './tracker/Selectors';
 
@@ -13,7 +13,7 @@ export default function BasicCounters() {
     const state = useSelector(totalCountersSelector);
 
     const exits = useSelector(exitsSelector);
-    const getLogicalState = useSelector(getRequirementLogicalStateSelector);
+    const getLogicalState = useSelector(getExitLogicalStateSelector);
     const counterBasis = useSelector(counterBasisSelector);
     const shouldCount = (state: LogicalState) =>
         counterBasis === 'logic' ? state === 'inLogic' : state !== 'outLogic';

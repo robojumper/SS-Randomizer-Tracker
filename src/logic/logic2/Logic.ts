@@ -1,11 +1,13 @@
 import { groupBy, invert, last } from 'es-toolkit';
 import { isEmpty } from '../../utils/Collections';
-import { appWarn } from '../../utils/Debug';
+import { chainComparators, compareBy } from '../../utils/Compare';
+import { appDebug, appWarn } from '../../utils/Debug';
 import {
     booleanExprToRequirementExpr,
     parseExpression,
 } from '../booleanlogic/ExpressionParse';
 import { isItem } from '../Inventory';
+import { dungeonNames } from '../Locations';
 import type { EntranceLinkage } from '../Logic';
 import { TimeOfDay } from '../Mappers';
 import {
@@ -144,7 +146,6 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
             name: exit.short_name,
             requirementsIdx: requirementsIdx++,
             vanillaConnection: exit.vanilla,
-            allowedTimeOfDay: exit.allowed_time_of_day,
             excludedFromFullEr:
                 exit.stage === undefined ||
                 exit.vanilla === undefined ||
@@ -198,7 +199,10 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
         if (rawArea.abstract && rawArea.can_sleep) {
             throw new Error(`cannot sleep in ${rawArea.name}`);
         }
-        if (rawArea.allowed_time_of_day !== TimeOfDay.Both) {
+        if (
+            rawArea.allowed_time_of_day !== TimeOfDay.Both &&
+            rawArea.can_sleep
+        ) {
             throw new Error(`cannot sleep in ${rawArea.name}`);
         }
 
@@ -237,7 +241,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     // cannot be banned. Again something the rando should enforce...
                     appWarn(
                         'check location',
-                        raw.checks[item].short_name,
+                        locations[item].name,
                         'is mentioned by a requirement, which makes it unbannable',
                     );
                     const fakeAuxItem = `FAKE_ITEM_FIX_THE_DATA-${item}`;
@@ -259,7 +263,16 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                 if (item === 'Night') {
                     return { type: 'timeOfDay', tod: TimeOfDay.NightOnly };
                 }
-                const [inventoryItem, count] = splitItemIndex(item);
+
+                if (item === '\\Song of the Hero') {
+                    return { type: 'item', name: 'Song of the Hero', count: 3 };
+                }
+
+                if (item === '\\Complete Triforce') {
+                    return { type: 'item', name: 'Triforce', count: 3 };
+                }
+
+                const [inventoryItem, count] = splitItemCount(item);
                 if (isItem(inventoryItem)) {
                     return {
                         type: 'item',
@@ -280,11 +293,19 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                 }
 
                 // If an expression looks at "goddess cube in X", require the actual item instead.
-                const goddessCubeItem = cubeCheckToCubeCollected[item] ?? item;
+                const goddessCubeItem = cubeCheckToCubeCollected[item];
                 if (goddessCubeItem) {
                     return { type: 'auxItem', name: inventoryItem };
                 }
 
+                if (/\\[0-9]+ Gratitude Crystals/.exec(item)) {
+                    return {
+                        type: 'gratitudeCrystals',
+                        amount: parseInt(item.split(' ')[0].slice(1), 10),
+                    };
+                }
+
+                appDebug('event:', item);
                 return { type: 'event', id: item };
             },
         );
@@ -347,6 +368,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     requirements[requirementsIdx] = expr;
                     area.logicalExits.push({
                         connectedArea: destArea.id,
+                        parentArea: area.id,
                         requirementsIdx: requirementsIdx++,
                     });
                 } else if (exits[fullExitName]) {
@@ -362,7 +384,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                         );
                     }
 
-                    if (area.abstract) {
+                    if (!area.abstract) {
                         const region = getHintRegion(fullExitName);
                         (hintRegionData.exitsByHintRegion[region] ??= []).push(
                             fullExitName,
@@ -382,6 +404,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
 
                 const entranceId = `${rawArea.name}\\${entrance}`;
                 const entranceDef = raw.entrances[entranceId];
+                entrances[entranceId].parentArea = area.id;
 
                 // Are both of these needed???
                 entrancesByShortName[entranceDef.short_name] = {
@@ -425,12 +448,6 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                             locationId,
                         );
                         hintRegionData.checkHintRegions[locationId] = region;
-                        /*
-                        const region = getHintRegion(locationId);
-                        if (check.type === 'tr_cube') {
-                            check.name = `${region} - ${check.name}`;
-                        }
-                        */
                     }
                 }
 
@@ -529,14 +546,37 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
     }
 
     const arrRequirements: FullRequirement2[] = [];
-    for (let i = 0; i < arrRequirements.length; i++) {
+    for (let i = 0; i < requirementsIdx; i++) {
         if (requirements[i] === undefined) {
             throw new Error('hole in requirements');
         }
         arrRequirements.push(requirements[i]);
     }
 
-    hintRegionData.hintRegions = Object.keys(hintRegionData.checksByHintRegion);
+    const rawCheckOrder = Object.keys(raw.checks);
+    for (const region of Object.keys(hintRegionData.checksByHintRegion)) {
+        hintRegionData.checksByHintRegion[region].sort(
+            compareBy((check) => {
+                const idx = rawCheckOrder.indexOf(check);
+                return idx !== -1 ? idx : Number.MAX_SAFE_INTEGER;
+            }),
+        );
+    }
+
+    const hintRegions = Object.keys(hintRegionData.checksByHintRegion);
+    const dungeonOrder: readonly string[] = dungeonNames;
+    hintRegions.sort(
+        chainComparators(
+            compareBy((area) => dungeonOrder.indexOf(area)),
+            compareBy((area) =>
+                rawCheckOrder.indexOf(
+                    hintRegionData.checksByHintRegion[area][0],
+                ),
+            ),
+        ),
+    );
+
+    hintRegionData.hintRegions = hintRegions;
 
     return {
         areas,
@@ -561,6 +601,19 @@ function splitItemIndex(
     item: string,
 ): [item: string, index: number | undefined] {
     const match = item.match(itemIndexPat);
+    if (!match) {
+        return [item, undefined];
+    } else {
+        return [match[1], parseInt(match[2], 10)];
+    }
+}
+
+const itemCountPat = /^(.+) x (\d+)$/;
+
+function splitItemCount(
+    item: string,
+): [item: string, index: number | undefined] {
+    const match = item.match(itemCountPat);
     if (!match) {
         return [item, undefined];
     } else {

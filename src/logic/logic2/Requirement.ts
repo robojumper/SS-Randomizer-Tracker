@@ -4,10 +4,15 @@ import type { DungeonName } from '../Locations';
 import type { TTimeOfDay } from '../Mappers';
 import { runtimeOptions } from '../ThingsThatWouldBeNiceToHaveInTheDump';
 
+export type RecursiveRequirement2<R> =
+    | { type: 'and'; terms: RecursiveRequirement2<R>[] }
+    | { type: 'or'; terms: RecursiveRequirement2<R>[] }
+    | R;
+
+export type Requirement2 = RecursiveRequirement2<SimpleRequirement2>;
+
 /** Basic requirements as they appear in the logic dump */
-export type Requirement2<R = never> =
-    | { type: 'and'; terms: (Requirement2<R> | R)[] }
-    | { type: 'or'; terms: (Requirement2<R> | R)[] }
+export type SimpleRequirement2 =
     | { type: 'item'; name: InventoryItem; count: number }
     | { type: 'event'; id: string }
     | {
@@ -27,8 +32,7 @@ export type Requirement2<R = never> =
     | {
           type: 'trick';
           name: string;
-      }
-    | R;
+      };
 
 type PreInstanceRequirement2 =
     | {
@@ -41,7 +45,9 @@ type PreInstanceRequirement2 =
       };
 
 /** Requirements after instantiating settings and required dungeons */
-export type FullRequirement2 = Requirement2<PreInstanceRequirement2>;
+export type FullRequirement2 = RecursiveRequirement2<
+    SimpleRequirement2 | PreInstanceRequirement2
+>;
 
 function instantiateRequirement(
     requirement: FullRequirement2,

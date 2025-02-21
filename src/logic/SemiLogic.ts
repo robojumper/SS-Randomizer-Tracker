@@ -1,16 +1,19 @@
 import type { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { isItem, itemMaxes } from './Inventory';
 import { type PotentialLocations, getSemiLogicKeys } from './KeyLogic';
+import type { ExitMapping } from './Locations';
 import { type Logic, isRegularItemCheck } from './Logic';
 import { LogicBuilder } from './LogicBuilder';
 import { type Requirements } from './bitlogic/BitLogic';
 import type { Logic2 } from './logic2/Logic';
-import { type SearchState2, cloneSearchState } from './logic2/Search';
+import { type SearchState2, cloneSearchState, search } from './logic2/Search';
 
 export interface SemiLogicState {
     state: SearchState2;
     assumedChecks: Set<string>;
 }
+
+// TODO: tricks that are enabled by settings can still be shown!!!
 
 /**
  * Requirements that assume every considered trick is enabled. Enables
@@ -19,9 +22,14 @@ export interface SemiLogicState {
 export function getVisibleTricks(
     options: OptionDefs,
     settings: TypedOptions,
+    expertMode: boolean,
     consideredTricks: Set<string>,
 ): Set<string> {
     const result = new Set<string>();
+
+    if (!expertMode) {
+        return result;
+    }
 
     for (const option of options) {
         if (
@@ -82,6 +90,7 @@ export function getVisibleTricksEnabledRequirements(
 
 export function computeSemiLogic(
     logic: Logic2,
+    exits: ExitMapping[],
     isCheckBanned: (checkId: string) => boolean,
     checkedChecks: Set<string>,
     inLogicSearchState: SearchState2,
@@ -97,6 +106,7 @@ export function computeSemiLogic(
     while (
         semiLogicStep(
             logic,
+            exits,
             isCheckBanned,
             dungeonKeyLogic,
             semiLogicState,
@@ -122,6 +132,7 @@ export function computeSemiLogic(
     while (
         semiLogicStep(
             logic,
+            exits,
             isCheckBanned,
             dungeonKeyLogic,
             semiLogicState,
@@ -139,6 +150,7 @@ export function computeSemiLogic(
 
 function semiLogicStep(
     logic: Logic2,
+    exits: ExitMapping[],
     isCheckBanned: (checkId: string) => boolean,
     dungeonKeyLogic: PotentialLocations[],
     state: SemiLogicState,
@@ -162,10 +174,8 @@ function semiLogicStep(
             if (
                 isRegularItemCheck(logic.locations[checkId].type) &&
                 hintedItem !== undefined &&
-                isItem(hintedItem) &&
-                !state.assumedChecks.has(checkId)
+                isItem(hintedItem)
             ) {
-                state.assumedChecks.add(checkId);
                 state.state.inventory[hintedItem] = Math.min(
                     itemMaxes[hintedItem],
                     state.state.inventory[hintedItem] + 1,
@@ -182,6 +192,10 @@ function semiLogicStep(
         state.assumedChecks,
     );
     changed ||= hasNewKeys;
+
+    if (changed) {
+        state.state = search(logic, exits, state.state);
+    }
 
     return changed;
 }

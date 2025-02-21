@@ -4,6 +4,7 @@ import type { EventAccess2, LocationAccess2 } from './Location';
 
 /** Simply connects regions */
 export interface LogicalExit2 {
+    parentArea: string;
     connectedArea: string;
     requirementsIdx: number;
 }

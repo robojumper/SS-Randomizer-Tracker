@@ -12,13 +12,13 @@ import { createTestLogic } from './testing/TestingUtils';
 import { checkOrUncheckAll, clickCheck } from './tracker/Actions';
 import { logicSelector } from './tracker/LogicInstanceSelector';
 import {
-    allSettingsSelector,
     areasSelector,
     checkHintSelector,
     checkSelector,
     rawItemCountSelector,
     totalCountersSelector,
 } from './tracker/Selectors';
+import { allSettingsSelector } from './tracker/SettingsSelector';
 import {
     acceptSettings,
     cancelItemAssignment,

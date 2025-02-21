@@ -15,7 +15,7 @@ import {
     areaHintSelector,
     areasSelector,
     exitsByIdSelector,
-    getRequirementLogicalStateSelector,
+    getExitLogicalStateSelector,
 } from '../../tracker/Selectors';
 import { useContextMenu } from '../context-menu';
 import HintDescription from '../HintsDescription';
@@ -51,9 +51,7 @@ function EntranceMarker({
     const exit = useSelector(
         (state: RootState) => exitsByIdSelector(state)[exitId],
     );
-    const getRequirementLogicalState = useSelector(
-        getRequirementLogicalStateSelector,
-    );
+    const getExitLogicalState = useSelector(getExitLogicalStateSelector);
     const logic = useSelector(logicSelector);
     const isDungeon = Object.values(
         logic.auxData.linkedEntrancePools['dungeons'],
@@ -65,7 +63,7 @@ function EntranceMarker({
     );
 
     const hasConnection = area !== undefined;
-    const canReach = getRequirementLogicalState(exit.exit.id) === 'inLogic';
+    const canReach = getExitLogicalState(exit.exit.id) === 'inLogic';
     const isUnrequiredDungeon =
         isDungeon &&
         exit.rule.type === 'random' &&

@@ -1,9 +1,12 @@
 import { maxBy, sumBy } from 'es-toolkit';
 import { BitVector } from '../../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
-import BooleanExpression, {
-    type Item,
-} from '../../logic/booleanlogic/BooleanExpression';
+import {
+    getRequirementBit,
+    type BitIndex,
+    type RecursiveTooltipRequirement2,
+    type TooltipRequirement2,
+} from './BitIndex';
 import type { LeanLogic } from './Types';
 
 /**
@@ -21,15 +24,16 @@ import type { LeanLogic } from './Types';
  * but since we don't have any don't cares and negations they will never be relevant.
  */
 export function dnfToRequirementExpr(
+    bitIndex: BitIndex,
     logic: LeanLogic,
     sop: BitVector[],
-): BooleanExpression {
+): RecursiveTooltipRequirement2 {
     if (sop.length === 0) {
-        return BooleanExpression.or();
+        return { type: 'or', terms: [] };
     }
 
     if (sop.length === 1 && sop[0].isEmpty()) {
-        return BooleanExpression.and();
+        return { type: 'and', terms: [] };
     }
 
     /*
@@ -50,20 +54,27 @@ export function dnfToRequirementExpr(
     // that we later can't easily simplify in a multi level form.
     for (const conj of conjunctions) {
         for (const bit of conj.iter()) {
-            for (const dominator of logic.impliedBy[logic.allItems[bit]] ??
-                []) {
-                const dominatorBit = logic.itemBits[dominator];
-                if (dominatorBit !== bit && conj.test(dominatorBit)) {
-                    conj.clearBit(bit);
+            const req = bitIndex.reverseIndex[bit];
+            if (req.type === 'item') {
+                for (let i = 1; i < req.count; i++) {
+                    const lesserBit = getRequirementBit(bitIndex, {
+                        type: 'item',
+                        name: req.name,
+                        count: i,
+                    });
+                    conj.clearBit(lesserBit);
                 }
             }
         }
     }
 
     if (conjunctions.length === 1) {
-        return BooleanExpression.and(
-            ...[...conjunctions[0].iter()].map((x) => logic.allItems[x]),
-        ).simplify();
+        return {
+            type: 'and',
+            terms: [...conjunctions[0].iter()].map(
+                (x) => bitIndex.reverseIndex[x],
+            ),
+        };
     }
 
     // First, remove all common factors and from our SOP so that it's "cube-free".
@@ -170,30 +181,49 @@ export function dnfToRequirementExpr(
             const optQuotient = new LogicalExpression(
                 quotient,
             ).removeDuplicates();
-            const andTerms: Item[] = [...commonFactors].map(
-                (f) => logic.allItems[f],
+            const andTerms: TooltipRequirement2[] = [...commonFactors].map(
+                (f) => bitIndex.reverseIndex[f],
             );
-            const product = BooleanExpression.and(
-                dnfToRequirementExpr(logic, optQuotient.conjunctions),
-                dnfToRequirementExpr(logic, divisor),
-            );
-            const sum = BooleanExpression.or(
-                product,
-                dnfToRequirementExpr(logic, remainder),
-            );
+            const product: RecursiveTooltipRequirement2 = {
+                type: 'and',
+                terms: [
+                    dnfToRequirementExpr(
+                        bitIndex,
+                        logic,
+                        optQuotient.conjunctions,
+                    ),
+                    dnfToRequirementExpr(bitIndex, logic, divisor),
+                ],
+            };
+            const sum: RecursiveTooltipRequirement2 = {
+                type: 'or',
+                terms: [
+                    product,
+                    dnfToRequirementExpr(bitIndex, logic, remainder),
+                ],
+            };
 
             // CommonFactor1 and CommonFactor2 and (Quotient and Divisor or Remainder)
-            return BooleanExpression.and(...andTerms, sum).simplify();
+            return {
+                type: 'and',
+                terms: [...andTerms, sum],
+            };
         }
     }
 
     // CommonFactor1 and CommonFactor2 and (SOPWithoutCommonFactors)
-    return BooleanExpression.and(
-        ...[...commonFactors].map((i) => logic.allItems[i]),
-        BooleanExpression.or(
-            ...conjunctions.map((c) => bitVecToRequirements(logic, c)),
-        ),
-    ).simplify();
+    return {
+        type: 'and',
+        terms: [
+            ...[...commonFactors].map((i) => bitIndex.reverseIndex[i]),
+            {
+                type: 'or',
+                terms: conjunctions.map((c) =>
+                    bitVecToRequirements(bitIndex, c),
+                ),
+            },
+        ],
+    };
 }
 
 function genRectangles(
@@ -379,10 +409,11 @@ function algebraicDivision(
 }
 
 function bitVecToRequirements(
-    logic: LeanLogic,
+    bitIndex: BitIndex,
     vec: BitVector,
-): BooleanExpression {
-    return BooleanExpression.and(
-        ...[...vec.iter()].map((x) => logic.allItems[x]),
-    );
+): RecursiveTooltipRequirement2 {
+    return {
+        type: 'and',
+        terms: [...[...vec.iter()].map((x) => bitIndex.reverseIndex[x])],
+    };
 }
