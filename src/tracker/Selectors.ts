@@ -3,7 +3,6 @@ import { compact, groupBy, isEqual, keyBy, partition, sumBy } from 'es-toolkit';
 import {
     counterBasisSelector,
     trickSemiLogicSelector,
-    trickSemiLogicTrickListSelector,
 } from '../customization/Selectors';
 import { parseHintsText } from '../hints/HintsParser';
 import {
@@ -19,55 +18,40 @@ import {
     type Check,
     type CheckGroup,
     type DungeonName,
-    dungeonNames,
     type HintRegion,
     isDungeon,
     type LogicalState,
 } from '../logic/Locations';
-import type { LogicalCheck } from '../logic/Logic';
-import { mapInventory, mapSettings } from '../logic/Mappers';
-import {
-    getAdditionalItems,
-    getNumLooseGratitudeCrystals,
-} from '../logic/Misc';
-import { exploreAreaGraph } from '../logic/Pathfinding';
-import {
-    areaGraphSelector,
-    logicSelector,
-    optionsSelector,
-} from '../logic/Selectors';
-import {
-    computeSemiLogic,
-    getVisibleTricksEnabledRequirements,
-} from '../logic/SemiLogic';
+import { getAdditionalItems } from '../logic/Misc';
+import { optionsSelector } from '../logic/Selectors';
+import { computeSemiLogic } from '../logic/SemiLogic';
 import { doesHintDistroUseGossipStone } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
     cubeCheckToGoddessChestCheck,
     dungeonCompletionItems,
     goddessChestCheckToCubeCheck,
 } from '../logic/TrackerModifications';
+import type { Location2 } from '../logic/logic2/Location';
 import {
-    computeLeastFixedPoint,
-    mergeRequirements,
-} from '../logic/bitlogic/BitLogic';
-import { BitVector } from '../logic/bitlogic/BitVector';
+    getInitialSearchState,
+    search,
+    type SearchState2,
+} from '../logic/logic2/Search';
 import { validateSettings } from '../permalink/Settings';
 import type { TypedOptions } from '../permalink/SettingsTypes';
 import type { RootState } from '../store/Store';
 import { emptyArray, mapValues } from '../utils/Collections';
 import { stubTrue } from '../utils/Function';
 import { currySelector } from '../utils/Redux';
-
-const bitVectorMemoizeOptions = {
-    memoizeOptions: {
-        resultEqualityCheck: (a: BitVector, b: BitVector) =>
-            a instanceof BitVector && b instanceof BitVector && a.equals(b),
-    },
-};
+import {
+    logicSelector,
+    requiredDungeonsSelector,
+} from './LogicInstanceSelector';
 
 const parsedHintsSelector = createSelector(
     [(state: RootState) => state.tracker.userHintsText, logicSelector],
-    (hintsText, logic) => parseHintsText(hintsText, logic.hintRegions),
+    (hintsText, logic) =>
+        parseHintsText(hintsText, logic.hintRegions.hintRegions),
     {
         // Make sure we don't accumulate garbage for every single
         // value of the hints text input
@@ -90,7 +74,7 @@ const allAreaHintsSelector = createSelector(
     ],
     (logic, parsed, tracked) =>
         Object.fromEntries(
-            logic.hintRegions.map((region) => [
+            logic.hintRegions.hintRegions.map((region) => [
                 region,
                 [...(tracked[region] ?? []), ...(parsed[region] ?? [])],
             ]),
@@ -174,48 +158,15 @@ const checkItemsSelector = createSelector(
 );
 
 export const totalGratitudeCrystalsSelector = createSelector(
-    [
-        logicSelector,
-        checkedChecksSelector,
-        rawItemCountSelector('Gratitude Crystal Pack'),
-    ],
-    (logic, checkedChecks, packCount) => {
-        const looseCrystalCount = getNumLooseGratitudeCrystals(
-            logic,
-            checkedChecks,
-        );
-        return packCount * 5 + looseCrystalCount;
+    [checkItemsSelector, rawItemCountSelector('Gratitude Crystal Pack')],
+    (checkItems, packCount) => {
+        return packCount * 5 + checkItems['Gratitude Crystal'];
     },
 );
 
 const allowedStartingEntrancesSelector = createSelector(
     [logicSelector, settingSelector('random-start-entrance')],
     getAllowedStartingEntrances,
-);
-
-const skyKeepRequiredSelector = (state: RootState) => {
-    const settings = settingsSelector(state);
-    if (!settings['triforce-required']) {
-        return false;
-    }
-    return settings['triforce-shuffle'] !== 'Anywhere';
-};
-
-export const requiredDungeonsSelector = createSelector(
-    [
-        (state: RootState) => state.tracker.requiredDungeons,
-        settingSelector('required-dungeon-count'),
-        skyKeepRequiredSelector,
-    ],
-    (selectedRequiredDungeons, numRequiredDungeons, skyKeepRequired) => {
-        // Enforce consistent order
-        return dungeonNames.filter((d) =>
-            d === 'Sky Keep'
-                ? skyKeepRequired
-                : numRequiredDungeons === 6 ||
-                  selectedRequiredDungeons.includes(d),
-        );
-    },
 );
 
 /**
@@ -226,7 +177,7 @@ export const requiredDungeonsSelector = createSelector(
  */
 export const entrancePoolsSelector = createSelector(
     [
-        areaGraphSelector,
+        logicSelector,
         allowedStartingEntrancesSelector,
         settingSelector('randomize-entrances'),
         settingSelector('randomize-dungeon-entrances'),
@@ -261,91 +212,23 @@ export const exitsByIdSelector = createSelector([exitsSelector], (exits) =>
     keyBy(exits, (e) => e.exit.id),
 );
 
-/**
- * Selects the requirements that depend on state/settings, but should still be revealed during
- * tooltip computations. Any recalculations here will cause the tooltips cache to throw away its
- * cached tooltips and recalculate requirements (after logic has loaded, this is only settings, mapped exits, and required dungeons).
- */
-export const settingsRequirementsSelector = createSelector(
-    [
-        logicSelector,
-        optionsSelector,
-        settingsSelector,
-        exitsSelector,
-        requiredDungeonsSelector,
-    ],
-    mapSettings,
+export const inLogicSearchSelector = createSelector(
+    [logicSelector, exitsSelector, inventorySelector, checkItemsSelector],
+    (logic, exits, inventory, auxItems) => {
+        const initialState = getInitialSearchState(inventory, auxItems);
+        return search(logic, exits, initialState);
+    },
 );
 
-const inventoryRequirementsSelector = createSelector(
-    [logicSelector, inventorySelector],
-    mapInventory,
-);
-
-const checkRequirementsSelector = createSelector(
-    [logicSelector, checkItemsSelector],
-    mapInventory,
-);
-
-export const inLogicBitsSelector = createSelector(
-    [
-        logicSelector,
-        settingsRequirementsSelector,
-        inventoryRequirementsSelector,
-        checkRequirementsSelector,
-    ],
-    (logic, settingsRequirements, inventoryRequirements, checkRequirements) =>
-        computeLeastFixedPoint(
-            'Logical state',
-            mergeRequirements(
-                logic.numRequirements,
-                logic.staticRequirements,
-                settingsRequirements,
-                inventoryRequirements,
-                checkRequirements,
-            ),
-        ),
-    bitVectorMemoizeOptions,
-);
-
-const optimisticInventoryItemRequirementsSelector = createSelector(
-    [logicSelector],
-    (logic) => mapInventory(logic, itemMaxes),
-);
-
-/**
- * A selector that computes logical state as if you had gotten every item.
- * Useful for checking if something is out of logic because of missing
- * items or generally unreachable because of missing entrances.
- */
-const optimisticLogicBitsSelector = createSelector(
-    [
-        logicSelector,
-        settingsRequirementsSelector,
-        optimisticInventoryItemRequirementsSelector,
-        // TODO this should probably also treat all check requirements as available? E.g. dungeons completed, cubes gotten?
-        checkRequirementsSelector,
-        inLogicBitsSelector,
-    ],
-    (
-        logic,
-        settingsRequirements,
-        optimisticInventoryRequirements,
-        checkRequirements,
-        inLogicBits,
-    ) =>
-        computeLeastFixedPoint(
-            'Optimistic state',
-            mergeRequirements(
-                logic.numRequirements,
-                logic.staticRequirements,
-                settingsRequirements,
-                optimisticInventoryRequirements,
-                checkRequirements,
-            ),
-            inLogicBits,
-        ),
-    bitVectorMemoizeOptions,
+export const optimisticSearchSelector = createSelector(
+    [logicSelector, exitsSelector, inLogicSearchSelector],
+    (logic, exits, inLogicState) => {
+        const state: SearchState2 = {
+            ...inLogicState,
+            inventory: itemMaxes,
+        };
+        return search(logic, exits, state);
+    },
 );
 
 const skyKeepNonprogressSelector = createSelector(
@@ -433,7 +316,7 @@ export const isCheckBannedSelector = createSelector(
         const banPotionShop = luvShopSanity !== true;
 
         const trialTreasurePattern = /Relic (\d+)/;
-        const isExcessRelic = (check: LogicalCheck) => {
+        const isExcessRelic = (check: Location2) => {
             if (check.type === 'trial_treasure') {
                 const match = check.name.match(trialTreasurePattern);
                 return match && parseInt(match[1], 10) > maxRelics;
@@ -442,29 +325,30 @@ export const isCheckBannedSelector = createSelector(
 
         const isBannedCubeCheckViaChest = (
             checkId: string,
-            check: LogicalCheck,
+            check: Location2,
         ) => {
             return (
                 check.type === 'tr_cube' &&
                 bannedChecks.has(
-                    logic.checks[cubeCheckToGoddessChestCheck[checkId]].name,
+                    logic.locations[cubeCheckToGoddessChestCheck[checkId]].name,
                 )
             );
         };
 
         const isBannedChestViaCube = (checkId: string) => {
             const cube = goddessChestCheckToCubeCheck[checkId];
-            return cube && areaNonprogress(logic.checks[cube].area!);
+            const hintRegion = logic.hintRegions.checkHintRegions[cube];
+            return cube && areaNonprogress(hintRegion);
         };
 
         const gossipStoneUsed =
             doesHintDistroUseGossipStone[hintDistro] ?? stubTrue;
 
         return (checkId: string) => {
-            const check = logic.checks[checkId];
+            const check = logic.locations[checkId];
             return (
                 bannedChecks.has(check.name) ||
-                areaNonprogress(logic.checks[checkId].area!) ||
+                areaNonprogress(logic.hintRegions.checkHintRegions[checkId]) ||
                 isExcessRelic(check) ||
                 isBannedChestViaCube(checkId) ||
                 isBannedCubeCheckViaChest(checkId, check) ||
@@ -482,26 +366,14 @@ export const isCheckBannedSelector = createSelector(
 const dungeonKeyLogicSelector = createSelector(
     [
         logicSelector,
+        exitsSelector,
         settingSelector('logic-mode'),
         settingSelector('boss-key-mode'),
         settingSelector('small-key-mode'),
-        settingsRequirementsSelector,
-        checkRequirementsSelector,
         isCheckBannedSelector,
-        optimisticLogicBitsSelector,
+        optimisticSearchSelector,
     ],
     keyData,
-);
-
-/** A selector for the requirements that assume every trick enabled in customization is enabled. */
-const visibleTricksRequirementsSelector = createSelector(
-    [
-        logicSelector,
-        optionsSelector,
-        settingsSelector,
-        trickSemiLogicTrickListSelector,
-    ],
-    getVisibleTricksEnabledRequirements,
 );
 
 export const locationsForItemSelector = currySelector(
@@ -514,38 +386,30 @@ export const locationsForItemSelector = currySelector(
         (checkHints, logic, item) =>
             Object.entries(checkHints)
                 .filter(([, itemHint]) => itemHint === item)
-                .map(([location, _]) => logic.checks[location].name),
+                .map(([location, _]) => logic.locations[location].name),
     ),
 );
 
-const semiLogicBitsSelector = createSelector(
+const semiLogicSearchSelector = createSelector(
     [
         logicSelector,
         isCheckBannedSelector,
         checkedChecksSelector,
-        inventorySelector,
-        inLogicBitsSelector,
+        inLogicSearchSelector,
         dungeonKeyLogicSelector,
-        settingsRequirementsSelector,
         checkHintsSelector,
         trickSemiLogicSelector,
-        visibleTricksRequirementsSelector,
     ],
     computeSemiLogic,
 );
 
 export const getRequirementLogicalStateSelector = createSelector(
-    [logicSelector, inLogicBitsSelector, semiLogicBitsSelector],
-    (logic, inLogicBits, semiLogicBits) =>
-        (requirement: string): LogicalState => {
-            const bit = logic.itemBits[requirement];
-            return inLogicBits.test(bit)
-                ? 'inLogic'
-                : semiLogicBits.inSemiLogicBits.test(bit)
-                  ? 'semiLogic'
-                  : semiLogicBits.inTrickLogicBits.test(bit)
-                    ? 'trickLogic'
-                    : 'outLogic';
+    [logicSelector, inLogicSearchSelector, semiLogicSearchSelector],
+    (_logic, _inLogicBits, _semiLogicBits) =>
+        (_requirement: string): LogicalState => {
+            // TODO: Probably need to change the interface to
+            // be able to figure out what a given requirement is
+            return 'trickLogic';
         },
 );
 
@@ -578,8 +442,8 @@ export const checkSelector = currySelector(
         ): Check => {
             const logicalState = getRequirementLogicalState(checkId);
 
-            if (logic.checks[checkId]) {
-                const checkName = logic.checks[checkId].name;
+            if (logic.locations[checkId]) {
+                const checkName = logic.locations[checkId].name;
                 const shortCheckName = checkName.includes('-')
                     ? checkName.substring(checkName.indexOf('-') + 1).trim()
                     : checkName;
@@ -587,12 +451,11 @@ export const checkSelector = currySelector(
                     checked: checkedChecks.has(checkId),
                     checkId,
                     checkName: shortCheckName,
-                    type: logic.checks[checkId].type,
+                    type: logic.locations[checkId].type,
                     logicalState,
                 };
-            } else if (logic.areaGraph.exits[checkId]) {
-                const shortCheckName =
-                    logic.areaGraph.exits[checkId].short_name;
+            } else if (logic.exits[checkId]) {
+                const shortCheckName = logic.exits[checkId].name;
                 return {
                     checked: Boolean(mappedExits[checkId]),
                     checkId,
@@ -631,63 +494,65 @@ export const areasSelector = createSelector(
     ): HintRegion[] => {
         const exitsById = keyBy(allExits, (e) => e.exit.id);
         return compact(
-            logic.hintRegions.map((area): HintRegion | undefined => {
-                const checks = logic.checksByHintRegion[area];
-                // Loose crystal checks can be banned to not require picking them up
-                // in logic, but we want to allow marking them as collected.
-                const progressChecks = checks.filter(
-                    (check) =>
-                        !isCheckBanned(check) ||
-                        logic.checks[check].type === 'loose_crystal',
-                );
-
-                const [extraChecks, regularChecks_] = partition(
-                    progressChecks,
-                    (check) =>
-                        logic.checks[check].type === 'gossip_stone' ||
-                        logic.checks[check].type === 'tr_cube' ||
-                        logic.checks[check].type === 'loose_crystal',
-                );
-
-                const nonProgress = isAreaNonprogress(area);
-                const hidden = isAreaHidden(area);
-                const regularChecks = nonProgress ? [] : regularChecks_;
-                const shouldCount = (state: LogicalState) =>
-                    counterBasis === 'logic'
-                        ? state === 'inLogic'
-                        : state !== 'outLogic';
-
-                const checkGroup = (checks: string[]): CheckGroup => {
-                    const nonBannedChecks = checks.filter(
-                        (c) => !isCheckBanned(c),
+            logic.hintRegions.hintRegions.map(
+                (area): HintRegion | undefined => {
+                    const checks = logic.hintRegions.checksByHintRegion[area];
+                    // Loose crystal checks can be banned to not require picking them up
+                    // in logic, but we want to allow marking them as collected.
+                    const progressChecks = checks.filter(
+                        (check) =>
+                            !isCheckBanned(check) ||
+                            logic.locations[check].type === 'loose_crystal',
                     );
-                    const remaining = nonBannedChecks.filter(
-                        (c) => !checkedChecks.has(c),
+
+                    const [extraChecks, regularChecks_] = partition(
+                        progressChecks,
+                        (check) =>
+                            logic.locations[check].type === 'gossip_stone' ||
+                            logic.locations[check].type === 'tr_cube' ||
+                            logic.locations[check].type === 'loose_crystal',
                     );
-                    const accessible = remaining.filter((c) =>
-                        shouldCount(getLogicalState(c)),
-                    );
-                    return {
-                        // Intentionally include banned but shown checks in the list
-                        // of checks, but do not count them anywhere!
-                        list: checks,
-                        numTotal: nonBannedChecks.length,
-                        numAccessible: accessible.length,
-                        numRemaining: remaining.length,
+
+                    const nonProgress = isAreaNonprogress(area);
+                    const hidden = isAreaHidden(area);
+                    const regularChecks = nonProgress ? [] : regularChecks_;
+                    const shouldCount = (state: LogicalState) =>
+                        counterBasis === 'logic'
+                            ? state === 'inLogic'
+                            : state !== 'outLogic';
+
+                    const checkGroup = (checks: string[]): CheckGroup => {
+                        const nonBannedChecks = checks.filter(
+                            (c) => !isCheckBanned(c),
+                        );
+                        const remaining = nonBannedChecks.filter(
+                            (c) => !checkedChecks.has(c),
+                        );
+                        const accessible = remaining.filter((c) =>
+                            shouldCount(getLogicalState(c)),
+                        );
+                        return {
+                            // Intentionally include banned but shown checks in the list
+                            // of checks, but do not count them anywhere!
+                            list: checks,
+                            numTotal: nonBannedChecks.length,
+                            numAccessible: accessible.length,
+                            numRemaining: remaining.length,
+                        };
                     };
-                };
 
-                const extraLocations: HintRegion<string>['extraLocations'] =
-                    mapValues(
-                        groupBy(
-                            extraChecks,
-                            (check) => logic.checks[check].type,
-                        ),
-                        checkGroup,
-                    );
+                    const extraLocations: HintRegion<string>['extraLocations'] =
+                        mapValues(
+                            groupBy(
+                                extraChecks,
+                                (check) => logic.locations[check].type,
+                            ),
+                            checkGroup,
+                        );
 
-                const relevantExits = logic.exitsByHintRegion[area].filter(
-                    (e) => {
+                    const relevantExits = logic.hintRegions.exitsByHintRegion[
+                        area
+                    ].filter((e) => {
                         const exitMapping = exitsById[e];
                         if (!exitMapping) {
                             return false;
@@ -696,38 +561,38 @@ export const areasSelector = createSelector(
                             exitMapping.canAssign &&
                             exitMapping.rule.type === 'random'
                         );
-                    },
-                );
+                    });
 
-                const remainingExits = relevantExits.filter((e) => {
-                    const exitMapping = exitsById[e];
-                    return !exitMapping.entrance;
-                });
+                    const remainingExits = relevantExits.filter((e) => {
+                        const exitMapping = exitsById[e];
+                        return !exitMapping.entrance;
+                    });
 
-                const accessibleExits = remainingExits.filter((e) => {
-                    const exitMapping = exitsById[e];
-                    return (
-                        exitMapping.rule.type === 'random' &&
-                        !exitMapping.rule.isKnownIrrelevant &&
-                        shouldCount(getLogicalState(e))
-                    );
-                });
+                    const accessibleExits = remainingExits.filter((e) => {
+                        const exitMapping = exitsById[e];
+                        return (
+                            exitMapping.rule.type === 'random' &&
+                            !exitMapping.rule.isKnownIrrelevant &&
+                            shouldCount(getLogicalState(e))
+                        );
+                    });
 
-                extraLocations.exits = {
-                    list: relevantExits,
-                    numAccessible: accessibleExits.length,
-                    numRemaining: remainingExits.length,
-                    numTotal: relevantExits.length,
-                } satisfies CheckGroup;
+                    extraLocations.exits = {
+                        list: relevantExits,
+                        numAccessible: accessibleExits.length,
+                        numRemaining: remainingExits.length,
+                        numTotal: relevantExits.length,
+                    } satisfies CheckGroup;
 
-                return {
-                    checks: checkGroup(regularChecks),
-                    extraLocations,
-                    nonProgress,
-                    hidden,
-                    name: area,
-                };
-            }),
+                    return {
+                        checks: checkGroup(regularChecks),
+                        extraLocations,
+                        nonProgress,
+                        hidden,
+                        name: area,
+                    };
+                },
+            ),
         );
     },
 );
@@ -763,14 +628,4 @@ export const totalCountersSelector = createSelector(
 export const usedEntrancesSelector = createSelector(
     [entrancePoolsSelector, exitsSelector],
     getUsedEntrances,
-);
-
-export const inLogicPathfindingSelector = createSelector(
-    [areaGraphSelector, exitsSelector, inLogicBitsSelector],
-    exploreAreaGraph,
-);
-
-export const optimisticPathfindingSelector = createSelector(
-    [areaGraphSelector, exitsSelector, optimisticLogicBitsSelector],
-    exploreAreaGraph,
 );

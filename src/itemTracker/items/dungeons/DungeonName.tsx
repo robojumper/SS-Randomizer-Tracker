@@ -3,10 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useDraggable } from '../../../dragAndDrop/DragAndDrop';
 import type { DungeonName as DungeonNameType } from '../../../logic/Locations';
 import type { RootState } from '../../../store/Store';
-import {
-    dungeonCompletedSelector,
-    requiredDungeonsSelector,
-} from '../../../tracker/Selectors';
+import { requiredDungeonsSelector } from '../../../tracker/LogicInstanceSelector';
+import { dungeonCompletedSelector } from '../../../tracker/Selectors';
 import { clickDungeonName } from '../../../tracker/Slice';
 import keyDownWrapper from '../../../utils/KeyDownWrapper';
 import styles from './DungeonName.module.css';

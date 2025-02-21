@@ -1,24 +1,18 @@
 import { shuffle } from 'es-toolkit';
 import {
-    trickSemiLogicSelector,
-    trickSemiLogicTrickListSelector,
-} from '../customization/Selectors';
-import {
     setEnabledSemilogicTricks,
     setTrickSemiLogic,
 } from '../customization/Slice';
-import { mergeRequirements } from '../logic/bitlogic/BitLogic';
 import type BooleanExpression from '../logic/booleanlogic/BooleanExpression';
 import { itemMaxes, type InventoryItem } from '../logic/Inventory';
-import { logicSelector, optionsSelector } from '../logic/Selectors';
 import { dungeonCompletionItems } from '../logic/TrackerModifications';
 import { createTestLogic } from '../testing/TestingUtils';
+import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
     allSettingsSelector,
     checkSelector,
+    exitsSelector,
     getRequirementLogicalStateSelector,
-    settingsRequirementsSelector,
-    settingsSelector,
 } from '../tracker/Selectors';
 import { acceptSettings, setItemCounts } from '../tracker/Slice';
 import { TooltipComputer } from './TooltipComputations';
@@ -35,29 +29,9 @@ describe('tooltips', () => {
 
     function createComputer(): TooltipComputer {
         const logic = tester.readSelector(logicSelector);
-        const options = tester.readSelector(optionsSelector);
-        const settings = tester.readSelector(settingsSelector);
-        const settingsRequirements = tester.readSelector(
-            settingsRequirementsSelector,
-        );
-        const expertMode = tester.readSelector(trickSemiLogicSelector);
-        const consideredTricks = tester.readSelector(
-            trickSemiLogicTrickListSelector,
-        );
+        const exits = tester.readSelector(exitsSelector);
 
-        const bitLogic = mergeRequirements(
-            logic.numRequirements,
-            logic.staticRequirements,
-            settingsRequirements,
-        );
-        return new TooltipComputer(
-            logic,
-            options,
-            settings,
-            expertMode,
-            consideredTricks,
-            bitLogic,
-        );
+        return new TooltipComputer(logic, exits);
     }
 
     async function getTooltipExpression(
@@ -290,7 +264,7 @@ describe('tooltips', () => {
                         }
                     };
 
-                    for (const checkId of Object.keys(logic.checks)) {
+                    for (const checkId of Object.keys(logic.locations)) {
                         if (dungeonCompletionItems['Sky Keep'] === checkId) {
                             continue;
                         }

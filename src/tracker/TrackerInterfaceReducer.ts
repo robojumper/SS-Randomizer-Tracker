@@ -6,8 +6,8 @@ import {
 } from '../locationTracker/mapTracker/MapModel';
 import { mapModelSelector } from '../locationTracker/mapTracker/Selectors';
 import type { ExitMapping } from '../logic/Locations';
-import type { AreaGraph, Logic } from '../logic/Logic';
-import { areaGraphSelector } from '../logic/Selectors';
+import type { Logic2 } from '../logic/logic2/Logic';
+import { logicSelector } from './LogicInstanceSelector';
 import { exitsByIdSelector } from './Selectors';
 
 export type InterfaceState =
@@ -69,14 +69,14 @@ export type InterfaceAction =
 
 function getHintRegionForEntrance(
     entranceId: string,
-    areaGraph: Logic['areaGraph'],
+    areaGraph: Logic2,
 ): string {
-    return areaGraph.entranceHintRegions[entranceId];
+    return areaGraph.hintRegions.entranceHintRegions[entranceId];
 }
 
 function getInitialState(
     mapModel: MapModel,
-    areaGraph: AreaGraph,
+    areaGraph: Logic2,
     exits: Record<string, ExitMapping>,
 ): InterfaceState {
     const startingExit = exits['\\Start'];
@@ -114,7 +114,7 @@ function getInitialState(
 
 function interfaceReducer(
     mapModel: MapModel,
-    areaGraph: AreaGraph,
+    areaGraph: Logic2,
     exits: Record<string, ExitMapping>,
 ) {
     return (
@@ -207,7 +207,7 @@ export function useTrackerInterfaceReducer(): [
     React.Dispatch<InterfaceAction>,
 ] {
     const mapModel = useSelector(mapModelSelector);
-    const areaGraph = useSelector(areaGraphSelector);
+    const areaGraph = useSelector(logicSelector);
     const exits = useSelector(exitsByIdSelector);
     const [internalTrackerState, dispatch] = useReducer(
         interfaceReducer(mapModel, areaGraph, exits),

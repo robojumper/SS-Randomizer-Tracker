@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import type { TriggerEvent } from 'react-contexify';
 import { useSelector } from 'react-redux';
 import { decodeHint } from '../hints/Hints';
-import { areaGraphSelector } from '../logic/Selectors';
 import type { RootState } from '../store/Store';
+import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
     areaHintSelector,
     areasSelector,
@@ -58,13 +58,13 @@ export function SubmapMarker({
         }
     }
 
-    const areaGraph = useSelector(areaGraphSelector);
+    const logic = useSelector(logicSelector);
 
     let markerColor = getMarkerColor(data.checks);
 
     const birdSanityOn = useSelector(settingSelector('random-start-statues'));
     const birdStatueSanityPool =
-        birdSanityOn && areaGraph.birdStatueSanity[title];
+        birdSanityOn && logic.auxData.birdStatueSanity[title];
     const needsBirdStatueSanityExit =
         birdStatueSanityPool &&
         exits[birdStatueSanityPool.exit].entrance === undefined;

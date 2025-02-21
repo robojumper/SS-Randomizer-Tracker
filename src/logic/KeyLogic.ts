@@ -1,15 +1,15 @@
 import { produce } from 'immer';
 import type { TypedOptions } from '../permalink/SettingsTypes';
-import { type InventoryItem, itemMaxes } from './Inventory';
-import { dungeonNames, isRegularDungeon } from './Locations';
-import { type Logic, type LogicalCheck, isRegularItemCheck } from './Logic';
-import { mapInventory } from './Mappers';
+import { itemMaxes, type InventoryItem } from './Inventory';
+import { dungeonNames, isRegularDungeon, type ExitMapping } from './Locations';
+import { isRegularItemCheck } from './Logic';
+import type { Location2 } from './logic2/Location';
+import type { Logic2 } from './logic2/Logic';
 import {
-    type Requirements,
-    computeLeastFixedPoint,
-    mergeRequirements,
-} from './bitlogic/BitLogic';
-import { BitVector } from './bitlogic/BitVector';
+    getInitialSearchState,
+    search,
+    type SearchState2,
+} from './logic2/Search';
 
 export interface PotentialLocations {
     item: InventoryItem;
@@ -50,14 +50,13 @@ export interface PotentialLocations {
  * So you just don't get key semilogic and this needs a new form of reasoning.
  */
 export function keyData(
-    logic: Logic,
+    logic: Logic2,
+    exits: ExitMapping[],
     logicModeSetting: TypedOptions['logic-mode'],
     bossKeySetting: TypedOptions['boss-key-mode'],
     smallKeySetting: TypedOptions['small-key-mode'],
-    settingsRequirements: Requirements,
-    checkRequirements: Requirements,
-    isCheckBanned: (checkId: string, check: LogicalCheck) => boolean,
-    optimisticLogicBits: BitVector,
+    isCheckBanned: (checkId: string, check: Location2) => boolean,
+    optimisticSearch: SearchState2,
 ): PotentialLocations[] {
     const locations: PotentialLocations[] = [];
 
@@ -68,10 +67,10 @@ export function keyData(
     }
 
     const regionChecks = (region: string) =>
-        logic.checksByHintRegion[region].filter(
+        logic.hintRegions.checksByHintRegion[region].filter(
             (c) =>
-                isRegularItemCheck(logic.checks[c].type) &&
-                !isCheckBanned(c, logic.checks[c]),
+                isRegularItemCheck(logic.locations[c].type) &&
+                !isCheckBanned(c, logic.locations[c]),
         );
 
     // Caves small key
@@ -87,7 +86,7 @@ export function keyData(
             potentialChecks:
                 smallKeySetting === 'Vanilla'
                     ? cavesChecks.filter(
-                          (c) => logic.checks[c].originalItem === item,
+                          (c) => logic.locations[c].originalItem === item,
                       )
                     : cavesChecks,
         });
@@ -109,16 +108,9 @@ export function keyData(
     );
 
     // This baseline logic state can be re-used in later computations
-    const baselineLogicState = computeLeastFixedPoint(
-        'KeyLogic baseline',
-        mergeRequirements(
-            logic.numRequirements,
-            logic.staticRequirements,
-            settingsRequirements,
-            checkRequirements,
-            mapInventory(logic, fullInventoryNoKeys),
-        ),
-    );
+    const baselineSearchState = search(logic, exits, {
+        ...getInitialSearchState(fullInventoryNoKeys, {}),
+    });
 
     for (const dungeon of dungeonNames.filter(isRegularDungeon)) {
         const dungeonChecks = regionChecks(dungeon);
@@ -132,7 +124,8 @@ export function keyData(
         const checksThatCanContainBossKey =
             bossKeySetting === 'Vanilla'
                 ? dungeonChecks.filter(
-                      (check) => logic.checks[check].originalItem === bossKey,
+                      (check) =>
+                          logic.locations[check].originalItem === bossKey,
                   )
                 : bossKeySetting === 'Own Dungeon'
                   ? dungeonChecks
@@ -141,7 +134,8 @@ export function keyData(
         const checksThatCanContainSmallKey = smallKey
             ? smallKeySetting === 'Vanilla'
                 ? dungeonChecks.filter(
-                      (check) => logic.checks[check].originalItem === smallKey,
+                      (check) =>
+                          logic.locations[check].originalItem === smallKey,
                   )
                 : smallKeySetting === 'Own Dungeon - Restricted' ||
                     smallKeySetting === 'Lanayru Caves Key Only'
@@ -155,7 +149,7 @@ export function keyData(
             checks: string[] | undefined,
         ): true | undefined =>
             checks?.every((check) =>
-                optimisticLogicBits.test(logic.itemBits[check]),
+                optimisticSearch.reachableChecks.has(check),
             ) || undefined;
 
         const canDoBossKeyLogic = allChecksPotentiallyReachable(
@@ -166,28 +160,18 @@ export function keyData(
         );
 
         const inventory = { ...fullInventoryNoKeys };
-        let logicState = baselineLogicState;
+        let logicState = baselineSearchState;
         if (smallKey && checksThatCanContainSmallKey && canDoSmallKeyLogic) {
             for (let i = 1; i <= itemMaxes[smallKey]; i++) {
                 locations.push({
                     item: smallKey,
                     count: i,
                     potentialChecks: checksThatCanContainSmallKey.filter((c) =>
-                        logicState.test(logic.itemBits[c]),
+                        logicState.reachableChecks.has(c),
                     ),
                 });
                 inventory[smallKey] = i;
-                logicState = computeLeastFixedPoint(
-                    'KeyLogic step',
-                    mergeRequirements(
-                        logic.numRequirements,
-                        logic.staticRequirements,
-                        settingsRequirements,
-                        checkRequirements,
-                        mapInventory(logic, inventory),
-                    ),
-                    logicState,
-                );
+                logicState = search(logic, exits, { ...logicState, inventory });
             }
         }
 
@@ -199,7 +183,7 @@ export function keyData(
                 item: bossKey,
                 count: 1,
                 potentialChecks: checksThatCanContainBossKey.filter((c) =>
-                    logicState.test(logic.itemBits[c]),
+                    logicState.reachableChecks.has(c),
                 ),
             });
         }
@@ -210,10 +194,9 @@ export function keyData(
 
 /** Predict which keys must be accessible in the dungeon, given logical and tracker state. */
 export function getSemiLogicKeys(
-    logic: Logic,
     inventory: Record<InventoryItem, number>,
     data: PotentialLocations[],
-    inLogicBits: BitVector,
+    searchState: SearchState2,
     checkedChecks: Set<string>,
 ): boolean {
     let changed = false;
@@ -223,7 +206,7 @@ export function getSemiLogicKeys(
             entry.potentialChecks.length &&
             entry.potentialChecks.every(
                 (c) =>
-                    inLogicBits.test(logic.itemBits[c]) || checkedChecks.has(c),
+                    searchState.reachableChecks.has(c) || checkedChecks.has(c),
             )
         ) {
             inventory[entry.item] = entry.count;

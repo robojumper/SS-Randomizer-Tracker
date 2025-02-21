@@ -5,17 +5,13 @@ import { mapValues } from '../utils/Collections';
 import { compareBy } from '../utils/Compare';
 import { appError } from '../utils/Debug';
 import type { DungeonName, ExitMapping } from './Locations';
-import type {
-    LinkedEntrancePool,
-    Logic,
-    TrackerLinkedEntrancePool,
-} from './Logic';
+import type { LinkedEntrancePool, TrackerLinkedEntrancePool } from './Logic';
 import {
     bannedExitsAndEntrances,
     lmfSecondExit,
-    nonRandomizedEntrances,
     nonRandomizedExits,
 } from './ThingsThatWouldBeNiceToHaveInTheDump';
+import type { Logic2 } from './logic2/Logic';
 
 export interface Entrance {
     name: string;
@@ -59,17 +55,17 @@ const fullErPool = 'TR_FULL_ER';
 const startingEntrancePool = 'TR_STARTING_ENTRANCE';
 
 export function getAllowedStartingEntrances(
-    logic: Logic,
+    logic: Logic2,
     randomizeStart: TypedOptions['random-start-entrance'],
 ): Entrance[] {
-    return Object.entries(logic.areaGraph.entrances)
+    return Object.entries(logic.entrances)
         .filter(([id, def]) => {
-            if (def['can-start-at'] === false) {
+            if (!def.canStartAt === false) {
                 return false;
             }
 
             // Vanilla starting entrance is always valid for all settings
-            if (id === logic.areaGraph.vanillaConnections['\\Start']) {
+            if (id === logic.exits['\\Start'].vanillaConnection) {
                 return true;
             }
 
@@ -77,7 +73,7 @@ export function getAllowedStartingEntrances(
                 case 'Vanilla':
                     return false;
                 case 'Bird Statues':
-                    return def.subtype === 'bird-statue-entrance';
+                    return def.isBirdStatueEntrance;
                 case 'Any Surface Region':
                     return def.province !== 'The Sky';
                 case 'Any':
@@ -88,12 +84,12 @@ export function getAllowedStartingEntrances(
         })
         .map(([id, def]) => ({
             id,
-            name: def.short_name,
+            name: def.name,
         }));
 }
 
 export function getEntrancePools(
-    areaGraph: Logic['areaGraph'],
+    logic: Logic2,
     allowedStartingEntrances: Entrance[],
     randomEntranceSetting: TypedOptions['randomize-entrances'],
     randomDungeonEntranceSetting: TypedOptions['randomize-dungeon-entrances'],
@@ -110,7 +106,7 @@ export function getEntrancePools(
 
     const result: Record<string, EntrancePool> = {};
     for (const [pool, entries] of Object.entries(
-        areaGraph.linkedEntrancePools,
+        logic.auxData.linkedEntrancePools,
     )) {
         result[pool] = {
             usedEntrancesExcluded: true,
@@ -132,7 +128,7 @@ export function getEntrancePools(
 
             const val = {
                 id: entranceId,
-                name: areaGraph.entrances[entranceId].short_name,
+                name: logic.entrances[entranceId].name,
             };
 
             if (
@@ -153,7 +149,7 @@ export function getEntrancePools(
     };
 
     for (const [pool, exitAndEntrances] of Object.entries(
-        areaGraph.birdStatueSanity,
+        logic.auxData.birdStatueSanity,
     )) {
         result[pool] = {
             usedEntrancesExcluded: false,
@@ -161,7 +157,7 @@ export function getEntrancePools(
                 (entranceId) => {
                     return {
                         id: entranceId,
-                        name: areaGraph.entrances[entranceId].short_name,
+                        name: logic.entrances[entranceId].name,
                     };
                 },
             ),
@@ -170,16 +166,11 @@ export function getEntrancePools(
 
     result[fullErPool] = {
         usedEntrancesExcluded: false,
-        entrances: Object.entries(areaGraph.entrances)
-            .filter(
-                ([entranceId]) =>
-                    !bannedExitsAndEntrances.includes(entranceId) &&
-                    areaGraph.entrances[entranceId].stage !== undefined &&
-                    !nonRandomizedEntrances.includes(entranceId),
-            )
+        entrances: Object.entries(logic.entrances)
+            .filter(([, entrance]) => !entrance.excludedFromFullEr)
             .map(([id, def]) => ({
                 id,
-                name: def.short_name,
+                name: def.name,
             })),
     };
 
@@ -187,7 +178,7 @@ export function getEntrancePools(
 }
 
 export function getExitRules(
-    logic: Logic,
+    logic: Logic2,
     startingEntranceSetting: TypedOptions['random-start-entrance'],
     randomEntranceSetting: TypedOptions['randomize-entrances'],
     randomDungeonEntranceSetting: TypedOptions['randomize-dungeon-entrances'],
@@ -199,7 +190,7 @@ export function getExitRules(
     const result: Record<string, ExitRule> = {};
 
     const followToCanonicalEntrance = invert<string, string>(
-        logic.areaGraph.autoExits,
+        logic.auxData.autoExits,
     );
 
     const everythingRandomized = randomEntranceSetting === 'All';
@@ -212,7 +203,7 @@ export function getExitRules(
         relevantDerSetting !== 'All Surface Dungeons + Sky Keep' &&
         relevantDerSetting !== 'Required Dungeons Separately';
 
-    for (const exitId of Object.keys(logic.areaGraph.exits)) {
+    for (const exitId of Object.keys(logic.exits)) {
         if (
             bannedExitsAndEntrances.includes(
                 exitId,
@@ -254,7 +245,7 @@ export function getExitRules(
         }
 
         const birdStatueSanityPool = Object.entries(
-            logic.areaGraph.birdStatueSanity,
+            logic.auxData.birdStatueSanity,
         ).find(([, entry]) => entry.exit === exitId);
         if (birdStatueSanityPool && statueSanity) {
             result[exitId] = {
@@ -266,10 +257,10 @@ export function getExitRules(
 
         const poolData = (() => {
             for (const [pool_, entries] of Object.entries(
-                logic.areaGraph.linkedEntrancePools,
+                logic.auxData.linkedEntrancePools,
             )) {
                 const pool =
-                    pool_ as keyof typeof logic.areaGraph.linkedEntrancePools;
+                    pool_ as keyof typeof logic.auxData.linkedEntrancePools;
                 for (const [entry, linkage] of Object.entries(entries)) {
                     if (linkage.exits[0] === exitId) {
                         return [pool, entry, true] as const;
@@ -313,12 +304,8 @@ export function getExitRules(
         }
 
         if (everythingRandomized) {
-            const exitDef = logic.areaGraph.exits[exitId];
-            if (
-                exitDef.stage === undefined ||
-                exitDef.vanilla === undefined ||
-                exitId.includes('Pillar')
-            ) {
+            const exitDef = logic.exits[exitId];
+            if (exitDef.excludedFromFullEr) {
                 result[exitId] = { type: 'vanilla' };
             } else {
                 result[exitId] = { type: 'random', pool: fullErPool };
@@ -333,7 +320,7 @@ export function getExitRules(
 }
 
 export function getExits(
-    logic: Logic,
+    logic: Logic2,
     exitRules: Record<string, ExitRule>,
     mappedExits: TrackerState['mappedExits'],
 ) {
@@ -346,12 +333,12 @@ export function getExits(
         if (!entranceId) {
             return undefined;
         }
-        const rawEntrance = logic.areaGraph.entrances[entranceId];
-        if (rawEntrance) {
+        const entrance = logic.entrances[entranceId];
+        if (entrance) {
             return {
                 id: entranceId,
-                name: rawEntrance.short_name,
-                region: logic.areaGraph.entranceHintRegions[entranceId],
+                name: entrance.name,
+                region: logic.hintRegions.entranceHintRegions[entranceId],
             };
         } else {
             appError('unknown entrance', entranceId);
@@ -360,7 +347,7 @@ export function getExits(
 
     const makeExit = (id: string): ExitMapping['exit'] => ({
         id,
-        name: logic.areaGraph.exits[id].short_name,
+        name: logic.exits[id].name,
     });
 
     // Exit assignment has to happen in this order because there are dependencies
@@ -380,7 +367,7 @@ export function getExits(
                 result[exitId] = {
                     canAssign: false,
                     entrance: makeEntrance(
-                        logic.areaGraph.vanillaConnections[exitId],
+                        logic.exits[exitId].vanillaConnection,
                     ),
                     exit: makeExit(exitId),
                     rule,
@@ -407,7 +394,7 @@ export function getExits(
                 // and if the Deep Woods - Exit to SV leads to ET - Main Entrance, then we know this
                 // exit leads to Deep Woods - Entrance from SV.
                 const location = rule.entry;
-                const pool = logic.areaGraph.linkedEntrancePools[rule.pool];
+                const pool = logic.auxData.linkedEntrancePools[rule.pool];
                 // This is the corresponding entrance for this exit
                 const neededEntrance = pool[location].entrances[0];
                 // Find the exit that was mapped to an entrance in this location
@@ -438,7 +425,7 @@ export function getExits(
             case 'lmfSecondExit': {
                 // LMF's second exit leads to ToT (vanilla) if LMF is at LMF, otherwise it's neutered
                 const lmfPool =
-                    logic.areaGraph.linkedEntrancePools.dungeons[
+                    logic.auxData.linkedEntrancePools.dungeons[
                         'Lanayru Mining Facility'
                     ];
                 if (
@@ -449,7 +436,7 @@ export function getExits(
                     result[exitId] = {
                         canAssign: false,
                         entrance: makeEntrance(
-                            logic.areaGraph.vanillaConnections[exitId],
+                            logic.exits[exitId].vanillaConnection,
                         ),
                         exit: makeExit(exitId),
                         rule,

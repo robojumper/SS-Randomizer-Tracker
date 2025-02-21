@@ -1,11 +1,14 @@
-import { logicSelector } from '../logic/Selectors';
 import { createTestLogic } from '../testing/TestingUtils';
+import { logicSelector } from '../tracker/LogicInstanceSelector';
 import { parseHintsText } from './HintsParser';
 
 describe('hints parser', () => {
     const tester = createTestLogic();
     const parse = (text: string) =>
-        parseHintsText(text, tester.readSelector(logicSelector).hintRegions);
+        parseHintsText(
+            text,
+            tester.readSelector(logicSelector).hintRegions.hintRegions,
+        );
 
     beforeAll(tester.initialize);
     beforeEach(tester.reset);

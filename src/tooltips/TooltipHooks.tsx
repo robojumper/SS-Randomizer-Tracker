@@ -9,20 +9,10 @@ import {
     useSyncExternalStore,
 } from 'react';
 import { useSelector } from 'react-redux';
+import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
-    trickSemiLogicSelector,
-    trickSemiLogicTrickListSelector,
-} from '../customization/Selectors';
-import { mergeRequirements } from '../logic/bitlogic/BitLogic';
-import type { ExplorationNode } from '../logic/Pathfinding';
-import { logicSelector, optionsSelector } from '../logic/Selectors';
-import {
+    exitsSelector,
     getRequirementLogicalStateSelector,
-    inLogicPathfindingSelector,
-    optimisticPathfindingSelector,
-    settingSelector,
-    settingsRequirementsSelector,
-    settingsSelector,
 } from '../tracker/Selectors';
 import { noop } from '../utils/Function';
 import { TooltipComputer } from './TooltipComputations';
@@ -40,42 +30,17 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
     const logic = useSelector(logicSelector);
-    const options = useSelector(optionsSelector);
-    const settings = useSelector(settingsSelector);
-    const settingsRequirements = useSelector(settingsRequirementsSelector);
-    const expertMode = useSelector(trickSemiLogicSelector);
-    const consideredTricks = useSelector(trickSemiLogicTrickListSelector);
+    const exits = useSelector(exitsSelector);
 
     useEffect(() => {
-        const bitLogic = mergeRequirements(
-            logic.numRequirements,
-            logic.staticRequirements,
-            settingsRequirements,
-        );
-        setAnalyzer(
-            new TooltipComputer(
-                logic,
-                options,
-                settings,
-                expertMode,
-                consideredTricks,
-                bitLogic,
-            ),
-        );
+        setAnalyzer(new TooltipComputer(logic, exits));
         return () => {
             setAnalyzer((oldAnalyzer) => {
                 oldAnalyzer?.destroy();
                 return null;
             });
         };
-    }, [
-        settingsRequirements,
-        logic,
-        options,
-        expertMode,
-        consideredTricks,
-        settings,
-    ]);
+    }, [logic, exits]);
 
     return <TooltipsContext value={analyzer}>{children}</TooltipsContext>;
 }
@@ -113,7 +78,7 @@ export function useTooltipExpr(
         [booleanExpr, logic, getRequirementLogicalState],
     );
 }
-
+/*
 export function useEntrancePath(checkId: string): string[] | undefined {
     const logicPathfinding = useSelector(inLogicPathfindingSelector);
     const optimisticPathfinding = useSelector(optimisticPathfindingSelector);
@@ -141,3 +106,4 @@ export function useEntrancePath(checkId: string): string[] | undefined {
         return segments.reverse();
     }, [checkId, entranceRando, logicPathfinding, optimisticPathfinding]);
 }
+*/

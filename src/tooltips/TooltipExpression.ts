@@ -5,7 +5,7 @@ import BooleanExpression, {
     type Op,
 } from '../logic/booleanlogic/BooleanExpression';
 import type { LogicalState } from '../logic/Locations';
-import type { Logic } from '../logic/Logic';
+import type { Logic2 } from '../logic/logic2/Logic';
 import { chainComparators, compareBy } from '../utils/Compare';
 
 const prettyItemNames: Record<
@@ -77,7 +77,7 @@ function getName(item: TooltipExpression): string {
 }
 
 function booleanExprToTooltipExprRecursive(
-    logic: Logic,
+    logic: Logic2,
     expr: BooleanExpression,
     getRequirementLogicalState: (requirement: string) => LogicalState,
 ): NonterminalRequirement {
@@ -107,7 +107,7 @@ function booleanExprToTooltipExprRecursive(
 }
 
 export function booleanExprToTooltipExpr(
-    logic: Logic,
+    logic: Logic2,
     expr: BooleanExpression,
     getRequirementLogicalState: (requirement: string) => LogicalState,
 ): RootTooltipExpression {
@@ -138,7 +138,7 @@ export function booleanExprToTooltipExpr(
 
 const itemCountPat = /^(.+) x (\d+)$/;
 
-function getReadableItemName(logic: Logic, item: string) {
+function getReadableItemName(logic: Logic2, item: string) {
     if (item in prettyItemNames) {
         return prettyItemNames[item][1];
     }
@@ -154,7 +154,7 @@ function getReadableItemName(logic: Logic, item: string) {
         }
     }
 
-    const check = logic.checks[item];
+    const check = logic.locations[item];
     if (check) {
         return check.name;
     }

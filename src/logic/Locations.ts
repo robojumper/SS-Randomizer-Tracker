@@ -1,5 +1,5 @@
 import type { ExitRule } from './Entrances';
-import type { LogicalCheck } from './Logic';
+import type { Location2 } from './logic2/Location';
 
 export interface CheckGroup {
     /**
@@ -35,7 +35,7 @@ export interface HintRegion<N extends string = string> {
 export type LogicalState = 'outLogic' | 'inLogic' | 'semiLogic' | 'trickLogic';
 
 export interface Check {
-    type: LogicalCheck['type'] | 'exit';
+    type: Location2['type'] | 'exit';
     checkId: string;
     checkName: string;
     logicalState: LogicalState;

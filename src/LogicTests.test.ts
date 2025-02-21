@@ -6,11 +6,11 @@ import {
 } from './customization/Slice';
 import { type InventoryItem, itemMaxes } from './logic/Inventory';
 import type { LogicalState } from './logic/Locations';
-import { logicSelector } from './logic/Selectors';
 import type { TypedOptions } from './permalink/SettingsTypes';
 import type { AppAction, RootState, SyncThunkResult } from './store/Store';
 import { createTestLogic } from './testing/TestingUtils';
 import { checkOrUncheckAll, clickCheck } from './tracker/Actions';
+import { logicSelector } from './tracker/LogicInstanceSelector';
 import {
     allSettingsSelector,
     areasSelector,
@@ -699,7 +699,7 @@ describe('full logic tests', () => {
         );
 
         const logic = readSelector(logicSelector);
-        for (const check of Object.keys(logic.checks)) {
+        for (const check of Object.keys(logic.locations)) {
             expect(checkState(check)).toSatisfy(
                 (state: string) => ['inLogic', 'semiLogic'].includes(state),
                 `${check} is inLogic or semiLogic`,

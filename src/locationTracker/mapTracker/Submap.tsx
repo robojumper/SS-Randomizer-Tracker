@@ -4,7 +4,7 @@ import leaveEldin from '../../assets/maps/leaveEldin.png';
 import leaveFaron from '../../assets/maps/leaveFaron.png';
 import leaveLanayru from '../../assets/maps/leaveLanayru.png';
 import leaveSkyloft from '../../assets/maps/leaveSkyloft.png';
-import { areaGraphSelector } from '../../logic/Selectors';
+import { logicSelector } from '../../tracker/LogicInstanceSelector';
 import keyDownWrapper from '../../utils/KeyDownWrapper';
 import EntranceMarker from './EntranceMarker';
 import MapMarker from './MapMarker';
@@ -47,7 +47,7 @@ function Submap({
     exitParams: ExitParams;
     currentRegionOrExit: string | undefined;
 }) {
-    const areaGraph = useSelector(areaGraphSelector);
+    const logic = useSelector(logicSelector);
 
     const handleBack = (e: TriggerEvent | React.UIEvent) => {
         if (e.type === 'contextmenu') {
@@ -91,7 +91,7 @@ function Submap({
                             key={marker.exitId}
                             markerX={marker.markerX}
                             markerY={marker.markerY}
-                            title={areaGraph.exits[marker.exitId].short_name}
+                            title={logic.exits[marker.exitId].name}
                             active={provinceId === activeSubmap}
                             exitId={marker.exitId}
                             selected={

@@ -1,14 +1,9 @@
 import { pick } from 'es-toolkit';
-import type { Logic } from '../logic/Logic';
-import { getTooltipOpaqueBits } from '../logic/TrackerModifications';
-import type { BitLogic } from '../logic/bitlogic/BitLogic';
 import BooleanExpression from '../logic/booleanlogic/BooleanExpression';
-import type { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
+import type { ExitMapping } from '../logic/Locations';
+import type { Logic2 } from '../logic/logic2/Logic';
 import type { WorkerRequest, WorkerResponse } from './worker/Types';
-import {
-    deserializeBooleanExpression,
-    serializeLogicalExpression,
-} from './worker/Utils';
+import { deserializeBooleanExpression } from './worker/Utils';
 
 /**
  * The TooltipComputer acts as:
@@ -24,24 +19,10 @@ export class TooltipComputer {
     cleanup: () => void;
     worker: Worker | undefined;
 
-    constructor(
-        logic: Logic,
-        options: OptionDefs,
-        settings: TypedOptions,
-        expertMode: boolean,
-        trickLogicTricks: Set<string>,
-        requirements: BitLogic,
-    ) {
+    constructor(logic: Logic2, exits: ExitMapping[]) {
         this.subscriptions = new Set();
         this.results = {};
         this.isWorking = false;
-        const opaqueBits = getTooltipOpaqueBits(
-            logic,
-            options,
-            settings,
-            expertMode,
-            trickLogicTricks,
-        );
 
         const { worker, cleanup } = createWorker();
         this.worker = worker;
@@ -49,9 +30,14 @@ export class TooltipComputer {
 
         worker.postMessage({
             type: 'initialize',
-            opaqueBits: [...opaqueBits.iter()],
-            requirements: requirements.map(serializeLogicalExpression),
-            logic: pick(logic, ['allItems', 'itemBits', 'impliedBy']),
+            logic: pick(logic, [
+                'areas',
+                'requirements',
+                'exits',
+                'entrances',
+                'events',
+            ]),
+            exits,
         } satisfies WorkerRequest);
         worker.onmessage = (ev: MessageEvent<WorkerResponse>) => {
             this.acceptTaskResult(

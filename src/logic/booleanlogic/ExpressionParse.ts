@@ -1,6 +1,7 @@
 import { compact } from 'es-toolkit';
 import { BitVector } from '../bitlogic/BitVector';
 import { andToDnf } from '../bitlogic/LogicalExpression';
+import type { Requirement2 } from '../logic2/Requirement';
 import BooleanExpression, { type Item } from './BooleanExpression';
 
 export function parseExpression(expression: string) {
@@ -36,6 +37,42 @@ function booleanExpressionForTokens(
         return BooleanExpression.or(...itemsForExpression);
     }
     return BooleanExpression.and(...itemsForExpression);
+}
+
+export function booleanExprToRequirementExpr<R>(
+    expr: Item,
+    lookup: (text: string) => Requirement2<R>,
+): Requirement2<R> {
+    if (BooleanExpression.isExpression(expr)) {
+        switch (expr.type) {
+            case 'or':
+                return {
+                    type: 'or',
+                    terms: expr.items.flatMap((item) =>
+                        booleanExprToRequirementExpr(item, lookup),
+                    ),
+                };
+            case 'and': {
+                return {
+                    type: 'and',
+                    terms: expr.items.flatMap((item) =>
+                        booleanExprToRequirementExpr(item, lookup),
+                    ),
+                };
+            }
+            default: {
+                throw new Error('unreachable');
+            }
+        }
+    }
+
+    if (expr === 'True') {
+        return { type: 'and', terms: [] };
+    } else if (expr === 'False') {
+        return { type: 'or', terms: [] };
+    } else {
+        return lookup(expr);
+    }
 }
 
 export function booleanExprToLogicalExpr(

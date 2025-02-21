@@ -1,6 +1,7 @@
 import mapData from '../../data/mapData.json';
 import type { ExitMapping } from '../../logic/Locations';
 import type { AreaGraph } from '../../logic/Logic';
+import type { Logic2 } from '../../logic/logic2/Logic';
 
 export type MapHintRegion = {
     /**
@@ -57,12 +58,13 @@ type MapDataEntranceMarker =
 
 function getEntranceMarker(
     marker: MapDataEntranceMarker,
-    areaGraph: AreaGraph,
+    areaGraph: Logic2,
     exits: Record<string, ExitMapping>,
 ): MapHintRegion {
     const exitPool = marker.exitPool as keyof AreaGraph['linkedEntrancePools'];
     const exitId =
-        areaGraph.linkedEntrancePools[exitPool][marker.entryName].exits[0];
+        areaGraph.auxData.linkedEntrancePools[exitPool][marker.entryName]
+            .exits[0];
     const mapping = exits[exitId];
     return {
         type: 'exit',
@@ -78,7 +80,7 @@ function getEntranceMarker(
 
 function getProvince(
     provinceId: MapProvince['provinceId'],
-    areaGraph: AreaGraph,
+    areaGraph: Logic2,
     exits: Record<string, ExitMapping>,
 ): MapProvince {
     const province = mapData[provinceId];
@@ -126,7 +128,7 @@ export function getOwningProvince(
 }
 
 export function getMapModel(
-    areaGraph: AreaGraph,
+    areaGraph: Logic2,
     exits: Record<string, ExitMapping>,
 ): MapModel {
     return {

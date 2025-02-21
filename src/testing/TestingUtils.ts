@@ -7,7 +7,6 @@ import { createElement, type ReactNode } from 'react';
 import { Provider, type ProviderProps } from 'react-redux';
 import { resetCustomizationForTest } from '../customization/Slice';
 import { getAndPatchLogic, type RemoteReference } from '../loader/LogicLoader';
-import { logicSelector } from '../logic/Selectors';
 import { loadLogic } from '../logic/Slice';
 import { defaultSettings } from '../permalink/Settings';
 import type { AllTypedOptions } from '../permalink/SettingsTypes';
@@ -18,6 +17,7 @@ import {
     type Store,
     type SyncThunkResult,
 } from '../store/Store';
+import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
     areasSelector,
     entrancePoolsSelector,
@@ -190,10 +190,10 @@ export function createTestLogic() {
 
         findEntranceId(areaName: string, entranceName: string) {
             const logic = tester.readSelector(logicSelector);
-            const entrance = Object.entries(logic.areaGraph.entrances).find(
+            const entrance = Object.entries(logic.entrances).find(
                 ([id, e]) =>
-                    logic.areaGraph.entranceHintRegions[id] === areaName &&
-                    e.short_name.includes(entranceName),
+                    logic.hintRegions.entranceHintRegions[id] === areaName &&
+                    e.name.includes(entranceName),
             );
             const id = entrance?.[0];
             expect(id).toBeTruthy();

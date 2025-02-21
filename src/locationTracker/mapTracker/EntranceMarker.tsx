@@ -8,9 +8,9 @@ import {
 } from '../../dragAndDrop/DragAndDrop';
 import { decodeHint } from '../../hints/Hints';
 import { hintsToSubmarkers } from '../../hints/HintsParser';
-import { logicSelector } from '../../logic/Selectors';
 import type { RootState } from '../../store/Store';
 import { useTooltipExpr } from '../../tooltips/TooltipHooks';
+import { logicSelector } from '../../tracker/LogicInstanceSelector';
 import {
     areaHintSelector,
     areasSelector,
@@ -56,7 +56,7 @@ function EntranceMarker({
     );
     const logic = useSelector(logicSelector);
     const isDungeon = Object.values(
-        logic.areaGraph.linkedEntrancePools['dungeons'],
+        logic.auxData.linkedEntrancePools['dungeons'],
     ).some((ex) => ex.exits[0] === exit.exit.id);
 
     const region = exit.entrance?.region;
@@ -94,7 +94,8 @@ function EntranceMarker({
     }).show;
 
     const destinationRegionName =
-        exit.entrance && logic.areaGraph.entranceHintRegions[exit.entrance.id];
+        exit.entrance &&
+        logic.hintRegions.entranceHintRegions[exit.entrance.id];
 
     const displayMenu = useCallback(
         (e: TriggerEvent) => {

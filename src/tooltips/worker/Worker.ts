@@ -1,19 +1,9 @@
-import {
-    bottomUpTooltipPropagation,
-    removeDuplicates,
-    shallowSimplify,
-    unifyRequirements,
-} from '../../logic/bitlogic/BitLogic';
-import { BitVector } from '../../logic/bitlogic/BitVector';
-import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
 import BooleanExpression from '../../logic/booleanlogic/BooleanExpression';
+import type { ExitMapping } from '../../logic/Locations';
 import { appDebug } from '../../utils/Debug';
 import { dnfToRequirementExpr } from './Algorithms';
 import type { LeanLogic, WorkerRequest, WorkerResponse } from './Types';
-import {
-    deserializeLogicalExpression,
-    serializeBooleanExpression,
-} from './Utils';
+import { serializeBooleanExpression } from './Utils';
 
 /**
  * This module contains various strategies to turn the requirements into a more compact and readable
@@ -25,9 +15,7 @@ import {
  */
 interface GlobalState {
     logic: LeanLogic;
-    opaqueBits: BitVector;
-    learned: Set<number>;
-    requirementsForBottomUp: LogicalExpression[];
+    exits: ExitMapping[];
 }
 
 let g: GlobalState;
@@ -38,38 +26,10 @@ self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
     const start = performance.now();
     switch (ev.data.type) {
         case 'initialize': {
-            const opaqueBits = new BitVector();
-            for (const bit of ev.data.opaqueBits) {
-                opaqueBits.setBit(bit);
-            }
-            const requirements = ev.data.requirements.map(
-                deserializeLogicalExpression,
-            );
             g = {
                 logic: ev.data.logic,
-                opaqueBits,
-                learned: new Set(),
-                requirementsForBottomUp: requirements,
+                exits: ev.data.exits,
             };
-
-            do {
-                // First, perform some cheap optimizations that will help every
-                // query afterwards.
-                removeDuplicates(g.requirementsForBottomUp);
-                while (
-                    shallowSimplify(g.opaqueBits, g.requirementsForBottomUp)
-                ) {
-                    removeDuplicates(g.requirementsForBottomUp);
-                }
-            } while (
-                unifyRequirements(g.opaqueBits, g.requirementsForBottomUp)
-            );
-            appDebug(
-                'worker',
-                'initializing and pre-simplifying took',
-                performance.now() - start,
-                'ms',
-            );
 
             const start2 = performance.now();
             bottomUpTooltipPropagation(g.opaqueBits, g.requirementsForBottomUp);

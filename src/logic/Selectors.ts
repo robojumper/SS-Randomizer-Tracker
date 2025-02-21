@@ -1,6 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../store/Store';
-import { parseLogic } from './Logic';
+import { parseLogic2 } from './logic2/Logic';
 
 const rawLogicSelector = (state: RootState) => state.logic.loaded!.logic;
 /** Selects loaded options. Throws if not loaded. */
@@ -12,9 +12,7 @@ export const isLogicLoadedSelector = (state: RootState) =>
     Boolean(state.logic.loaded);
 
 /** Select parsed logic. Throws if logic hasn't loaded yet (guard with `isLogicLoadedSelector`). */
-export const logicSelector = createSelector([rawLogicSelector], parseLogic);
-
-export const areaGraphSelector = createSelector(
-    [logicSelector],
-    (logic) => logic.areaGraph,
+export const preInstanceLogicSelector = createSelector(
+    [rawLogicSelector],
+    parseLogic2,
 );
