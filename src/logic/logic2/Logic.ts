@@ -279,7 +279,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                 }
 
                 if (wellKnownRequirements[item]) {
-                    Requirement.wellKnown(wellKnownRequirements[item]);
+                    return Requirement.wellKnown(wellKnownRequirements[item]);
                 }
 
                 if (item === 'Day') {

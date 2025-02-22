@@ -4,7 +4,7 @@ import type {
     TypedOptions,
 } from '../permalink/SettingsTypes';
 import { stubFalse } from '../utils/Function';
-import type { FullRequirement2 } from './logic2/Requirement';
+import type { WellKnownRequirement } from './logic2/Requirement';
 
 /** Exits that are not randomized even if ER is on. */
 export const nonRandomizedExits = [
@@ -103,10 +103,7 @@ export const doesHintDistroUseGossipStone: Record<
 };
 
 // These requirements are populated based on required dungeons
-export const wellKnownRequirements: Record<
-    string,
-    (FullRequirement2 & { type: 'wellKnown' })['name']
-> = {
+export const wellKnownRequirements: Record<string, WellKnownRequirement> = {
     'GoT Opening Requirement': 'openGot',
     'GoT Raising Requirement': 'raiseGot',
     'Horde Door Requirement': 'hordeDoor',

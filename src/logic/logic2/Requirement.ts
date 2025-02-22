@@ -16,6 +16,8 @@ export type RecursiveRequirement3<R> =
 
 export type Requirement2 = RecursiveRequirement3<SimpleRequirement2>;
 
+export type WellKnownRequirement = 'openGot' | 'raiseGot' | 'hordeDoor';
+
 /** Basic requirements */
 export type SimpleRequirement2 =
     | { type: 'item'; name: InventoryItem; count: number }
@@ -47,7 +49,7 @@ type PreInstanceRequirement2 =
       }
     | {
           type: 'wellKnown';
-          name: 'openGot' | 'raiseGot' | 'hordeDoor';
+          name: WellKnownRequirement;
       };
 
 export const Requirement = {
@@ -116,7 +118,7 @@ export const Requirement = {
         return { kind: 'leaf', type: 'item', name, count } as const;
     },
 
-    wellKnown: (name: string) => {
+    wellKnown: (name: WellKnownRequirement) => {
         return { kind: 'leaf', type: 'wellKnown', name } as const;
     },
 };
