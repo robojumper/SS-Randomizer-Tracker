@@ -80,6 +80,7 @@ export interface Logic2<R = Requirement2> {
     entrances: Record<string, Entrance2>;
     locations: Record<string, Location2>;
     events: Record<string, Event2>;
+    auxItemNames: Record<string, string>;
     auxData: LogicAuxData2;
     hintRegions: HintRegionLookup2;
     /**
@@ -97,6 +98,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
     const locations: PreSettingsLogic2['locations'] = {};
     const exits: PreSettingsLogic2['exits'] = {};
     const entrances: PreSettingsLogic2['entrances'] = {};
+    const auxItemNames: PreSettingsLogic2['auxItemNames'] = {};
     const auxItems: Set<string> = new Set();
     let requirementsIdx = 0;
     const requirements: Record<number, FullRequirement2> = {};
@@ -177,6 +179,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
             containedAuxItem: cubeItem,
         };
         auxItems.add(cubeItem);
+        auxItemNames[cubeItem] = last(cubeCheck.split('\\'))!;
     }
 
     for (const [gossipStoneId, gossipStoneName] of Object.entries(
@@ -241,11 +244,18 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
         return area;
     }
 
+    console.log(cubeCheckToCubeCollected);
+
     const knownSettings = runtimeOptions.map((o) => o[0]);
     const parseExpr = (expr: string) => {
         return booleanExprToRequirementExpr(
             parseExpression(expr),
             (item: string): FullRequirement2 => {
+                // If an expression looks at "goddess cube in X", require the actual item instead.
+                const goddessCubeItem = cubeCheckToCubeCollected[item];
+                if (goddessCubeItem) {
+                    return { type: 'auxItem', name: goddessCubeItem };
+                }
                 if (locations[item]) {
                     // check whether a check is mentioned by requirements.
                     // This should not be a thing because it means that the location
@@ -297,12 +307,6 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
 
                 if (knownSettings.includes(item)) {
                     return { type: 'setting', name: item };
-                }
-
-                // If an expression looks at "goddess cube in X", require the actual item instead.
-                const goddessCubeItem = cubeCheckToCubeCollected[item];
-                if (goddessCubeItem) {
-                    return { type: 'auxItem', name: inventoryItem };
                 }
 
                 if (/\\[0-9]+ Gratitude Crystals/.exec(item)) {
@@ -444,12 +448,10 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                 if (check) {
                     if (isPrimaryLocation) {
                         const region = getHintRegion(locationId);
-                        /*
                         if (check.type === 'tr_cube') {
-                            check.name = `${region} - ${check.name}`;
+                            auxItemNames[check.containedAuxItem!] =
+                                `${region} - ${auxItemNames[check.containedAuxItem!]}`;
                         }
-                        check.area = region;
-                        */
                         (hintRegionData.checksByHintRegion[region] ??= []).push(
                             locationId,
                         );
@@ -606,6 +608,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
         events,
         exits,
         locations,
+        auxItemNames,
         requirements: arrRequirements,
         auxData: {
             autoExits,

@@ -94,7 +94,7 @@ function booleanExprToTooltipExprRecursive(
         } else {
             return {
                 type: 'item',
-                item: getReadableItemName(item),
+                item: getReadableItemName(logic, item),
                 logicalState: getRequirementLogicalState(item),
             };
         }
@@ -144,7 +144,7 @@ export function booleanExprToTooltipExpr(
     }
 }
 
-function getReadableItemName(item: TooltipRequirement2): string {
+function getReadableItemName(logic: Logic2, item: TooltipRequirement2): string {
     switch (item.type) {
         case 'item':
             if (item.name in prettyItemNames) {
@@ -159,6 +159,8 @@ function getReadableItemName(item: TooltipRequirement2): string {
         case 'trick':
             return `${item.name} Trick`;
         case 'auxItem':
-            return last(item.name.split('\\'))!;
+            return (
+                logic.auxItemNames[item.name] ?? last(item.name.split('\\'))!
+            );
     }
 }
