@@ -8,7 +8,7 @@ import {
 } from '../booleanlogic/ExpressionParse';
 import { isItem } from '../Inventory';
 import { dungeonNames } from '../Locations';
-import type { EntranceLinkage } from '../Logic';
+import type { EntranceLinkage, LinkedEntrancePool } from '../Logic';
 import { TimeOfDay } from '../Mappers';
 import {
     bannedExitsAndEntrances,
@@ -65,10 +65,7 @@ export interface LogicAuxData2 {
      * where interior exits follow exterior exit choice.
      */
     linkedEntrancePools: {
-        [key in keyof RawLogic['linked_entrances']]: Record<
-            string,
-            EntranceLinkage
-        >;
+        [key in LinkedEntrancePool]: Record<string, EntranceLinkage>;
     };
     /**
      * An entrance pool without linkage.
