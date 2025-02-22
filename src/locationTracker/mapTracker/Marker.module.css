@@ -59,7 +59,8 @@
     left: calc(var(--map-marker-x) + var(--map-marker-size));
 
     &.left {
-        left: calc(var(--map-marker-x) - var(--map-marker-size) / 2);
+        left: var(--map-marker-x);
+        transform: translateX(-100%);
         flex-wrap: wrap-reverse;
     }
 
