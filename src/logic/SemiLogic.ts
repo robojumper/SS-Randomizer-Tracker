@@ -1,9 +1,7 @@
 import type { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { isItem, itemMaxes } from './Inventory';
 import { type PotentialLocations, getSemiLogicKeys } from './KeyLogic';
-import { type Logic, isRegularItemCheck } from './Logic';
-import { LogicBuilder } from './LogicBuilder';
-import { type Requirements } from './bitlogic/BitLogic';
+import { isRegularItemCheck } from './Logic';
 import type { SearchExits2 } from './logic2/Entrance';
 import type { Logic2 } from './logic2/Logic';
 import { type SearchState2, cloneSearchState, search } from './logic2/Search';
@@ -49,41 +47,6 @@ export function getVisibleTricks(
     }
 
     return result;
-}
-
-/**
- * Requirements that assume every considered trick is enabled. Enables
- * all tricks if consideredTricks is empty.
- */
-export function getVisibleTricksEnabledRequirements(
-    logic: Logic,
-    options: OptionDefs,
-    settings: TypedOptions,
-    consideredTricks: Set<string>,
-): Requirements {
-    const requirements: Requirements = {};
-    const b = new LogicBuilder(logic.allItems, logic.itemLookup, requirements);
-
-    for (const option of options) {
-        if (
-            option.type === 'multichoice' &&
-            (option.command === 'enabled-tricks-glitched' ||
-                option.command === 'enabled-tricks-bitless')
-        ) {
-            const vals = option.choices;
-            for (const opt of vals) {
-                const considered =
-                    settings[option.command].includes(opt) ||
-                    !consideredTricks.size ||
-                    consideredTricks.has(opt);
-                if (considered) {
-                    b.set(`${opt} Trick`, b.true());
-                }
-            }
-        }
-    }
-
-    return requirements;
 }
 
 export function computeSemiLogic(

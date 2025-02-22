@@ -69,8 +69,6 @@ export const runtimeOptions: OptionMapping[] = [
 export const impaSongCheck =
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
 
-export const completeTriforceReq = '\\Complete Triforce';
-
 export const swordsToAdd = {
     Swordless: 0,
     'Practice Sword': 1,
@@ -113,6 +111,3 @@ export const wellKnownRequirements: Record<
     'GoT Raising Requirement': 'raiseGot',
     'Horde Door Requirement': 'hordeDoor',
 };
-export const gotOpeningReq = 'GoT Opening Requirement';
-export const gotRaisingReq = 'GoT Raising Requirement';
-export const hordeDoorReq = 'Horde Door Requirement';

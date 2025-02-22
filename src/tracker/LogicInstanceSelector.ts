@@ -36,7 +36,7 @@ export const requiredDungeonsSelector = createSelector(
     },
 );
 
-export const visibleTricksSelector = createSelector(
+const visibleTricksSelector = createSelector(
     [
         optionsSelector,
         settingsSelector,

@@ -169,25 +169,3 @@ function andToDnf2(left: BitVector[], right: BitVector[]): BitVector[] {
     }
     return newExpr;
 }
-
-export function andToDnf(arr: BitVector[][]): BitVector[] {
-    if (arr.length === 2) {
-        return andToDnf2(arr[0], arr[1]);
-    }
-    const newExpr = [];
-    for (const tuple of cartesianProduct(...arr)) {
-        const newVec = tuple.reduce((acc, val) => acc.or(val), new BitVector());
-        newExpr.push(newVec);
-    }
-    return newExpr;
-}
-
-function cartesianProduct<T>(...allEntries: T[][]): T[][] {
-    return allEntries.reduce<T[][]>(
-        (results, entries) =>
-            results
-                .map((result) => entries.map((entry) => result.concat([entry])))
-                .reduce((subResults, result) => subResults.concat(result), []),
-        [[]],
-    );
-}

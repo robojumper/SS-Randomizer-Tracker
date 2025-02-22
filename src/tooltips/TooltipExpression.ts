@@ -1,5 +1,6 @@
 import { last, sumBy } from 'es-toolkit';
 import prettyItemNames_ from '../data/prettyItemNames.json';
+import { itemName } from '../logic/Inventory';
 import type { LogicalState } from '../logic/Locations';
 import type { Logic2 } from '../logic/logic2/Logic';
 import { chainComparators, compareBy } from '../utils/Compare';
@@ -148,10 +149,9 @@ function getReadableItemName(item: TooltipRequirement2): string {
         case 'item':
             if (item.name in prettyItemNames) {
                 return prettyItemNames[item.name][item.count];
-            } else if (item.count > 1) {
-                return `${item.name} x ${item.count}`;
+            } else {
+                return itemName(item.name, item.count);
             }
-            return item.name;
         case 'rupeeCapacity':
             return `Wallet Capacity >= ${item.amount}`;
         case 'gratitudeCrystals':

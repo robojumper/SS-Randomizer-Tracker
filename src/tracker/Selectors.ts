@@ -192,7 +192,7 @@ export const exitsByIdSelector = createSelector([exitsSelector], (exits) =>
     keyBy(exits, (e) => e.exit.id),
 );
 
-export const inLogicSearchSelector = createSelector(
+const inLogicSearchSelector = createSelector(
     [
         logicSelector,
         searchExitsSelector,
@@ -205,7 +205,7 @@ export const inLogicSearchSelector = createSelector(
     },
 );
 
-export const optimisticSearchSelector = createSelector(
+const optimisticSearchSelector = createSelector(
     [logicSelector, searchExitsSelector, inLogicSearchSelector],
     (logic, exits, inLogicState) => {
         const state: SearchState2 = {
@@ -406,7 +406,7 @@ export const getRequirementLogicalStateSelector = createSelector(
         },
 );
 
-export const getLocationLogicalStateSelector = createSelector(
+const getLocationLogicalStateSelector = createSelector(
     [inLogicSearchSelector, semiLogicSearchSelector],
     (inLogicState, semiLogicState) =>
         (location: string): LogicalState => {

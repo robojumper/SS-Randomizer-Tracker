@@ -415,7 +415,7 @@ function LogicChooser({
     );
 }
 
-export interface PlaintextRef {
+interface PlaintextRef {
     setInput: (text: string) => void;
 }
 

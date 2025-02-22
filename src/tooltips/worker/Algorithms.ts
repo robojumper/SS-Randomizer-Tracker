@@ -2,6 +2,10 @@ import { maxBy, sumBy } from 'es-toolkit';
 import { BitVector } from '../../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
 import {
+    falseRequirement,
+    trueRequirement,
+} from '../../logic/logic2/Requirement';
+import {
     getRequirementBit,
     type BitIndex,
     type RecursiveTooltipRequirement2,
@@ -29,11 +33,11 @@ export function dnfToRequirementExpr(
     sop: BitVector[],
 ): RecursiveTooltipRequirement2 {
     if (sop.length === 0) {
-        return { type: 'or', terms: [] };
+        return falseRequirement();
     }
 
     if (sop.length === 1 && sop[0].isEmpty()) {
-        return { type: 'and', terms: [] };
+        return trueRequirement();
     }
 
     /*

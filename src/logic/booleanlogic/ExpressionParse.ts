@@ -1,7 +1,9 @@
 import { compact } from 'es-toolkit';
-import { BitVector } from '../bitlogic/BitVector';
-import { andToDnf } from '../bitlogic/LogicalExpression';
-import type { FullRequirement2 } from '../logic2/Requirement';
+import {
+    falseRequirement,
+    trueRequirement,
+    type FullRequirement2,
+} from '../logic2/Requirement';
 import BooleanExpression, { type Item } from './BooleanExpression';
 
 export function parseExpression(expression: string) {
@@ -67,42 +69,10 @@ export function booleanExprToRequirementExpr(
     }
 
     if (expr === 'True') {
-        return { type: 'and', terms: [] };
+        return trueRequirement();
     } else if (expr === 'False') {
-        return { type: 'or', terms: [] };
+        return falseRequirement();
     } else {
         return lookup(expr);
-    }
-}
-
-export function booleanExprToLogicalExpr(
-    expr: Item,
-    lookup: (text: string) => number,
-): BitVector[] {
-    if (BooleanExpression.isExpression(expr)) {
-        switch (expr.type) {
-            case 'or':
-                return expr.items.flatMap((item) =>
-                    booleanExprToLogicalExpr(item, lookup),
-                );
-            case 'and': {
-                const mapped = expr.items.map((i) =>
-                    booleanExprToLogicalExpr(i, lookup),
-                );
-                return andToDnf(mapped);
-            }
-            default: {
-                throw new Error('unreachable');
-            }
-        }
-    }
-
-    if (expr === 'True') {
-        return [new BitVector()];
-    } else if (expr === 'False') {
-        return [];
-    } else {
-        const bit_idx = lookup(expr);
-        return [new BitVector().setBit(bit_idx)];
     }
 }
