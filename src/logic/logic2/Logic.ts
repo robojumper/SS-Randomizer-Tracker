@@ -134,7 +134,9 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
         locations[checkId] = {
             id: checkId,
             name: check.short_name,
-            originalItem: splitItemIndex(check['original item'])[0],
+            originalItem: check['original item']
+                ? splitItemIndex(check['original item'])[0]
+                : undefined,
             type,
             containedAuxItem,
         };
@@ -247,8 +249,6 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
 
         return area;
     }
-
-    console.log(cubeCheckToCubeCollected);
 
     const knownSettings = runtimeOptions.map((o) => o[0]);
     const parseExpr = (expr: string) => {

@@ -1,3 +1,4 @@
+import { appDebug } from '../../utils/Debug';
 import type { InventoryItem } from '../Inventory';
 import { TimeOfDay, type TTimeOfDay } from '../Mappers';
 import { getAuxItems, getDerivedItems } from '../Misc';
@@ -48,6 +49,7 @@ export function search(
     exitsMappings: SearchExits2,
     initialState: SearchState2,
 ): SearchState2 {
+    const start = performance.now();
     const areaAtTod: Record<string, TTimeOfDay[keyof TTimeOfDay] | 0> = {};
     let newThingsFound = true;
 
@@ -86,6 +88,8 @@ export function search(
         for (const location of area.locations) {
             locationsToTryLast.add(location);
         }
+        // ssrando bug here: ssrando's logic construction
+        // effectively does areaAtTod[area.id] = areaAtTod[sourceArea.id]
         areaAtTod[area.id] = tod;
         if (area.canSleep) {
             areaAtTod[area.id] = TimeOfDay.Both;
@@ -120,15 +124,13 @@ export function search(
 
     function tryExit(exit: UnifiedExit2) {
         for (const tod of [TimeOfDay.DayOnly, TimeOfDay.NightOnly]) {
-            // ssrando effectively has a bug here where passing the exit requirement
-            // at a specific ToD only still allows the opposite ToD to logically
-            // pass through.
             if (
                 // We haven't reached the area yet at the given time of day
                 (areaAtTod[exit.connectedArea.id] & tod) === 0 &&
                 // Can reach parent area at time of day
                 (areaAtTod[exit.parentArea.id] & tod) !== 0 &&
                 // The given time of day is valid for all involved areas, exit, and entrance
+                // ssrando bug, this is effectively not checked by ssrando's logic construction
                 (exit.validTod & tod) !== 0
             ) {
                 if (evaluateRequirement(newState, exit.requirement, tod)) {
@@ -136,6 +138,7 @@ export function search(
                         visitAreaForTheFirstTime(exit.connectedArea, tod);
                     } else {
                         areaAtTod[exit.connectedArea.id] |= tod;
+                        newThingsFound = true;
                     }
                 }
             }
@@ -205,6 +208,7 @@ export function search(
         }
     }
 
+    appDebug('search took', performance.now() - start, 'ms');
     return newState;
 }
 
