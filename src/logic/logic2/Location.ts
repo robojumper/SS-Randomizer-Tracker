@@ -10,8 +10,7 @@ export interface Location2 {
         | 'beedle_shop'
         | 'gear_shop'
         | 'potion_shop'
-        | 'tr_cube'
-        | 'tr_dummy';
+        | 'tr_cube';
     name: string;
     originalItem: string | undefined;
     containedAuxItem: string | undefined;

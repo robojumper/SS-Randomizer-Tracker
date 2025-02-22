@@ -9,7 +9,7 @@ export type TrackerLinkedEntrancePool =
 /**
  * Is this a check that can contain mostly any random item, assuming it is unbanned?
  */
-export function isRegularItemCheck(type: Location2['type']) {
+export function isRegularItemCheck(type: Location2['type']): boolean {
     switch (type) {
         case 'regular':
         case 'trial_treasure':
@@ -22,7 +22,6 @@ export function isRegularItemCheck(type: Location2['type']) {
         case 'loose_crystal':
         case 'gossip_stone':
         case 'tr_cube':
-        case 'tr_dummy':
             return false;
     }
 }
