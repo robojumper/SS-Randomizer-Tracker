@@ -1,5 +1,4 @@
 import React from 'react';
-import type { Op } from '../logic/booleanlogic/BooleanExpression';
 import type {
     RootTooltipExpression,
     TooltipExpression,
@@ -38,7 +37,7 @@ function Expr({
     parentOp,
 }: {
     expr: TooltipExpression;
-    parentOp: Op | undefined;
+    parentOp: 'and' | 'or' | undefined;
 }): React.ReactElement {
     if (expr.type === 'expr') {
         return (

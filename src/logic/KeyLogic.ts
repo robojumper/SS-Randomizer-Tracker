@@ -110,7 +110,7 @@ export function keyData(
 
     // This baseline logic state can be re-used in later computations
     const baselineSearchState = search(logic, exits, {
-        ...getInitialSearchState(fullInventoryNoKeys, new Set()),
+        ...getInitialSearchState(logic, fullInventoryNoKeys, new Set()),
     });
 
     for (const dungeon of dungeonNames.filter(isRegularDungeon)) {

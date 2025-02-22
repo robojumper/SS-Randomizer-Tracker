@@ -6,11 +6,7 @@ import {
     triforceItems,
 } from './TrackerModifications';
 
-export function getAdditionalItems(
-    logic: Logic2,
-    inventory: Record<InventoryItem, number>,
-    checkedChecks: Set<string>,
-) {
+export function getAuxItems(logic: Logic2, checkedChecks: Set<string>) {
     const result: Record<string, number> = {};
     for (const checkId of checkedChecks) {
         const check = logic.locations[checkId];
@@ -20,6 +16,11 @@ export function getAdditionalItems(
         }
     }
 
+    return result;
+}
+
+export function getDerivedItems(inventory: Record<InventoryItem, number>) {
+    const result: Record<string, number> = {};
     for (let i = 1; i <= inventory['Song of the Hero']; i++) {
         result[sothItems[i - 1]] = 1;
     }

@@ -40,16 +40,6 @@ export function dnfToRequirementExpr(
         return trueRequirement();
     }
 
-    /*
-    return BooleanExpression.or(
-        ...sop.map((s) =>
-            BooleanExpression.and(
-                ...[...s.iter()].map((bit) => logic.allItems[bit]),
-            ),
-        ),
-    );
-    */
-
     const conjunctions = new LogicalExpression(sop).removeDuplicates()
         .conjunctions;
 

@@ -1,6 +1,6 @@
 import type { InventoryItem } from '../Inventory';
 import { TimeOfDay, type TTimeOfDay } from '../Mappers';
-import { getAdditionalItems } from '../Misc';
+import { getAuxItems, getDerivedItems } from '../Misc';
 import type { Area2 } from './Area';
 import { type SearchExits2, type UnifiedExit2 } from './Entrance';
 import type { EventAccess2, LocationAccess2 } from './Location';
@@ -29,6 +29,7 @@ export function cloneSearchState(state: SearchState2): SearchState2 {
 }
 
 export function getInitialSearchState(
+    logic: Logic2,
     inventory: Record<InventoryItem, number>,
     checkedChecks: Set<string>,
 ): SearchState2 {
@@ -38,7 +39,7 @@ export function getInitialSearchState(
         events: new Set(),
         reachableChecks: new Set(checkedChecks),
         reachableExits: new Set(['\\Start']),
-        auxItems: {},
+        auxItems: getAuxItems(logic, checkedChecks),
     };
 }
 
@@ -61,11 +62,10 @@ export function search(
     let exitsToTry = new Set<UnifiedExit2>();
 
     const newState = cloneSearchState(initialState);
-    newState.auxItems = getAdditionalItems(
-        logic,
-        newState.inventory,
-        newState.reachableChecks,
-    );
+    newState.auxItems = {
+        ...newState.auxItems,
+        ...getDerivedItems(newState.inventory),
+    };
 
     function visitAreaForTheFirstTime(
         area: Area2,

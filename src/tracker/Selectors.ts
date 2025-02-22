@@ -23,7 +23,7 @@ import {
     type LogicalState,
 } from '../logic/Locations';
 import { TimeOfDay } from '../logic/Mappers';
-import { getAdditionalItems } from '../logic/Misc';
+import { getAuxItems } from '../logic/Misc';
 import { computeSemiLogic } from '../logic/SemiLogic';
 import { doesHintDistroUseGossipStone } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
@@ -126,16 +126,16 @@ const checkedChecksSelector = createSelector(
     (checkedChecks) => new Set(checkedChecks),
 );
 
-const checkItemsSelector = createSelector(
-    [logicSelector, inventorySelector, checkedChecksSelector],
-    getAdditionalItems,
+const auxItemsSelector = createSelector(
+    [logicSelector, checkedChecksSelector],
+    getAuxItems,
     { memoizeOptions: { resultEqualityCheck: isEqual } },
 );
 
 export const totalGratitudeCrystalsSelector = createSelector(
-    [checkItemsSelector, rawItemCountSelector('Gratitude Crystal Pack')],
-    (checkItems, packCount) => {
-        return packCount * 5 + (checkItems['Gratitude Crystal'] ?? 0);
+    [auxItemsSelector, rawItemCountSelector('Gratitude Crystal Pack')],
+    (auxItems, packCount) => {
+        return packCount * 5 + (auxItems['Gratitude Crystal'] ?? 0);
     },
 );
 
@@ -200,7 +200,11 @@ const inLogicSearchSelector = createSelector(
         checkedChecksSelector,
     ],
     (logic, exits, inventory, checkedChecks) => {
-        const initialState = getInitialSearchState(inventory, checkedChecks);
+        const initialState = getInitialSearchState(
+            logic,
+            inventory,
+            checkedChecks,
+        );
         return search(logic, exits, initialState);
     },
 );
@@ -447,9 +451,9 @@ export const dungeonCompletedSelector = currySelector(
         [
             (_state: RootState, name: DungeonName) => name,
             // This dependency is the wrong way around, I think
-            checkItemsSelector,
+            auxItemsSelector,
         ],
-        (name, checkItems) => Boolean(checkItems[dungeonCompletionItems[name]]),
+        (name, auxItems) => Boolean(auxItems[dungeonCompletionItems[name]]),
     ),
 );
 
