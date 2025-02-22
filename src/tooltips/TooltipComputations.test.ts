@@ -134,7 +134,7 @@ describe('tooltips', () => {
                 ),
             );
             expect(formatExpr(result)).toMatchInlineSnapshot(
-                `"(Goddess Cube on top of Skyview and (Beetle or Bow or Clawshots or Slingshot))"`,
+                `"(Faron Woods - Goddess Cube on top of Skyview and (Beetle or Bow or Clawshots or Slingshot))"`,
             );
         });
 

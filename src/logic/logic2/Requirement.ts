@@ -9,11 +9,6 @@ import {
 } from '../ThingsThatWouldBeNiceToHaveInTheDump';
 import { dungeonCompletionItems, impaSongEvent } from '../TrackerModifications';
 
-export type RecursiveRequirement2<R> =
-    | { type: 'and'; terms: RecursiveRequirement2<R>[] }
-    | { type: 'or'; terms: RecursiveRequirement2<R>[] }
-    | R;
-
 export type RecursiveRequirement3<R> =
     | { kind: 'op'; type: 'and'; terms: RecursiveRequirement3<R>[] }
     | { kind: 'op'; type: 'or'; terms: RecursiveRequirement3<R>[] }

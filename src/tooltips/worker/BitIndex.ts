@@ -10,9 +10,6 @@ export type TooltipRequirement2 = Requirement2 & {
 export type RecursiveTooltipRequirement2 =
     RecursiveRequirement3<TooltipRequirement2>;
 
-export type RecursiveTooltipRequirement3 =
-    RecursiveRequirement3<TooltipRequirement2>;
-
 export interface BitIndex {
     itemBits: Record<string, number>;
     walletCapBits: Record<string, number>;
