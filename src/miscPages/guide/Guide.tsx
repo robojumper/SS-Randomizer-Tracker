@@ -1,11 +1,14 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
+import { useSelector } from 'react-redux';
 import DiscordButton from '../../additionalComponents/DiscordButton';
 import Tooltip, { FakeTooltip } from '../../additionalComponents/Tooltip';
 import CustomizationModal from '../../customization/CustomizationModal';
+import { tumbleweedSelector } from '../../customization/Selectors';
 import { BasicItem } from '../../itemTracker/BasicItem';
 import images from '../../itemTracker/Images';
 import RequirementsTooltip from '../../locationTracker/RequirementsTooltip';
+import { itemMaxes, type InventoryItem } from '../../logic/Inventory';
 import type { RootTooltipExpression } from '../../tooltips/TooltipExpression';
 import styles from './Guide.module.css';
 import {
@@ -16,6 +19,7 @@ import {
 } from './GuideTooltips';
 
 export default function Guide() {
+    const trackTim = useSelector(tumbleweedSelector);
     return (
         <div className={styles.guidePage}>
             <div className={styles.guideContent}>
@@ -149,12 +153,43 @@ export default function Guide() {
                     Your First Seed
                 </Heading>
                 <Section>
-                    TODO expand this
+                    <p>
+                        This assumes you have set up and launched a randomized
+                        game and are ready to begin playing. If any of these
+                        steps are unclear, the{' '}
+                        <a href="#tracker-features">Tracker Features</a> section
+                        goes into much more detail.
+                    </p>
                     <ol>
-                        <li>Enter your starting location</li>
-                        <li>Ask Fi for your required dungeons and mark them</li>
-                        <li>Ask Fi for hints (if any) and act on them</li>
-                        <li>Enter a randomized starting item (if any)</li>
+                        <li>
+                            <b>Select your Randomizer version and settings:</b>{' '}
+                            On the Options page, select the correct randomizer
+                            release and paste your settings string. Make sure
+                            the settings are right, then click{' '}
+                            <b>Launch New Tracker</b>.
+                        </li>
+                        <li>
+                            <b>Enter your starting entrance:</b> If you have a
+                            random starting entrance, the tracker will prompt
+                            you for it. Enter it so that the tracker knows where
+                            to start.
+                        </li>
+                        <li>
+                            <b>Mark your required dungeons:</b> Ask Fi for your
+                            required dungeons and click the corresponding
+                            dungeon labels to mark them as required. If Empty
+                            Unrequired Dungeons is enabled, this will cause
+                            their checks to appear.
+                        </li>
+                        <li>
+                            <b>Enter your Fi hints:</b> Fi may have some hints
+                            for you. Ask her and track these hints.
+                        </li>
+                        <li>
+                            <b>Check for a random starting item:</b> Depending
+                            on settings, you may start with an additional random
+                            starting item. Make sure to mark it!
+                        </li>
                     </ol>
                 </Section>
                 <Heading level={2} id="tracker-features">
@@ -271,7 +306,10 @@ export default function Guide() {
                         its count or unmark it. Note that the Dungeon Tracker
                         also includes various dungeon-related items.
                     </p>
-                    <GuideItem />
+                    <div className={styles.guideItemRow}>
+                        <GuideItem item="Progressive Beetle" />
+                        {trackTim && <GuideItem item="Tumbleweed" />}
+                    </div>
                     <p>
                         In the <b>Item Tracker Settings</b> customization option
                         you can switch between an <b>In-Game Inventory</b> with
@@ -677,22 +715,22 @@ function GuideCustomization() {
     );
 }
 
-function GuideItem() {
+function GuideItem({ item }: { item: InventoryItem }) {
     const [count, setCount] = useState(0);
     return (
         <div className={styles.guideItemSection}>
-            <Tooltip content="Progressive Beetle">
+            <Tooltip content={item}>
                 <BasicItem
                     className={styles.guideItem}
-                    itemName="Progressive Beetle"
-                    images={images['Progressive Beetle']}
+                    itemName={item}
+                    images={images[item]}
                     count={count}
                     onGiveOrTake={(take: boolean) => {
                         setCount((old) => {
                             if (take) {
-                                return old === 0 ? 4 : old - 1;
+                                return old === 0 ? itemMaxes[item] : old - 1;
                             } else {
-                                return old === 4 ? 0 : old + 1;
+                                return old === itemMaxes[item] ? 0 : old + 1;
                             }
                         });
                     }}

@@ -20,6 +20,10 @@
     justify-content: center;
 }
 
+.guideItemRow {
+    display: flex;
+}
+
 .guideItem {
     width: 72px;
 }

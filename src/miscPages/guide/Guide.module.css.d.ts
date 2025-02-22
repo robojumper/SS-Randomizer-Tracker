@@ -3,6 +3,7 @@ declare const classNames: {
     readonly guideContent: 'guideContent';
     readonly guideSection: 'guideSection';
     readonly guideItemSection: 'guideItemSection';
+    readonly guideItemRow: 'guideItemRow';
     readonly guideItem: 'guideItem';
     readonly guideTooltipsRow: 'guideTooltipsRow';
 };
