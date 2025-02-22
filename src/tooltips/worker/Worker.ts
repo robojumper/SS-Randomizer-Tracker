@@ -1,15 +1,18 @@
 import { BitVector } from '../../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
-import type { ExitMapping } from '../../logic/Locations';
 import type { Area2 } from '../../logic/logic2/Area';
-import { getSearchExits, type UnifiedExit2 } from '../../logic/logic2/Entrance';
+import {
+    type SearchExits2,
+    type UnifiedExit2,
+} from '../../logic/logic2/Entrance';
 import type {
     EventAccess2,
     LocationAccess2,
 } from '../../logic/logic2/Location';
-import type {
-    RecursiveRequirement2,
-    Requirement2,
+import {
+    simplifyRequirement,
+    type RecursiveRequirement2,
+    type Requirement2,
 } from '../../logic/logic2/Requirement';
 import { TimeOfDay, type TTimeOfDay } from '../../logic/Mappers';
 import { appDebug } from '../../utils/Debug';
@@ -32,7 +35,7 @@ import type { LeanLogic, WorkerRequest, WorkerResponse } from './Types';
  */
 interface GlobalState {
     logic: LeanLogic;
-    exits: ExitMapping[];
+    exits: SearchExits2;
     locationExitDnfs: Record<string, LogicalExpression>;
     bitIndex: BitIndex | undefined;
 }
@@ -112,10 +115,7 @@ export function intersects<T>(a: Set<T>, b: Set<T>): boolean {
     return [...a].some((r) => b.has(r));
 }
 
-function bottomUpTooltipPropagation(
-    logic: LeanLogic,
-    exitsMappings: ExitMapping[],
-) {
+function bottomUpTooltipPropagation(logic: LeanLogic, exits: SearchExits2) {
     const bitIndex = createBitIndex();
     const eventExprs: Record<string, LogicalExpression | undefined> = {};
     const areaTodExprs: Record<
@@ -142,7 +142,7 @@ function bottomUpTooltipPropagation(
         Set<string> | undefined
     >();
 
-    const { mapExits, logicalExits } = getSearchExits(logic, exitsMappings);
+    const { mapExits, logicalExits } = exits;
     const startMapping = mapExits['\\Start']!;
     exitsToTry.add(startMapping);
     for (const area of Object.values(logic.areas)) {
@@ -150,8 +150,18 @@ function bottomUpTooltipPropagation(
             for (const event of area.events) {
                 eventsToTry.add(event);
             }
+            newlyUpdatedAreas.add(area.id);
+            // Abstract areas cannot contain ToD requirements in their
+            // events / exits, so simply set Day to True. This is an annoying
+            // workaround for a quirk in the ssrando logic format with abstract
+            // areas; other logics call these kinds of events Macros and
+            // substitute them directly when parsing.
+            areaTodExprs[TimeOfDay.DayOnly][area.id] = LogicalExpression.true();
         }
     }
+
+    // TODO requirements are only remote if they actually appear
+    // in a different area! Some optimization potential here
 
     function visitor(thing: UnifiedExit2 | EventAccess2) {
         function handler(requirement: Requirement2) {
@@ -177,6 +187,13 @@ function bottomUpTooltipPropagation(
                 );
             }
         }
+
+        for (const event of area.events) {
+            visitRequirement(
+                logic.requirements[event.requirementsIdx],
+                visitor(event),
+            );
+        }
     }
 
     for (const conn of Object.values(logicalExits).flat()) {
@@ -184,9 +201,6 @@ function bottomUpTooltipPropagation(
     }
 
     let newThingsFound = true;
-    areaTodExprs[TimeOfDay.DayOnly][startMapping.parentArea.id] =
-        LogicalExpression.true();
-    newlyUpdatedAreas.add(startMapping.parentArea.id);
 
     function wasRecentlyUpdated(
         area: Area2,
@@ -387,7 +401,7 @@ function bottomUpTooltipPropagation(
         for (const access of list) {
             expr = expr.or(
                 tryAccessAtTime(access, TimeOfDay.DayOnly).or(
-                    tryAccessAtTime(access, TimeOfDay.DayOnly),
+                    tryAccessAtTime(access, TimeOfDay.NightOnly),
                 ),
             );
         }
@@ -434,5 +448,5 @@ function analyze(checkId: string): RecursiveTooltipRequirement2 {
         performance.now() - simplifyStart,
         'ms',
     );
-    return simplified;
+    return simplifyRequirement(simplified);
 }

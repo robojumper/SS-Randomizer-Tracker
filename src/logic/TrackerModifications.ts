@@ -49,6 +49,8 @@ export const triforceItems = [
 
 export const triforceItemReplacement = 'Triforce';
 
+export const impaSongEvent = '\\Tracker\\Song from Impa';
+
 // Checking a dungeon completion check gives the respective "item"
 // so that the "All Required Dungeons Complete" requirement is
 // logically fulfilled when the player completes the dungeon, not

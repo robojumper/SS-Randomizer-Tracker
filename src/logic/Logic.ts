@@ -345,7 +345,7 @@ export function parseLogic(raw: RawLogic): Logic {
             type: getCheckType(check.short_name, check.type),
             originalItem: item,
             area: checkAreaPlaceholder,
-        } as const;
+        };
     });
 
     for (const [cubeItem, cubeCheck] of Object.entries(
@@ -1148,6 +1148,7 @@ function getCheckType(
         checkType.includes('Tadtones') &&
         !checkName.includes("Water Dragon's Reward")
     ) {
+        console.log(checkName);
         return 'tadtone';
     } else {
         return 'regular';

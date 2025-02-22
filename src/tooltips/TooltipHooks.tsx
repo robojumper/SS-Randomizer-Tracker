@@ -11,8 +11,8 @@ import {
 import { useSelector } from 'react-redux';
 import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
-    exitsSelector,
     getRequirementLogicalStateSelector,
+    searchExitsSelector,
 } from '../tracker/Selectors';
 import { noop } from '../utils/Function';
 import { TooltipComputer } from './TooltipComputations';
@@ -30,7 +30,7 @@ export function MakeTooltipsAvailable({ children }: { children: ReactNode }) {
     const [analyzer, setAnalyzer] = useState<TooltipComputer | null>(null);
 
     const logic = useSelector(logicSelector);
-    const exits = useSelector(exitsSelector);
+    const exits = useSelector(searchExitsSelector);
 
     useEffect(() => {
         setAnalyzer(new TooltipComputer(logic, exits));

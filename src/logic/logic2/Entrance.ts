@@ -38,7 +38,7 @@ export interface UnifiedExit2 {
     exitId: string | undefined;
 }
 
-interface Exits {
+export interface SearchExits2 {
     /** Exit id -> connection */
     mapExits: Record<string, UnifiedExit2 | undefined>;
     /** area id -> connection[] */
@@ -48,7 +48,7 @@ interface Exits {
 export function getSearchExits(
     logic: Pick<Logic2, 'exits' | 'areas' | 'entrances' | 'requirements'>,
     exitsMappings: ExitMapping[],
-): Exits {
+): SearchExits2 {
     const connections = keyBy(exitsMappings, (mapping) => mapping.exit.id);
 
     const mapExits: Record<string, UnifiedExit2 | undefined> = {};

@@ -1,6 +1,10 @@
 import type { InventoryItem } from './Inventory';
 import type { Logic2 } from './logic2/Logic';
-import { dungeonCompletionItems } from './TrackerModifications';
+import {
+    dungeonCompletionItems,
+    sothItems,
+    triforceItems,
+} from './TrackerModifications';
 
 export function getAdditionalItems(
     logic: Logic2,
@@ -14,6 +18,14 @@ export function getAdditionalItems(
             result[check.containedAuxItem] ??= 0;
             result[check.containedAuxItem]++;
         }
+    }
+
+    for (let i = 1; i <= inventory['Song of the Hero']; i++) {
+        result[sothItems[i - 1]] = 1;
+    }
+
+    for (let i = 1; i <= inventory['Triforce']; i++) {
+        result[triforceItems[i - 1]] = 1;
     }
 
     if (inventory['Triforce'] === 3) {

@@ -148,15 +148,16 @@ function getReadableItemName(item: TooltipRequirement2): string {
         case 'item':
             if (item.name in prettyItemNames) {
                 return prettyItemNames[item.name][item.count];
+            } else if (item.count > 1) {
+                return `${item.name} x ${item.count}`;
             }
-            // TODO?
             return item.name;
         case 'rupeeCapacity':
             return `Wallet Capacity >= ${item.amount}`;
         case 'gratitudeCrystals':
             return `${item.amount} Gratitude Crystals`;
         case 'trick':
-            return item.name;
+            return `${item.name} Trick`;
         case 'auxItem':
             return last(item.name.split('\\'))!;
     }

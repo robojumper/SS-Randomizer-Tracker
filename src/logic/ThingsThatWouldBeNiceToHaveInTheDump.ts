@@ -4,6 +4,7 @@ import type {
     TypedOptions,
 } from '../permalink/SettingsTypes';
 import { stubFalse } from '../utils/Function';
+import type { FullRequirement2 } from './logic2/Requirement';
 
 /** Exits that are not randomized even if ER is on. */
 export const nonRandomizedExits = [
@@ -67,6 +68,7 @@ export const runtimeOptions: OptionMapping[] = [
 
 export const impaSongCheck =
     '\\Faron\\Sealed Grounds\\Sealed Temple\\Song from Impa';
+
 export const completeTriforceReq = '\\Complete Triforce';
 
 export const swordsToAdd = {
@@ -103,7 +105,14 @@ export const doesHintDistroUseGossipStone: Record<
 };
 
 // These requirements are populated based on required dungeons
-
+export const wellKnownRequirements: Record<
+    string,
+    (FullRequirement2 & { type: 'wellKnown' })['name']
+> = {
+    'GoT Opening Requirement': 'openGot',
+    'GoT Raising Requirement': 'raiseGot',
+    'Horde Door Requirement': 'hordeDoor',
+};
 export const gotOpeningReq = 'GoT Opening Requirement';
 export const gotRaisingReq = 'GoT Raising Requirement';
 export const hordeDoorReq = 'Horde Door Requirement';

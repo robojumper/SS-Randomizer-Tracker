@@ -31,6 +31,7 @@ import {
     dungeonCompletionItems,
     goddessChestCheckToCubeCheck,
 } from '../logic/TrackerModifications';
+import { getSearchExits } from '../logic/logic2/Entrance';
 import type { Location2 } from '../logic/logic2/Location';
 import {
     evaluateRequirement,
@@ -182,20 +183,30 @@ export const exitsSelector = createSelector(
     getExits,
 );
 
+export const searchExitsSelector = createSelector(
+    [logicSelector, exitsSelector],
+    getSearchExits,
+);
+
 export const exitsByIdSelector = createSelector([exitsSelector], (exits) =>
     keyBy(exits, (e) => e.exit.id),
 );
 
 export const inLogicSearchSelector = createSelector(
-    [logicSelector, exitsSelector, inventorySelector, checkItemsSelector],
-    (logic, exits, inventory, auxItems) => {
-        const initialState = getInitialSearchState(inventory, auxItems);
+    [
+        logicSelector,
+        searchExitsSelector,
+        inventorySelector,
+        checkedChecksSelector,
+    ],
+    (logic, exits, inventory, checkedChecks) => {
+        const initialState = getInitialSearchState(inventory, checkedChecks);
         return search(logic, exits, initialState);
     },
 );
 
 export const optimisticSearchSelector = createSelector(
-    [logicSelector, exitsSelector, inLogicSearchSelector],
+    [logicSelector, searchExitsSelector, inLogicSearchSelector],
     (logic, exits, inLogicState) => {
         const state: SearchState2 = {
             ...inLogicState,
@@ -340,7 +351,7 @@ export const isCheckBannedSelector = createSelector(
 const dungeonKeyLogicSelector = createSelector(
     [
         logicSelector,
-        exitsSelector,
+        searchExitsSelector,
         settingSelector('logic-mode'),
         settingSelector('boss-key-mode'),
         settingSelector('small-key-mode'),
@@ -367,7 +378,7 @@ export const locationsForItemSelector = currySelector(
 const semiLogicSearchSelector = createSelector(
     [
         logicSelector,
-        exitsSelector,
+        searchExitsSelector,
         isCheckBannedSelector,
         checkedChecksSelector,
         inLogicSearchSelector,

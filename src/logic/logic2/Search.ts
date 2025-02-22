@@ -1,8 +1,8 @@
 import type { InventoryItem } from '../Inventory';
-import type { ExitMapping } from '../Locations';
 import { TimeOfDay, type TTimeOfDay } from '../Mappers';
+import { getAdditionalItems } from '../Misc';
 import type { Area2 } from './Area';
-import { getSearchExits, type UnifiedExit2 } from './Entrance';
+import { type SearchExits2, type UnifiedExit2 } from './Entrance';
 import type { EventAccess2, LocationAccess2 } from './Location';
 import type { Logic2 } from './Logic';
 import type { Requirement2 } from './Requirement';
@@ -30,21 +30,21 @@ export function cloneSearchState(state: SearchState2): SearchState2 {
 
 export function getInitialSearchState(
     inventory: Record<InventoryItem, number>,
-    auxItems: Record<string, number>,
+    checkedChecks: Set<string>,
 ): SearchState2 {
     return {
         allowTricks: false,
         inventory,
         events: new Set(),
-        reachableChecks: new Set(),
+        reachableChecks: new Set(checkedChecks),
         reachableExits: new Set(['\\Start']),
-        auxItems,
+        auxItems: {},
     };
 }
 
 export function search(
     logic: Logic2<Requirement2>,
-    exitsMappings: ExitMapping[],
+    exitsMappings: SearchExits2,
     initialState: SearchState2,
 ): SearchState2 {
     const areaAtTod: Record<string, TTimeOfDay[keyof TTimeOfDay] | 0> = {};
@@ -57,10 +57,15 @@ export function search(
     let eventsToTry = new Set<EventAccess2>();
     const locationsToTryLast = new Set<LocationAccess2>();
 
-    const { mapExits, logicalExits } = getSearchExits(logic, exitsMappings);
+    const { mapExits, logicalExits } = exitsMappings;
     let exitsToTry = new Set<UnifiedExit2>();
 
     const newState = cloneSearchState(initialState);
+    newState.auxItems = getAdditionalItems(
+        logic,
+        newState.inventory,
+        newState.reachableChecks,
+    );
 
     function visitAreaForTheFirstTime(
         area: Area2,
@@ -240,6 +245,6 @@ export function evaluateRequirement(
         case 'auxItem':
             return (state.auxItems[requirement.name] ?? 0) > 0;
         case 'trick':
-            return state.allowTricks;
+            return requirement.isCustomizationTrick ? state.allowTricks : true;
     }
 }

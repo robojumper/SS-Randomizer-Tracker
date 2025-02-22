@@ -1,7 +1,7 @@
 import { groupBy, invert, last } from 'es-toolkit';
 import { isEmpty } from '../../utils/Collections';
 import { chainComparators, compareBy } from '../../utils/Compare';
-import { appDebug, appWarn } from '../../utils/Debug';
+import { appWarn } from '../../utils/Debug';
 import {
     booleanExprToRequirementExpr,
     parseExpression,
@@ -12,15 +12,18 @@ import type { EntranceLinkage } from '../Logic';
 import { TimeOfDay } from '../Mappers';
 import {
     bannedExitsAndEntrances,
-    gotRaisingReq,
-    hordeDoorReq,
+    impaSongCheck,
     nonRandomizedEntrances,
     runtimeOptions,
+    wellKnownRequirements,
 } from '../ThingsThatWouldBeNiceToHaveInTheDump';
 import {
     cubeCheckToCubeCollected,
     cubeCollectedToCubeCheck,
     dungeonCompletionItems,
+    impaSongEvent,
+    sothItems,
+    triforceItems,
 } from '../TrackerModifications';
 import type { RawArea, RawEntrance, RawLogic } from '../UpstreamTypes';
 import type { Area2 } from './Area';
@@ -106,8 +109,16 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
         auxItems.add(item);
     }
 
+    for (const item of triforceItems) {
+        auxItems.add(item);
+    }
+
+    for (const item of sothItems) {
+        auxItems.add(item);
+    }
+
     for (const [checkId, check] of Object.entries(raw.checks)) {
-        const type = getLocationType(check['original item'], check.type);
+        const type = getLocationType(check.short_name, check.type);
         const dungeon = dungeonCompletionRequirements[checkId];
         const containedAuxItem = dungeon
             ? dungeonCompletionItems[dungeon]
@@ -249,12 +260,15 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     return { type: 'auxItem', name: fakeAuxItem };
                 }
 
-                if (
-                    item === gotRaisingReq ||
-                    item === gotRaisingReq ||
-                    item === hordeDoorReq
-                ) {
-                    return { type: 'wellKnown', name: item };
+                if (auxItems.has(item)) {
+                    return { type: 'auxItem', name: item };
+                }
+
+                if (item in wellKnownRequirements) {
+                    return {
+                        type: 'wellKnown',
+                        name: wellKnownRequirements[item],
+                    };
                 }
 
                 if (item === 'Day') {
@@ -262,14 +276,6 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                 }
                 if (item === 'Night') {
                     return { type: 'timeOfDay', tod: TimeOfDay.NightOnly };
-                }
-
-                if (item === '\\Song of the Hero') {
-                    return { type: 'item', name: 'Song of the Hero', count: 3 };
-                }
-
-                if (item === '\\Complete Triforce') {
-                    return { type: 'item', name: 'Triforce', count: 3 };
                 }
 
                 const [inventoryItem, count] = splitItemCount(item);
@@ -285,6 +291,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     return {
                         type: 'trick',
                         name: item.slice(0, -' Trick'.length),
+                        isCustomizationTrick: false,
                     };
                 }
 
@@ -305,7 +312,6 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     };
                 }
 
-                appDebug('event:', item);
                 return { type: 'event', id: item };
             },
         );
@@ -472,6 +478,22 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     });
                 }
             }
+        }
+
+        // The rando can cause game completion to rely on a check
+        // as a requirement, which is a bad idea because it makes
+        // checks unbannable and it's also incompatible
+        // with the tracker's logic framework, so we need to make
+        // up an event.
+        if (area.id === '\\Faron\\Sealed Grounds\\Sealed Temple') {
+            const impaSongItem = area.locations.find(
+                (l) => l.locationId === impaSongCheck,
+            )!;
+            area.events.push({
+                eventId: impaSongEvent,
+                parentArea: area.id,
+                requirementsIdx: impaSongItem.requirementsIdx,
+            });
         }
 
         return area;

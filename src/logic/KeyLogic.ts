@@ -1,8 +1,9 @@
 import { produce } from 'immer';
 import type { TypedOptions } from '../permalink/SettingsTypes';
 import { itemMaxes, type InventoryItem } from './Inventory';
-import { dungeonNames, isRegularDungeon, type ExitMapping } from './Locations';
+import { dungeonNames, isRegularDungeon } from './Locations';
 import { isRegularItemCheck } from './Logic';
+import type { SearchExits2 } from './logic2/Entrance';
 import type { Location2 } from './logic2/Location';
 import type { Logic2 } from './logic2/Logic';
 import {
@@ -51,7 +52,7 @@ export interface PotentialLocations {
  */
 export function keyData(
     logic: Logic2,
-    exits: ExitMapping[],
+    exits: SearchExits2,
     logicModeSetting: TypedOptions['logic-mode'],
     bossKeySetting: TypedOptions['boss-key-mode'],
     smallKeySetting: TypedOptions['small-key-mode'],
@@ -109,7 +110,7 @@ export function keyData(
 
     // This baseline logic state can be re-used in later computations
     const baselineSearchState = search(logic, exits, {
-        ...getInitialSearchState(fullInventoryNoKeys, {}),
+        ...getInitialSearchState(fullInventoryNoKeys, new Set()),
     });
 
     for (const dungeon of dungeonNames.filter(isRegularDungeon)) {

@@ -1,10 +1,10 @@
 import type { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import { isItem, itemMaxes } from './Inventory';
 import { type PotentialLocations, getSemiLogicKeys } from './KeyLogic';
-import type { ExitMapping } from './Locations';
 import { type Logic, isRegularItemCheck } from './Logic';
 import { LogicBuilder } from './LogicBuilder';
 import { type Requirements } from './bitlogic/BitLogic';
+import type { SearchExits2 } from './logic2/Entrance';
 import type { Logic2 } from './logic2/Logic';
 import { type SearchState2, cloneSearchState, search } from './logic2/Search';
 
@@ -12,8 +12,6 @@ export interface SemiLogicState {
     state: SearchState2;
     assumedChecks: Set<string>;
 }
-
-// TODO: tricks that are enabled by settings can still be shown!!!
 
 /**
  * Requirements that assume every considered trick is enabled. Enables
@@ -90,7 +88,7 @@ export function getVisibleTricksEnabledRequirements(
 
 export function computeSemiLogic(
     logic: Logic2,
-    exits: ExitMapping[],
+    exits: SearchExits2,
     isCheckBanned: (checkId: string) => boolean,
     checkedChecks: Set<string>,
     inLogicSearchState: SearchState2,
@@ -124,10 +122,11 @@ export function computeSemiLogic(
     }
 
     const semiLogicOnlyState = {
-        assumedChecks: new Set(checkedChecks),
-        state: cloneSearchState(inLogicSearchState),
+        assumedChecks: new Set(semiLogicState.assumedChecks),
+        state: cloneSearchState(semiLogicState.state),
     };
     semiLogicState.state.allowTricks = true;
+    semiLogicState.state = search(logic, exits, semiLogicState.state);
 
     while (
         semiLogicStep(
@@ -150,7 +149,7 @@ export function computeSemiLogic(
 
 function semiLogicStep(
     logic: Logic2,
-    exits: ExitMapping[],
+    exits: SearchExits2,
     isCheckBanned: (checkId: string) => boolean,
     dungeonKeyLogic: PotentialLocations[],
     state: SemiLogicState,

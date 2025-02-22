@@ -1,29 +1,19 @@
-/*
 import { shuffle } from 'es-toolkit';
 import {
     setEnabledSemilogicTricks,
     setTrickSemiLogic,
 } from '../customization/Slice';
-import type BooleanExpression from '../logic/booleanlogic/BooleanExpression';
 import { itemMaxes, type InventoryItem } from '../logic/Inventory';
 import { dungeonCompletionItems } from '../logic/TrackerModifications';
 import { createTestLogic } from '../testing/TestingUtils';
 import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
-    allSettingsSelector,
     checkSelector,
-    exitsSelector,
     getRequirementLogicalStateSelector,
-} from '../tracker/Selectors';
-import { acceptSettings, setItemCounts } from '../tracker/Slice';
-import { createTestLogic } from '../testing/TestingUtils';
-import { logicSelector } from '../tracker/LogicInstanceSelector';
-import {
-    exitsSelector,
-    getRequirementLogicalStateSelector,
+    searchExitsSelector,
 } from '../tracker/Selectors';
 import { allSettingsSelector } from '../tracker/SettingsSelector';
-import { acceptSettings } from '../tracker/Slice';
+import { acceptSettings, setItemCounts } from '../tracker/Slice';
 import { TooltipComputer } from './TooltipComputations';
 import {
     booleanExprToTooltipExpr,
@@ -39,7 +29,7 @@ describe('tooltips', () => {
 
     function createComputer(): TooltipComputer {
         const logic = tester.readSelector(logicSelector);
-        const exits = tester.readSelector(exitsSelector);
+        const exits = tester.readSelector(searchExitsSelector);
 
         return new TooltipComputer(logic, exits);
     }
@@ -304,4 +294,3 @@ describe('tooltips', () => {
         );
     });
 });
-*/

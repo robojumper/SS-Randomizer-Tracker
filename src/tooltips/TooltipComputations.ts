@@ -1,5 +1,5 @@
 import { pick } from 'es-toolkit';
-import type { ExitMapping } from '../logic/Locations';
+import type { SearchExits2 } from '../logic/logic2/Entrance';
 import type { Logic2 } from '../logic/logic2/Logic';
 import type { RecursiveTooltipRequirement2 } from './worker/BitIndex';
 import type { WorkerRequest, WorkerResponse } from './worker/Types';
@@ -18,7 +18,7 @@ export class TooltipComputer {
     cleanup: () => void;
     worker: Worker | undefined;
 
-    constructor(logic: Logic2, exits: ExitMapping[]) {
+    constructor(logic: Logic2, exits: SearchExits2) {
         this.subscriptions = new Set();
         this.results = {};
         this.isWorking = false;

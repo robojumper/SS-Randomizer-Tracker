@@ -1,7 +1,7 @@
 // Please don't use interfaces here - messages need to be exact since we cannot afford
 // accidentally serializing huge or unserializable data.
 
-import type { ExitMapping } from '../../logic/Locations';
+import type { SearchExits2 } from '../../logic/logic2/Entrance';
 import type { Logic2 } from '../../logic/logic2/Logic';
 import type { RecursiveTooltipRequirement2 } from './BitIndex';
 
@@ -16,7 +16,7 @@ export type WorkerRequest =
     | {
           type: 'initialize';
           logic: LeanLogic;
-          exits: ExitMapping[];
+          exits: SearchExits2;
       }
     | {
           type: 'analyze';

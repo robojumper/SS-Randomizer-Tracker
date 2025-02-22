@@ -1,8 +1,13 @@
 import type { TypedOptions } from '../../permalink/SettingsTypes';
+import type { RecursiveTooltipRequirement2 } from '../../tooltips/worker/BitIndex';
 import type { InventoryItem } from '../Inventory';
 import type { DungeonName } from '../Locations';
 import type { TTimeOfDay } from '../Mappers';
-import { runtimeOptions } from '../ThingsThatWouldBeNiceToHaveInTheDump';
+import {
+    runtimeOptions,
+    swordsToAdd,
+} from '../ThingsThatWouldBeNiceToHaveInTheDump';
+import { dungeonCompletionItems, impaSongEvent } from '../TrackerModifications';
 
 export type RecursiveRequirement2<R> =
     | { type: 'and'; terms: RecursiveRequirement2<R>[] }
@@ -32,6 +37,7 @@ export type SimpleRequirement2 =
     | {
           type: 'trick';
           name: string;
+          isCustomizationTrick: boolean;
       };
 
 type PreInstanceRequirement2 =
@@ -41,13 +47,71 @@ type PreInstanceRequirement2 =
       }
     | {
           type: 'wellKnown';
-          name: string;
+          name: 'openGot' | 'raiseGot' | 'hordeDoor';
       };
+
+export function trueRequirement<R>(): RecursiveRequirement2<R> {
+    return { type: 'and', terms: [] };
+}
+
+export function falseRequirement<R>(): RecursiveRequirement2<R> {
+    return { type: 'or', terms: [] };
+}
 
 /** Requirements after instantiating settings and required dungeons */
 export type FullRequirement2 = RecursiveRequirement2<
     SimpleRequirement2 | PreInstanceRequirement2
 >;
+
+function instantiateWellKnownRequirement(
+    requirement: FullRequirement2 & { type: 'wellKnown' },
+    settings: TypedOptions,
+    requiredDungeons: DungeonName[],
+): Requirement2 {
+    const requiredDungeonsReq = (): Requirement2 => {
+        const dungeonsReq: Requirement2 = { type: 'and', terms: [] };
+        for (const dungeon of requiredDungeons) {
+            if (dungeon !== 'Sky Keep') {
+                dungeonsReq.terms.push({
+                    type: 'auxItem',
+                    name: dungeonCompletionItems[dungeon],
+                });
+            }
+        }
+        return dungeonsReq;
+    };
+    switch (requirement.name) {
+        case 'raiseGot':
+            if (settings['got-start'] === 'Raised') {
+                return trueRequirement();
+            } else {
+                return { type: 'event', id: impaSongEvent };
+            }
+        case 'openGot': {
+            const neededSwords = swordsToAdd[settings['got-sword-requirement']];
+            const expr: Requirement2 = {
+                type: 'item',
+                name: 'Progressive Sword',
+                count: neededSwords,
+            };
+            if (settings['got-dungeon-requirement'] === 'Required') {
+                return { type: 'and', terms: [expr, requiredDungeonsReq()] };
+            } else {
+                return expr;
+            }
+        }
+        case 'hordeDoor': {
+            const expr: Requirement2 = settings['triforce-required']
+                ? { type: 'item', name: 'Triforce', count: 3 }
+                : trueRequirement();
+            if (settings['got-dungeon-requirement'] === 'Unrequired') {
+                return { type: 'and', terms: [expr, requiredDungeonsReq()] };
+            } else {
+                return expr;
+            }
+        }
+    }
+}
 
 function instantiateRequirement(
     requirement: FullRequirement2,
@@ -78,14 +142,14 @@ function instantiateRequirement(
             return requirement;
         case 'trick':
             if (consideredTricks.has(requirement.name)) {
-                return requirement;
+                return { ...requirement, isCustomizationTrick: true };
             } else if (
                 settings['enabled-tricks-bitless'].includes(requirement.name) ||
                 settings['enabled-tricks-glitched'].includes(requirement.name)
             ) {
-                return { type: 'and', terms: [] };
+                return requirement;
             } else {
-                return { type: 'or', terms: [] };
+                return falseRequirement();
             }
         case 'setting': {
             const checker = runtimeOptions.find(
@@ -97,13 +161,14 @@ function instantiateRequirement(
                 val !== undefined &&
                 (typeof expect === 'function' ? expect(val) : expect === val);
 
-            return match
-                ? { type: 'and', terms: [] }
-                : { type: 'or', terms: [] };
+            return match ? trueRequirement() : falseRequirement();
         }
         case 'wellKnown':
-            // TODO
-            return { type: 'and', terms: [] };
+            return instantiateWellKnownRequirement(
+                requirement,
+                settings,
+                requiredDungeons,
+            );
     }
 }
 
@@ -116,4 +181,43 @@ export function instantiateRequirements(
     return requirements.map((r) =>
         instantiateRequirement(r, settings, consideredTricks, requiredDungeons),
     );
+}
+
+export function simplifyRequirement(
+    req: RecursiveTooltipRequirement2,
+): RecursiveTooltipRequirement2 {
+    if ('type' in req) {
+        switch (req.type) {
+            case 'or':
+            case 'and': {
+                const newItems = req.terms.flatMap((item) => {
+                    if (item.type !== 'and' && item.type !== 'or') {
+                        return item;
+                    }
+                    const flatItem = simplifyRequirement(item);
+                    if (
+                        (flatItem.type === 'and' || flatItem.type === 'or') &&
+                        (flatItem.type === req.type ||
+                            flatItem.terms.length === 1)
+                    ) {
+                        return flatItem.terms;
+                    }
+                    return flatItem;
+                });
+
+                if (
+                    newItems.length === 1 &&
+                    (newItems[0].type === 'and' || newItems[0].type === 'or')
+                ) {
+                    return newItems[0];
+                }
+
+                return {
+                    type: req.type,
+                    terms: newItems,
+                };
+            }
+        }
+    }
+    return req;
 }
