@@ -12,7 +12,7 @@ import type { InventoryItem } from '../logic/Inventory';
 import type { Check } from '../logic/Locations';
 import { isRegularItemCheck } from '../logic/Logic';
 import { useAppDispatch, type RootState } from '../store/Store';
-import { useTooltipExpr } from '../tooltips/TooltipHooks';
+import { useEntrancePath, useTooltipExpr } from '../tooltips/TooltipHooks';
 import { clickCheck } from '../tracker/Actions';
 import {
     checkHintSelector,
@@ -24,6 +24,7 @@ import { mapEntrance } from '../tracker/Slice';
 import keyDownWrapper from '../utils/KeyDownWrapper';
 import { useContextMenu } from './context-menu';
 import styles from './Location.module.css';
+import PathTooltip from './PathTooltip';
 import RequirementsTooltip from './RequirementsTooltip';
 
 export interface LocationContextMenuProps {
@@ -73,7 +74,7 @@ function CheckLocation({ id }: { id: string }) {
     );
 
     const expr = useTooltipExpr(id);
-    // const path = useEntrancePath(id);
+    const path = useEntrancePath(id);
     const canAssignItemHint =
         check.type !== 'exit' && isRegularItemCheck(check.type);
 
@@ -94,12 +95,12 @@ function CheckLocation({ id }: { id: string }) {
             content={
                 <>
                     <RequirementsTooltip requirements={expr} />
-                    {/*path && (
+                    {path && (
                         <>
                             <hr />
                             <PathTooltip segments={path} />
                         </>
-                    )*/}
+                    )}
                     {isBanned && (
                         <div className={styles.tooltipNote}>
                             This location is excluded by current settings and
@@ -205,7 +206,7 @@ function Exit({
     };
 
     const expr = useTooltipExpr(id);
-    // const path = useEntrancePath(id);
+    const path = useEntrancePath(id);
 
     const onClick = () => onChooseEntrance(id);
 
@@ -215,12 +216,12 @@ function Exit({
                 content={
                     <>
                         <RequirementsTooltip requirements={expr} />
-                        {/*path && (
+                        {path && (
                             <>
                                 <hr />
                                 <PathTooltip segments={path} />
                             </>
-                        )*/}
+                        )}
                     </>
                 }
             >

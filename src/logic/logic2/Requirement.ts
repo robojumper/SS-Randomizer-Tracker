@@ -2,7 +2,7 @@ import type { TypedOptions } from '../../permalink/SettingsTypes';
 import type { RecursiveTooltipRequirement2 } from '../../tooltips/worker/BitIndex';
 import type { InventoryItem } from '../Inventory';
 import type { DungeonName } from '../Locations';
-import type { TTimeOfDay } from '../Mappers';
+import { TimeOfDay, type TTimeOfDay } from '../Mappers';
 import {
     runtimeOptions,
     swordsToAdd,
@@ -14,9 +14,14 @@ export type RecursiveRequirement2<R> =
     | { type: 'or'; terms: RecursiveRequirement2<R>[] }
     | R;
 
-export type Requirement2 = RecursiveRequirement2<SimpleRequirement2>;
+export type RecursiveRequirement3<R> =
+    | { kind: 'op'; type: 'and'; terms: RecursiveRequirement3<R>[] }
+    | { kind: 'op'; type: 'or'; terms: RecursiveRequirement3<R>[] }
+    | ({ kind: 'leaf' } & R);
 
-/** Basic requirements as they appear in the logic dump */
+export type Requirement2 = RecursiveRequirement3<SimpleRequirement2>;
+
+/** Basic requirements */
 export type SimpleRequirement2 =
     | { type: 'item'; name: InventoryItem; count: number }
     | { type: 'event'; id: string }
@@ -50,16 +55,79 @@ type PreInstanceRequirement2 =
           name: 'openGot' | 'raiseGot' | 'hordeDoor';
       };
 
-export function trueRequirement<R>(): RecursiveRequirement2<R> {
-    return { type: 'and', terms: [] };
-}
+export const Requirement = {
+    and: <R>(terms: RecursiveRequirement3<R>[]): RecursiveRequirement3<R> => {
+        return { kind: 'op', type: 'and', terms };
+    },
 
-export function falseRequirement<R>(): RecursiveRequirement2<R> {
-    return { type: 'or', terms: [] };
-}
+    or: <R>(terms: RecursiveRequirement3<R>[]): RecursiveRequirement3<R> => {
+        return { kind: 'op', type: 'or', terms };
+    },
+
+    true: <R>(): RecursiveRequirement3<R> => {
+        return Requirement.and([]);
+    },
+
+    false: <R>(): RecursiveRequirement3<R> => {
+        return Requirement.or([]);
+    },
+
+    auxItem: (name: string) => {
+        return { kind: 'leaf', type: 'auxItem', name } as const;
+    },
+
+    day: () => {
+        return {
+            kind: 'leaf',
+            type: 'timeOfDay',
+            tod: TimeOfDay.DayOnly,
+        } as const;
+    },
+
+    night: () => {
+        return {
+            kind: 'leaf',
+            type: 'timeOfDay',
+            tod: TimeOfDay.NightOnly,
+        } as const;
+    },
+
+    walletCapacity: (amount: number) => {
+        return { kind: 'leaf', type: 'rupeeCapacity', amount } as const;
+    },
+
+    gratitudeCrystals: (amount: number) => {
+        return { kind: 'leaf', type: 'gratitudeCrystals', amount } as const;
+    },
+
+    event: (id: string) => {
+        return { kind: 'leaf', type: 'event', id } as const;
+    },
+
+    trick: (name: string) => {
+        return {
+            kind: 'leaf',
+            type: 'trick',
+            name,
+            isCustomizationTrick: false,
+        } as const;
+    },
+
+    setting: (name: string) => {
+        return { kind: 'leaf', type: 'setting', name } as const;
+    },
+
+    item: (name: InventoryItem, count: number) => {
+        return { kind: 'leaf', type: 'item', name, count } as const;
+    },
+
+    wellKnown: (name: string) => {
+        return { kind: 'leaf', type: 'wellKnown', name } as const;
+    },
+};
 
 /** Requirements after instantiating settings and required dungeons */
-export type FullRequirement2 = RecursiveRequirement2<
+export type FullRequirement2 = RecursiveRequirement3<
     SimpleRequirement2 | PreInstanceRequirement2
 >;
 
@@ -69,43 +137,33 @@ function instantiateWellKnownRequirement(
     requiredDungeons: DungeonName[],
 ): Requirement2 {
     const requiredDungeonsReq = (): Requirement2 => {
-        const dungeonsReq: Requirement2 = { type: 'and', terms: [] };
-        for (const dungeon of requiredDungeons) {
-            if (dungeon !== 'Sky Keep') {
-                dungeonsReq.terms.push({
-                    type: 'auxItem',
-                    name: dungeonCompletionItems[dungeon],
-                });
-            }
-        }
-        return dungeonsReq;
+        const terms = requiredDungeons
+            .filter((d) => d !== 'Sky Keep')
+            .map((d) => Requirement.auxItem(dungeonCompletionItems[d]));
+        return Requirement.and(terms);
     };
     switch (requirement.name) {
         case 'raiseGot':
             if (settings['got-start'] === 'Raised') {
-                return trueRequirement();
+                return Requirement.true();
             } else {
-                return { type: 'event', id: impaSongEvent };
+                return Requirement.event(impaSongEvent);
             }
         case 'openGot': {
             const neededSwords = swordsToAdd[settings['got-sword-requirement']];
-            const expr: Requirement2 = {
-                type: 'item',
-                name: 'Progressive Sword',
-                count: neededSwords,
-            };
+            const expr = Requirement.item('Progressive Sword', neededSwords);
             if (settings['got-dungeon-requirement'] === 'Required') {
-                return { type: 'and', terms: [expr, requiredDungeonsReq()] };
+                return Requirement.and([expr, requiredDungeonsReq()]);
             } else {
                 return expr;
             }
         }
         case 'hordeDoor': {
             const expr: Requirement2 = settings['triforce-required']
-                ? { type: 'item', name: 'Triforce', count: 3 }
-                : trueRequirement();
+                ? Requirement.item('Triforce', 3)
+                : Requirement.true();
             if (settings['got-dungeon-requirement'] === 'Unrequired') {
-                return { type: 'and', terms: [expr, requiredDungeonsReq()] };
+                return Requirement.and([expr, requiredDungeonsReq()]);
             } else {
                 return expr;
             }
@@ -119,10 +177,10 @@ function instantiateRequirement(
     consideredTricks: Set<string>,
     requiredDungeons: DungeonName[],
 ): Requirement2 {
-    switch (requirement.type) {
-        case 'and':
-        case 'or':
+    switch (requirement.kind) {
+        case 'op':
             return {
+                kind: 'op',
                 type: requirement.type,
                 terms: requirement.terms.map((t) =>
                     instantiateRequirement(
@@ -133,42 +191,52 @@ function instantiateRequirement(
                     ),
                 ),
             };
-        case 'item':
-        case 'event':
-        case 'timeOfDay':
-        case 'rupeeCapacity':
-        case 'gratitudeCrystals':
-        case 'auxItem':
-            return requirement;
-        case 'trick':
-            if (consideredTricks.has(requirement.name)) {
-                return { ...requirement, isCustomizationTrick: true };
-            } else if (
-                settings['enabled-tricks-bitless'].includes(requirement.name) ||
-                settings['enabled-tricks-glitched'].includes(requirement.name)
-            ) {
-                return requirement;
-            } else {
-                return falseRequirement();
-            }
-        case 'setting': {
-            const checker = runtimeOptions.find(
-                (o) => o[0] === requirement.name,
-            )!;
-            const [, command, expect] = checker;
-            const val = settings[command];
-            const match =
-                val !== undefined &&
-                (typeof expect === 'function' ? expect(val) : expect === val);
+        case 'leaf': {
+            switch (requirement.type) {
+                case 'item':
+                case 'event':
+                case 'timeOfDay':
+                case 'rupeeCapacity':
+                case 'gratitudeCrystals':
+                case 'auxItem':
+                    return requirement;
+                case 'trick':
+                    if (consideredTricks.has(requirement.name)) {
+                        return { ...requirement, isCustomizationTrick: true };
+                    } else if (
+                        settings['enabled-tricks-bitless'].includes(
+                            requirement.name,
+                        ) ||
+                        settings['enabled-tricks-glitched'].includes(
+                            requirement.name,
+                        )
+                    ) {
+                        return requirement;
+                    } else {
+                        return Requirement.false();
+                    }
+                case 'setting': {
+                    const checker = runtimeOptions.find(
+                        (o) => o[0] === requirement.name,
+                    )!;
+                    const [, command, expect] = checker;
+                    const val = settings[command];
+                    const match =
+                        val !== undefined &&
+                        (typeof expect === 'function'
+                            ? expect(val)
+                            : expect === val);
 
-            return match ? trueRequirement() : falseRequirement();
+                    return match ? Requirement.true() : Requirement.false();
+                }
+                case 'wellKnown':
+                    return instantiateWellKnownRequirement(
+                        requirement,
+                        settings,
+                        requiredDungeons,
+                    );
+            }
         }
-        case 'wellKnown':
-            return instantiateWellKnownRequirement(
-                requirement,
-                settings,
-                requiredDungeons,
-            );
     }
 }
 
@@ -186,37 +254,31 @@ export function instantiateRequirements(
 export function simplifyRequirement(
     req: RecursiveTooltipRequirement2,
 ): RecursiveTooltipRequirement2 {
-    if ('type' in req) {
-        switch (req.type) {
-            case 'or':
-            case 'and': {
-                const newItems = req.terms.flatMap((item) => {
-                    if (item.type !== 'and' && item.type !== 'or') {
-                        return item;
-                    }
-                    const flatItem = simplifyRequirement(item);
-                    if (
-                        (flatItem.type === 'and' || flatItem.type === 'or') &&
-                        (flatItem.type === req.type ||
-                            flatItem.terms.length === 1)
-                    ) {
-                        return flatItem.terms;
-                    }
-                    return flatItem;
-                });
-
-                if (
-                    newItems.length === 1 &&
-                    (newItems[0].type === 'and' || newItems[0].type === 'or')
-                ) {
-                    return newItems[0];
+    switch (req.kind) {
+        case 'op': {
+            const newItems = req.terms.flatMap((item) => {
+                if (item.type !== 'and' && item.type !== 'or') {
+                    return item;
                 }
+                const flatItem = simplifyRequirement(item);
+                if (
+                    flatItem.kind === 'op' &&
+                    (flatItem.type === req.type || flatItem.terms.length === 1)
+                ) {
+                    return flatItem.terms;
+                }
+                return flatItem;
+            });
 
-                return {
-                    type: req.type,
-                    terms: newItems,
-                };
+            if (newItems.length === 1 && newItems[0].kind === 'op') {
+                return newItems[0];
             }
+
+            return {
+                kind: 'op',
+                type: req.type,
+                terms: newItems,
+            };
         }
     }
     return req;

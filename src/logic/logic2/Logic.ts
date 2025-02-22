@@ -29,7 +29,11 @@ import type { RawArea, RawEntrance, RawLogic } from '../UpstreamTypes';
 import type { Area2 } from './Area';
 import type { Entrance2, Exit2 } from './Entrance';
 import { getLocationType, type Event2, type Location2 } from './Location';
-import type { FullRequirement2, Requirement2 } from './Requirement';
+import {
+    Requirement,
+    type FullRequirement2,
+    type Requirement2,
+} from './Requirement';
 
 /**
  * Assigns checks and exits to hint regions. This is something
@@ -254,7 +258,7 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                 // If an expression looks at "goddess cube in X", require the actual item instead.
                 const goddessCubeItem = cubeCheckToCubeCollected[item];
                 if (goddessCubeItem) {
-                    return { type: 'auxItem', name: goddessCubeItem };
+                    return Requirement.auxItem(goddessCubeItem);
                 }
                 if (locations[item]) {
                     // check whether a check is mentioned by requirements.
@@ -267,56 +271,44 @@ export function parseLogic2(raw: RawLogic): PreSettingsLogic2 {
                     );
                     const fakeAuxItem = `FAKE_ITEM_FIX_THE_DATA-${item}`;
                     locations[item].containedAuxItem = fakeAuxItem;
-                    return { type: 'auxItem', name: fakeAuxItem };
+                    return Requirement.auxItem(fakeAuxItem);
                 }
 
                 if (auxItems.has(item)) {
-                    return { type: 'auxItem', name: item };
+                    return Requirement.auxItem(item);
                 }
 
-                if (item in wellKnownRequirements) {
-                    return {
-                        type: 'wellKnown',
-                        name: wellKnownRequirements[item],
-                    };
+                if (wellKnownRequirements[item]) {
+                    Requirement.wellKnown(wellKnownRequirements[item]);
                 }
 
                 if (item === 'Day') {
-                    return { type: 'timeOfDay', tod: TimeOfDay.DayOnly };
+                    return Requirement.day();
                 }
                 if (item === 'Night') {
-                    return { type: 'timeOfDay', tod: TimeOfDay.NightOnly };
+                    return Requirement.night();
                 }
 
                 const [inventoryItem, count] = splitItemCount(item);
                 if (isItem(inventoryItem)) {
-                    return {
-                        type: 'item',
-                        name: inventoryItem,
-                        count: count ?? 1,
-                    };
+                    return Requirement.item(inventoryItem, count ?? 1);
                 }
 
                 if (item.endsWith(' Trick')) {
-                    return {
-                        type: 'trick',
-                        name: item.slice(0, -' Trick'.length),
-                        isCustomizationTrick: false,
-                    };
+                    return Requirement.trick(item.slice(0, -' Trick'.length));
                 }
 
                 if (knownSettings.includes(item)) {
-                    return { type: 'setting', name: item };
+                    return Requirement.setting(item);
                 }
 
                 if (/\\[0-9]+ Gratitude Crystals/.exec(item)) {
-                    return {
-                        type: 'gratitudeCrystals',
-                        amount: parseInt(item.split(' ')[0].slice(1), 10),
-                    };
+                    return Requirement.gratitudeCrystals(
+                        parseInt(item.split(' ')[0].slice(1), 10),
+                    );
                 }
 
-                return { type: 'event', id: item };
+                return Requirement.event(item);
             },
         );
     };

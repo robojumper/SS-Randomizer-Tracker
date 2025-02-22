@@ -1,10 +1,7 @@
 import { maxBy, sumBy } from 'es-toolkit';
 import { BitVector } from '../../logic/bitlogic/BitVector';
 import { LogicalExpression } from '../../logic/bitlogic/LogicalExpression';
-import {
-    falseRequirement,
-    trueRequirement,
-} from '../../logic/logic2/Requirement';
+import { Requirement } from '../../logic/logic2/Requirement';
 import {
     getRequirementBit,
     type BitIndex,
@@ -33,11 +30,11 @@ export function dnfToRequirementExpr(
     sop: BitVector[],
 ): RecursiveTooltipRequirement2 {
     if (sop.length === 0) {
-        return falseRequirement();
+        return Requirement.false();
     }
 
     if (sop.length === 1 && sop[0].isEmpty()) {
-        return trueRequirement();
+        return Requirement.true();
     }
 
     const conjunctions = new LogicalExpression(sop).removeDuplicates()
@@ -51,11 +48,10 @@ export function dnfToRequirementExpr(
             const req = bitIndex.reverseIndex[bit];
             if (req.type === 'item') {
                 for (let i = 1; i < req.count; i++) {
-                    const lesserBit = getRequirementBit(bitIndex, {
-                        type: 'item',
-                        name: req.name,
-                        count: i,
-                    });
+                    const lesserBit = getRequirementBit(
+                        bitIndex,
+                        Requirement.item(req.name, i),
+                    );
                     conj.clearBit(lesserBit);
                 }
             }
@@ -63,12 +59,9 @@ export function dnfToRequirementExpr(
     }
 
     if (conjunctions.length === 1) {
-        return {
-            type: 'and',
-            terms: [...conjunctions[0].iter()].map(
-                (x) => bitIndex.reverseIndex[x],
-            ),
-        };
+        return Requirement.and<TooltipRequirement2>(
+            [...conjunctions[0].iter()].map((x) => bitIndex.reverseIndex[x]),
+        );
     }
 
     // First, remove all common factors and from our SOP so that it's "cube-free".
@@ -178,46 +171,27 @@ export function dnfToRequirementExpr(
             const andTerms: TooltipRequirement2[] = [...commonFactors].map(
                 (f) => bitIndex.reverseIndex[f],
             );
-            const product: RecursiveTooltipRequirement2 = {
-                type: 'and',
-                terms: [
-                    dnfToRequirementExpr(
-                        bitIndex,
-                        logic,
-                        optQuotient.conjunctions,
-                    ),
-                    dnfToRequirementExpr(bitIndex, logic, divisor),
-                ],
-            };
-            const sum: RecursiveTooltipRequirement2 = {
-                type: 'or',
-                terms: [
-                    product,
-                    dnfToRequirementExpr(bitIndex, logic, remainder),
-                ],
-            };
+            const product: RecursiveTooltipRequirement2 = Requirement.and([
+                dnfToRequirementExpr(bitIndex, logic, optQuotient.conjunctions),
+                dnfToRequirementExpr(bitIndex, logic, divisor),
+            ]);
+            const sum: RecursiveTooltipRequirement2 = Requirement.or([
+                product,
+                dnfToRequirementExpr(bitIndex, logic, remainder),
+            ]);
 
             // CommonFactor1 and CommonFactor2 and (Quotient and Divisor or Remainder)
-            return {
-                type: 'and',
-                terms: [...andTerms, sum],
-            };
+            return Requirement.and([...andTerms, sum]);
         }
     }
 
     // CommonFactor1 and CommonFactor2 and (SOPWithoutCommonFactors)
-    return {
-        type: 'and',
-        terms: [
-            ...[...commonFactors].map((i) => bitIndex.reverseIndex[i]),
-            {
-                type: 'or',
-                terms: conjunctions.map((c) =>
-                    bitVecToRequirements(bitIndex, c),
-                ),
-            },
-        ],
-    };
+    return Requirement.and([
+        ...[...commonFactors].map((i) => bitIndex.reverseIndex[i]),
+        Requirement.or(
+            conjunctions.map((c) => bitVecToRequirements(bitIndex, c)),
+        ),
+    ]);
 }
 
 function genRectangles(
@@ -406,8 +380,7 @@ function bitVecToRequirements(
     bitIndex: BitIndex,
     vec: BitVector,
 ): RecursiveTooltipRequirement2 {
-    return {
-        type: 'and',
-        terms: [...[...vec.iter()].map((x) => bitIndex.reverseIndex[x])],
-    };
+    return Requirement.and<TooltipRequirement2>([
+        ...[...vec.iter()].map((x) => bitIndex.reverseIndex[x]),
+    ]);
 }

@@ -9,11 +9,15 @@ import {
     useSyncExternalStore,
 } from 'react';
 import { useSelector } from 'react-redux';
+import type { ExplorationNode } from '../logic/Pathfinding';
 import { logicSelector } from '../tracker/LogicInstanceSelector';
 import {
     getRequirementLogicalStateSelector,
+    inLogicPathfindingSelector,
+    optimisticPathfindingSelector,
     searchExitsSelector,
 } from '../tracker/Selectors';
+import { settingSelector } from '../tracker/SettingsSelector';
 import { noop } from '../utils/Function';
 import { TooltipComputer } from './TooltipComputations';
 import {
@@ -78,7 +82,7 @@ export function useTooltipExpr(
         [booleanExpr, logic, getRequirementLogicalState],
     );
 }
-/*
+
 export function useEntrancePath(checkId: string): string[] | undefined {
     const logicPathfinding = useSelector(inLogicPathfindingSelector);
     const optimisticPathfinding = useSelector(optimisticPathfindingSelector);
@@ -106,4 +110,3 @@ export function useEntrancePath(checkId: string): string[] | undefined {
         return segments.reverse();
     }, [checkId, entranceRando, logicPathfinding, optimisticPathfinding]);
 }
-*/

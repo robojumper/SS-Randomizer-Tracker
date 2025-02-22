@@ -1,9 +1,5 @@
 import { compact } from 'es-toolkit';
-import {
-    falseRequirement,
-    trueRequirement,
-    type FullRequirement2,
-} from '../logic2/Requirement';
+import { Requirement, type FullRequirement2 } from '../logic2/Requirement';
 import BooleanExpression, { type Item } from './BooleanExpression';
 
 export function parseExpression(expression: string) {
@@ -48,19 +44,17 @@ export function booleanExprToRequirementExpr(
     if (BooleanExpression.isExpression(expr)) {
         switch (expr.type) {
             case 'or':
-                return {
-                    type: 'or',
-                    terms: expr.items.flatMap((item) =>
+                return Requirement.or(
+                    expr.items.flatMap((item) =>
                         booleanExprToRequirementExpr(item, lookup),
                     ),
-                };
+                );
             case 'and': {
-                return {
-                    type: 'and',
-                    terms: expr.items.flatMap((item) =>
+                return Requirement.and(
+                    expr.items.flatMap((item) =>
                         booleanExprToRequirementExpr(item, lookup),
                     ),
-                };
+                );
             }
             default: {
                 throw new Error('unreachable');
@@ -69,9 +63,9 @@ export function booleanExprToRequirementExpr(
     }
 
     if (expr === 'True') {
-        return trueRequirement();
+        return Requirement.true();
     } else if (expr === 'False') {
-        return falseRequirement();
+        return Requirement.false();
     } else {
         return lookup(expr);
     }

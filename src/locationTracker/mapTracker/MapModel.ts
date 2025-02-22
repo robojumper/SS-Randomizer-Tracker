@@ -1,6 +1,5 @@
 import mapData from '../../data/mapData.json';
 import type { ExitMapping } from '../../logic/Locations';
-import type { AreaGraph } from '../../logic/Logic';
 import type { Logic2 } from '../../logic/logic2/Logic';
 
 export type MapHintRegion = {
@@ -16,7 +15,7 @@ export type MapHintRegion = {
     | { type: 'hint_region' }
     | {
           type: 'exit';
-          exitPool: keyof AreaGraph['linkedEntrancePools'];
+          exitPool: keyof Logic2['auxData']['linkedEntrancePools'];
           exitId: string;
       }
 );
@@ -61,7 +60,8 @@ function getEntranceMarker(
     areaGraph: Logic2,
     exits: Record<string, ExitMapping>,
 ): MapHintRegion {
-    const exitPool = marker.exitPool as keyof AreaGraph['linkedEntrancePools'];
+    const exitPool =
+        marker.exitPool as keyof Logic2['auxData']['linkedEntrancePools'];
     const exitId =
         areaGraph.auxData.linkedEntrancePools[exitPool][marker.entryName]
             .exits[0];

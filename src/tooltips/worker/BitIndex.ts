@@ -1,5 +1,5 @@
 import type {
-    RecursiveRequirement2,
+    RecursiveRequirement3,
     Requirement2,
 } from '../../logic/logic2/Requirement';
 
@@ -8,7 +8,10 @@ export type TooltipRequirement2 = Requirement2 & {
 };
 
 export type RecursiveTooltipRequirement2 =
-    RecursiveRequirement2<TooltipRequirement2>;
+    RecursiveRequirement3<TooltipRequirement2>;
+
+export type RecursiveTooltipRequirement3 =
+    RecursiveRequirement3<TooltipRequirement2>;
 
 export interface BitIndex {
     itemBits: Record<string, number>;

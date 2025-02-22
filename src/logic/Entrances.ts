@@ -60,7 +60,7 @@ export function getAllowedStartingEntrances(
 ): Entrance[] {
     return Object.entries(logic.entrances)
         .filter(([id, def]) => {
-            if (!def.canStartAt === false) {
+            if (!def.canStartAt) {
                 return false;
             }
 

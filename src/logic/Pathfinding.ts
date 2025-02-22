@@ -1,8 +1,8 @@
-import { keyBy } from 'es-toolkit';
-import { BitVector } from './bitlogic/BitVector';
-import type { ExitMapping } from './Locations';
-import type { AreaGraph } from './Logic';
+import { once } from 'es-toolkit';
 import { TimeOfDay, type TTimeOfDay } from './Mappers';
+import type { SearchExits2 } from './logic2/Entrance';
+import type { Logic2 } from './logic2/Logic';
+import { evaluateRequirement, type SearchState2 } from './logic2/Search';
 
 /*
 The pathfinding algorithm starts at the Start entrance with its specific time of day,
@@ -23,25 +23,26 @@ function nodeKey(node: ExplorationNode) {
 }
 
 export function exploreAreaGraph(
-    areaGraph: AreaGraph,
-    exits: ExitMapping[],
-    logicBits: BitVector,
+    areaGraph: Logic2,
+    exits: SearchExits2,
+    searchState: SearchState2,
 ) {
-    const mappingsByExitId = keyBy(exits, (exit) => exit.exit.id);
-    const startingEntrance = mappingsByExitId['\\Start']?.entrance;
-    if (!startingEntrance) {
+    const { mapExits, logicalExits } = exits;
+    const startConnection = mapExits['\\Start'];
+    if (!startConnection || startConnection.type !== 'mapExit') {
         return undefined;
     }
-    const startingEntranceDef = areaGraph.entrances[startingEntrance.id];
+    const startingArea = startConnection.connectedArea;
     if (
-        startingEntranceDef.allowed_time_of_day !== TimeOfDay.DayOnly &&
-        startingEntranceDef.allowed_time_of_day !== TimeOfDay.NightOnly
+        startConnection.validTod !== TimeOfDay.DayOnly &&
+        startConnection.validTod !== TimeOfDay.NightOnly
     ) {
         return undefined;
     }
+
     const startingNode: ExplorationNode = {
-        area: areaGraph.areasByEntrance[startingEntrance.id].id,
-        timeOfDay: startingEntranceDef.allowed_time_of_day,
+        area: startingArea.id,
+        timeOfDay: startConnection.validTod,
         parent: undefined,
         edge: undefined,
     };
@@ -71,74 +72,63 @@ export function exploreAreaGraph(
                 workList.unshift(nextNode);
             }
         }
-        for (const location of area.locations) {
-            const condition =
-                location.areaAvailability === TimeOfDay.Both
-                    ? currentTimeOfDay === TimeOfDay.DayOnly
-                        ? location.requirements.day
-                        : location.requirements.night
-                    : location.requirements;
-            switch (location.type) {
-                case 'logicalExit': {
-                    const destArea = areaGraph.areas[location.toArea];
-                    const nextNode = {
-                        timeOfDay: currentTimeOfDay,
-                        area: destArea.id,
-                        parent: workItem,
-                        edge: undefined,
-                    };
-                    if (
-                        !visitedNodes[nodeKey(nextNode)] &&
-                        (destArea.availability === TimeOfDay.Both ||
-                            destArea.availability === currentTimeOfDay) &&
-                        condition.eval(logicBits)
-                    ) {
-                        visitedNodes[nodeKey(nextNode)] = nextNode;
-                        workList.unshift(nextNode);
-                    }
-                    break;
-                }
-                case 'mapExit': {
-                    if (
-                        !reachableChecks[location.id] &&
-                        condition.eval(logicBits)
-                    ) {
-                        reachableChecks[location.id] = workItem;
-                    }
-                    const entrance = mappingsByExitId[location.id]?.entrance;
-                    if (entrance) {
-                        const destArea = areaGraph.areasByEntrance[entrance.id];
-                        const nextNode = {
-                            timeOfDay: currentTimeOfDay,
-                            area: destArea.id,
-                            parent: workItem,
-                            edge: areaGraph.exits[location.id].short_name,
-                        };
 
-                        if (
-                            !visitedNodes[nodeKey(nextNode)] &&
-                            (destArea.availability === TimeOfDay.Both ||
-                                destArea.availability === currentTimeOfDay)
-                        ) {
-                            visitedNodes[nodeKey(nextNode)] = nextNode;
-                            workList.unshift(nextNode);
-                        }
-                    }
-                    break;
+        for (const location of area.locations) {
+            const condition = areaGraph.requirements[location.requirementsIdx];
+            if (
+                !reachableChecks[location.locationId] &&
+                evaluateRequirement(searchState, condition, currentTimeOfDay)
+            ) {
+                reachableChecks[location.locationId] = workItem;
+            }
+        }
+
+        for (const exit of area.exits) {
+            const condition = areaGraph.requirements[exit.requirementsIdx];
+            const metRequirement = once(() =>
+                evaluateRequirement(searchState, condition, currentTimeOfDay),
+            );
+            if (!reachableChecks[exit.id] && metRequirement()) {
+                reachableChecks[exit.id] = workItem;
+            }
+            const connection = mapExits[exit.id];
+            if (connection) {
+                const destArea = connection.connectedArea;
+                const nextNode = {
+                    timeOfDay: currentTimeOfDay,
+                    area: destArea.id,
+                    parent: workItem,
+                    edge: exit.name,
+                };
+
+                if (
+                    metRequirement() &&
+                    !visitedNodes[nodeKey(nextNode)] &&
+                    (destArea.allowedTimeOfDay & currentTimeOfDay) !== 0
+                ) {
+                    visitedNodes[nodeKey(nextNode)] = nextNode;
+                    workList.unshift(nextNode);
                 }
-                case 'check': {
-                    if (
-                        !reachableChecks[location.id] &&
-                        condition.eval(logicBits)
-                    ) {
-                        reachableChecks[location.id] = workItem;
-                    }
-                    break;
-                }
-                case 'virtualLocation': {
-                    // Nothing to do, virtual locations are resolved through `inLogicBits`
-                    break;
-                }
+            }
+        }
+
+        for (const connection of logicalExits[area.id]) {
+            const condition = connection.requirement;
+            const destArea = connection.connectedArea;
+            const nextNode = {
+                timeOfDay: currentTimeOfDay,
+                area: destArea.id,
+                parent: workItem,
+                edge: undefined,
+            };
+
+            if (
+                evaluateRequirement(searchState, condition, currentTimeOfDay) &&
+                !visitedNodes[nodeKey(nextNode)] &&
+                (destArea.allowedTimeOfDay & currentTimeOfDay) !== 0
+            ) {
+                visitedNodes[nodeKey(nextNode)] = nextNode;
+                workList.unshift(nextNode);
             }
         }
     }

@@ -24,6 +24,7 @@ import {
 } from '../logic/Locations';
 import { TimeOfDay } from '../logic/Mappers';
 import { getAuxItems } from '../logic/Misc';
+import { exploreAreaGraph } from '../logic/Pathfinding';
 import { computeSemiLogic } from '../logic/SemiLogic';
 import { doesHintDistroUseGossipStone } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
 import {
@@ -663,4 +664,14 @@ export const totalCountersSelector = createSelector(
 export const usedEntrancesSelector = createSelector(
     [entrancePoolsSelector, exitsSelector],
     getUsedEntrances,
+);
+
+export const inLogicPathfindingSelector = createSelector(
+    [logicSelector, searchExitsSelector, inLogicSearchSelector],
+    exploreAreaGraph,
+);
+
+export const optimisticPathfindingSelector = createSelector(
+    [logicSelector, searchExitsSelector, optimisticSearchSelector],
+    exploreAreaGraph,
 );

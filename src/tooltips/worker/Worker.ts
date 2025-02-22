@@ -10,8 +10,9 @@ import type {
     LocationAccess2,
 } from '../../logic/logic2/Location';
 import {
+    Requirement,
     simplifyRequirement,
-    type RecursiveRequirement2,
+    type RecursiveRequirement3,
     type Requirement2,
 } from '../../logic/logic2/Requirement';
 import { TimeOfDay, type TTimeOfDay } from '../../logic/Mappers';
@@ -88,17 +89,14 @@ self.onmessage = (ev: MessageEvent<WorkerRequest>) => {
 };
 
 function visitRequirement<R extends object>(
-    req: RecursiveRequirement2<R>,
-    handler: (req: RecursiveRequirement2<R>) => void,
+    req: RecursiveRequirement3<R>,
+    handler: (req: RecursiveRequirement3<R>) => void,
 ) {
     handler(req);
-    if ('type' in req) {
-        switch (req.type) {
-            case 'or':
-            case 'and': {
-                for (const term of req.terms) {
-                    visitRequirement(term, handler);
-                }
+    switch (req.kind) {
+        case 'op': {
+            for (const term of req.terms) {
+                visitRequirement(term, handler);
             }
         }
     }
@@ -228,11 +226,10 @@ function bottomUpTooltipPropagation(logic: LeanLogic, exits: SearchExits2) {
                 const bitv = new BitVector();
                 for (let i = 1; i <= req.count; i++) {
                     bitv.setBit(
-                        getRequirementBit(bitIndex, {
-                            type: 'item',
-                            name: req.name,
-                            count: i,
-                        }),
+                        getRequirementBit(
+                            bitIndex,
+                            Requirement.item(req.name, i),
+                        ),
                     );
                 }
                 return new LogicalExpression([bitv]);
