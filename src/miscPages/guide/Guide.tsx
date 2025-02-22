@@ -114,8 +114,10 @@ export default function Guide() {
                     Why use a Tracker?
                 </Heading>
                 <Section>
-                    A tracker allows you to, well, track everything that
-                    happened in your seed:
+                    <p>
+                        A tracker allows you to, well, track everything that
+                        happened in your seed:
+                    </p>
                     <ul>
                         <li>
                             You can mark your collected <b>Items</b> so that you
@@ -143,11 +145,14 @@ export default function Guide() {
                             and randomized entrances.
                         </li>
                     </ul>
-                    Plenty of players do not use a tracker, or do not use every
-                    feature of this tracker. However, experience has shown that
-                    this tracker is great for first-time players, or players who
-                    try out unfamiliar settings, and many of them will keep
-                    using it for all of the aforementioned benefits.
+                    <p>
+                        Plenty of players do not use a tracker, or do not use
+                        every feature of this tracker. However, experience has
+                        shown that this tracker is great for first-time players,
+                        or players who try out unfamiliar settings, and many of
+                        them will keep using it for all of the aforementioned
+                        benefits.
+                    </p>
                 </Section>
                 <Heading level={2} id="your-first-seed">
                     Your First Seed
@@ -656,26 +661,25 @@ export default function Guide() {
                         If the tracker says <b>0 Locations Accessible</b> and
                         you are not yet able to beat the game, it may seem like
                         you are stuck. Here are some things you can try:
-                        <ul>
-                            <li>
-                                Check if there are <b>Entrances Accessible</b>.
-                                Discovering the entrance to a given exit can
-                                make additional checks available.
-                            </li>
-                            <li>
-                                Check if there are <b>loose crystals</b> or{' '}
-                                <b>goddess cubes</b> to collect. The map layout
-                                makes these more obvious.
-                            </li>
-                            <li>
-                                You may have mis-tracked something. The
-                                Randomizer may have created a <b>Spoiler Log</b>{' '}
-                                that contains all item locations, so you can
-                                check that or let someone else <DiscordButton />{' '}
-                                check it for you.
-                            </li>
-                        </ul>
                     </p>
+                    <ul>
+                        <li>
+                            Check if there are <b>Entrances Accessible</b>.
+                            Discovering the entrance to a given exit can make
+                            additional checks available.
+                        </li>
+                        <li>
+                            Check if there are <b>loose crystals</b> or{' '}
+                            <b>goddess cubes</b> to collect. The map layout
+                            makes these more obvious.
+                        </li>
+                        <li>
+                            You may have mis-tracked something. The Randomizer
+                            may have created a <b>Spoiler Log</b> that contains
+                            all item locations, so you can check that or let
+                            someone else <DiscordButton /> check it for you.
+                        </li>
+                    </ul>
                 </Section>
             </div>
         </div>
