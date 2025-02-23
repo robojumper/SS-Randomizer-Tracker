@@ -10,7 +10,7 @@ export function getAuxItems(logic: Logic2, checkedChecks: Set<string>) {
     const result: Record<string, number> = {};
     for (const checkId of checkedChecks) {
         const check = logic.locations[checkId];
-        if (check.containedAuxItem) {
+        if (check?.containedAuxItem) {
             result[check.containedAuxItem] ??= 0;
             result[check.containedAuxItem]++;
         }
