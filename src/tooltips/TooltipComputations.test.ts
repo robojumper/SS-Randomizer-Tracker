@@ -1,3 +1,4 @@
+import { shuffle } from 'es-toolkit';
 import {
     trickSemiLogicSelector,
     trickSemiLogicTrickListSelector,
@@ -8,15 +9,18 @@ import {
 } from '../customization/Slice';
 import { mergeRequirements } from '../logic/bitlogic/BitLogic';
 import type BooleanExpression from '../logic/booleanlogic/BooleanExpression';
+import { itemMaxes, type InventoryItem } from '../logic/Inventory';
 import { logicSelector, optionsSelector } from '../logic/Selectors';
+import { dungeonCompletionItems } from '../logic/TrackerModifications';
 import { createTestLogic } from '../testing/TestingUtils';
 import {
     allSettingsSelector,
+    checkSelector,
     getRequirementLogicalStateSelector,
     settingsRequirementsSelector,
     settingsSelector,
 } from '../tracker/Selectors';
-import { acceptSettings } from '../tracker/Slice';
+import { acceptSettings, setItemCounts } from '../tracker/Slice';
 import { TooltipComputer } from './TooltipComputations';
 import {
     booleanExprToTooltipExpr,
@@ -209,5 +213,110 @@ describe('tooltips', () => {
                 `"(Digging Mitts and Ruby Tablet and (Bow or Slingshot or Stuttersprint Trick))"`,
             );
         });
+    });
+
+    describe('logic state agrees with tooltips', () => {
+        let computer: TooltipComputer;
+        beforeAll(() => {
+            tester.reset();
+
+            const settings = tester.readSelector(allSettingsSelector);
+            tester.dispatch(
+                acceptSettings({
+                    settings: {
+                        ...settings,
+                        'excluded-locations': [],
+                        rupeesanity: true,
+                        tadtonesanity: true,
+                        shopsanity: true,
+                    },
+                }),
+            );
+            computer = createComputer();
+        });
+
+        it(
+            'agrees',
+            {
+                timeout: 30000,
+            },
+            async ({ expect }) => {
+                const tablets: InventoryItem[] = shuffle([
+                    'Amber Tablet',
+                    'Emerald Tablet',
+                    'Ruby Tablet',
+                ]);
+                let itemPool: InventoryItem[] = [];
+                for (const [item_, count] of Object.entries(itemMaxes)) {
+                    const item = item_ as InventoryItem;
+                    if (!tablets.includes(item)) {
+                        for (let i = 0; i < count; i++) {
+                            itemPool.push(item);
+                        }
+                    }
+                }
+                itemPool = shuffle(itemPool);
+                // Insert tablets somewhere early
+                itemPool.splice(2, 0, tablets[0]);
+                itemPool.splice(7, 0, tablets[1]);
+                itemPool.splice(14, 0, tablets[2]);
+
+                const logic = tester.readSelector(logicSelector);
+
+                const doCheck = async (
+                    items: Partial<Record<InventoryItem, number>>,
+                ) => {
+                    tester.dispatch(
+                        setItemCounts(
+                            Object.entries(items).map(([item, count]) => ({
+                                item: item as InventoryItem,
+                                count,
+                            })),
+                        ),
+                    );
+
+                    const evaluate = (tooltip: TooltipExpression) => {
+                        switch (tooltip.type) {
+                            case 'item':
+                                return tooltip.logicalState === 'inLogic';
+                            case 'expr': {
+                                switch (tooltip.op) {
+                                    case 'and':
+                                        return tooltip.items.every(evaluate);
+                                    case 'or':
+                                        return tooltip.items.some(evaluate);
+                                }
+                            }
+                        }
+                    };
+
+                    for (const checkId of Object.keys(logic.checks)) {
+                        if (dungeonCompletionItems['Sky Keep'] === checkId) {
+                            continue;
+                        }
+                        const logicState = tester.readSelector(
+                            checkSelector(checkId),
+                        ).logicalState;
+                        const tooltip = await getTooltipExpression(
+                            computer,
+                            checkId,
+                        );
+                        expect(logicState === 'inLogic', checkId).toEqual(
+                            evaluate(tooltip),
+                        );
+                    }
+                };
+
+                const inventory: Partial<Record<InventoryItem, number>> = {};
+                doCheck(inventory);
+
+                while (itemPool.length) {
+                    const item = itemPool.shift()!;
+                    inventory[item] ??= 0;
+                    inventory[item]++;
+                    await doCheck(inventory);
+                }
+            },
+        );
     });
 });

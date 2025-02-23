@@ -6,6 +6,7 @@ import {
 } from './customization/Slice';
 import { type InventoryItem, itemMaxes } from './logic/Inventory';
 import type { LogicalState } from './logic/Locations';
+import { logicSelector } from './logic/Selectors';
 import type { TypedOptions } from './permalink/SettingsTypes';
 import type { AppAction, RootState, SyncThunkResult } from './store/Store';
 import { createTestLogic } from './testing/TestingUtils';
@@ -416,10 +417,10 @@ describe('full logic tests', () => {
     });
 
     it('hides gossip stones with known hint distros', () => {
-        updateSettingsWithReset('hint-distribution', 'Balanced');
+        updateSettings('hint-distribution', 'Balanced');
         tester.findCheckId('Faron Woods', 'Gossip Stone in Deep Woods');
 
-        updateSettingsWithReset('hint-distribution', 'Remlits Tournament');
+        updateSettings('hint-distribution', 'Remlits Tournament');
         expectCheckAbsent('Faron Woods', 'Gossip Stone in Deep Woods');
     });
 
@@ -671,5 +672,38 @@ describe('full logic tests', () => {
             "Upper Skyloft - Crystal in Link's Room",
         ]);
         expect(checkState(bat30Check)).toBe('outLogic');
+    });
+
+    it("has Water Dragon's Reward even if Tadtonesanity is off", () => {
+        updateSettings('excluded-locations', []);
+        updateSettings('tadtonesanity', false);
+        expect(
+            tester.findCheckId('Flooded Faron Woods', "Water Dragon's Reward"),
+        ).toBeTruthy();
+    });
+
+    it('makes all checks reachable with a full inventory', () => {
+        updateSettings('excluded-locations', []);
+        updateSettings('empty-unrequired-dungeons', false);
+        updateSettings('rupeesanity', true);
+        updateSettings('tadtonesanity', true);
+        updateSettings('shopsanity', true);
+
+        tester.dispatch(
+            setItemCounts(
+                Object.entries(itemMaxes).map(([item, count]) => ({
+                    item: item as InventoryItem,
+                    count,
+                })),
+            ),
+        );
+
+        const logic = readSelector(logicSelector);
+        for (const check of Object.keys(logic.checks)) {
+            expect(checkState(check)).toSatisfy(
+                (state: string) => ['inLogic', 'semiLogic'].includes(state),
+                `${check} is inLogic or semiLogic`,
+            );
+        }
     });
 });
