@@ -160,8 +160,8 @@ export default function Guide() {
                 <Section>
                     <p>
                         This assumes you have set up and launched a randomized
-                        game and are ready to begin playing. If any of these
-                        steps are unclear, the{' '}
+                        game and are ready to begin playing. If any of the
+                        following steps are unclear, the{' '}
                         <a href="#tracker-features">Tracker Features</a> section
                         goes into much more detail.
                     </p>
@@ -674,10 +674,14 @@ export default function Guide() {
                             makes these more obvious.
                         </li>
                         <li>
-                            You may have mis-tracked something. The Randomizer
-                            may have created a <b>Spoiler Log</b> that contains
-                            all item locations, so you can check that or let
-                            someone else <DiscordButton /> check it for you.
+                            You may have mis-tracked something. Double-check
+                            your inventory for any items not marked in the
+                            tracker, and go through the areas to verify you
+                            checked all locations you marked as checked. The
+                            Randomizer may have created a <b>Spoiler Log</b>{' '}
+                            that contains all item locations, so you can check
+                            that or let someone else <DiscordButton /> check it
+                            for you.
                         </li>
                     </ul>
                 </Section>
