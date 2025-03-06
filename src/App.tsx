@@ -51,15 +51,8 @@ const routeTree = rootRoute.addChildren([
 
 const router = createRouter({
     routeTree,
-    // This breaks some interactions, e.g.:
-    // * Open /guide
-    // * Click a table of contents entry
-    // * -> scroll, OK
-    // * navigate back
-    // * -> no scroll, not OK
-    // so turning it off for now
-    // scrollRestoration: true,
-    // scrollRestorationBehavior: 'instant',
+    scrollRestoration: true,
+    scrollRestorationBehavior: 'instant',
 });
 
 function createApplyColorSchemeListener() {
