@@ -15,7 +15,7 @@ export function ExternalLinks() {
 function SourceCodeLink() {
     return (
         <a rel="noreferrer noopener" target="_blank" href={sourceCode}>
-            View the Source Code <i className="fab fa-github" />
+            View the Source Code <i className="bi-github" />
         </a>
     );
 }

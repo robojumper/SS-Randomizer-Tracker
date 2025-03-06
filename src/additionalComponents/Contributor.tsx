@@ -12,7 +12,7 @@ export default function Contributor({
             <span>{name}</span>
             {Object.entries(links).map(([type, link]) => (
                 <a key={link} href={link} aria-label={type}>
-                    <i className={`fab fa-${type}`} />
+                    <i className={`bi-${type}`} />
                 </a>
             ))}
         </div>
