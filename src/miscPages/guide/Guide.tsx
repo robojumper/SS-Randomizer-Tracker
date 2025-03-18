@@ -102,6 +102,11 @@ export default function Guide() {
                                 </a>
                             </li>
                             <li>
+                                <a href="#where-is-sky-keep">
+                                    Why is Sky Keep missing from the tracker?
+                                </a>
+                            </li>
+                            <li>
                                 <a href="#zero-locations-accessible">
                                     I am out of locations to check, what do I
                                     do?
@@ -652,6 +657,40 @@ export default function Guide() {
                         </a>
                         .
                     </p>
+                </Section>
+                <Heading level={3} id="where-is-sky-keep">
+                    Why is Sky Keep missing from the tracker?
+                </Heading>
+                <Section>
+                    <p>
+                        Sky Keep is the game's seventh "dungeon", but it doesn't
+                        always behave like a dungeon. As a general rule of
+                        thumb, the tracker will hide Sky Keep if it's known to
+                        be not useful given your settings. Sky Keep is worth
+                        visiting in the following situations:
+                    </p>
+                    <ul>
+                        <li>
+                            <b>Empty Unrequired Dungeons</b> is disabled. In
+                            these cases all Sky Keep checks can be useful.
+                        </li>
+                        <li>
+                            <b>Triforce Shuffle</b> places Triforces in Sky
+                            Keep, either <b>Vanilla</b> or randomized within{' '}
+                            <b>Sky Keep</b> - the Anywhere option places them
+                            outside of Sky Keep. Triforces in Sky Keep make Sky
+                            Keep required for purposes of Empty Unrequired
+                            Dungeons, so all other checks there can be useful
+                            too.
+                        </li>
+                        <li>
+                            <b>Randomize Entrances</b> is set to{' '}
+                            <b>All Surface Dungeons + Sky Keep</b>. In this case
+                            the checks themselves are not useful, but the exit
+                            to Sky Keep and the Stone of Trials need to be
+                            tracked, so Sky Keep is shown.
+                        </li>
+                    </ul>
                 </Section>
                 <Heading level={3} id="zero-locations-accessible">
                     I am out of locations to check, what do I do?

@@ -26,6 +26,13 @@
     }
 }
 
+/* Hack: When quickly hovering over radix tooltips
+ * in the locations list, the tooltip may disappear.
+ * This seems to prevent it from happening */
+div[data-radix-popper-content-wrapper] {
+    pointer-events: none;
+}
+
 @layer base {
     body {
         margin: 0;
