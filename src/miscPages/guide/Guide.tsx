@@ -667,7 +667,7 @@ export default function Guide() {
                         always behave like a dungeon. As a general rule of
                         thumb, the tracker will hide Sky Keep if it's known to
                         be not useful given your settings. Sky Keep is worth
-                        visiting in the following situations:
+                        visiting in the following cases:
                     </p>
                     <ul>
                         <li>
@@ -691,6 +691,7 @@ export default function Guide() {
                             tracked, so Sky Keep is shown.
                         </li>
                     </ul>
+                    <p>In all other situations, Sky Keep is hidden.</p>
                 </Section>
                 <Heading level={3} id="zero-locations-accessible">
                     I am out of locations to check, what do I do?
