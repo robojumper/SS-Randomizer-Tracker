@@ -68,7 +68,7 @@ export function BasicItem({
             draggable
             tabIndex={0}
             style={{ width: imgWidth, ...style }}
-            ref={mergeRefs(setNodeRef, restProps.ref)}
+            ref={mergeRefs<HTMLDivElement>(setNodeRef, restProps.ref)}
         >
             <img
                 draggable={false}
