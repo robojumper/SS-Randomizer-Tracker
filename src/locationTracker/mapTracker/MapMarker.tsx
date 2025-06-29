@@ -8,7 +8,11 @@ import {
 import { decodeHint } from '../../hints/Hints';
 import { hintsToSubmarkers } from '../../hints/HintsParser';
 import type { RootState } from '../../store/Store';
-import { areaHintSelector, areasSelector } from '../../tracker/Selectors';
+import {
+    areaHintSelector,
+    areasSelector,
+    stillNeedToEnterCrystalCountsSelector,
+} from '../../tracker/Selectors';
 import HintDescription from '../HintsDescription';
 import type { LocationGroupContextMenuProps } from '../LocationGroupContextMenu';
 import { useContextMenu } from '../context-menu';
@@ -58,6 +62,13 @@ function MapMarker({
     if (dragPreviewHint && isOver) {
         hints = [...hints, dragPreviewHint];
     }
+    const needsEnterBatCounts = useSelector(
+        stillNeedToEnterCrystalCountsSelector,
+    );
+    const showEnterBatCounts =
+        needsEnterBatCounts &&
+        title === "Batreaux's House" &&
+        data.checks.numAccessible === 0;
 
     const tooltip = (
         <center>
@@ -67,6 +78,7 @@ function MapMarker({
             {hints.map((hint, idx) => (
                 <HintDescription key={idx} hint={decodeHint(hint)} />
             ))}
+            {showEnterBatCounts && 'Click to enter required Gratitude Crystals'}
         </center>
     );
 
@@ -100,6 +112,7 @@ function MapMarker({
             ]}
         >
             {Boolean(data.checks.numAccessible) && data.checks.numAccessible}
+            {showEnterBatCounts && '?'}
         </Marker>
     );
 }

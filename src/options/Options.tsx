@@ -101,6 +101,7 @@ const optionCategorization_ = {
     Miscellaneous: [
         'logic-mode',
         'bit-patches',
+        'batreaux-counts',
         'damage-multiplier',
         'enabled-tricks-bitless',
         'enabled-tricks-glitched',

@@ -143,6 +143,11 @@ function getReadableItemName(logic: Logic, item: string) {
         return prettyItemNames[item][1];
     }
 
+    if (item === '\\1 Gratitude Crystals') {
+        // macro name
+        return '1 Gratitude Crystal';
+    }
+
     const match = item.match(itemCountPat);
     if (match) {
         const [, baseName, count] = match;

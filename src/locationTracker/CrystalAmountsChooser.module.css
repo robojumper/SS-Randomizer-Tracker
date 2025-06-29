@@ -1,0 +1,19 @@
+.chooser {
+    padding: 4px;
+}
+
+.inputs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(45px, 1fr));
+    gap: 4px;
+
+    align-items: center;
+
+    > div {
+        display: flex;
+        > input {
+            flex: 1;
+            min-width: 0;
+        }
+    }
+}
