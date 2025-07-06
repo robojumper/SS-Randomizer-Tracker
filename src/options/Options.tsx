@@ -127,6 +127,10 @@ const wellKnownRemotes: {
         remoteName: 'alkalineace/season-3',
     },
     {
+        prettyName: 'Co-Op Tournament Season 2',
+        remoteName: 'alkalineace/Co-op-S2-Tournament',
+    },
+    {
         prettyName: 'Latest Development Build',
         remoteName: 'ssrando/main',
     },

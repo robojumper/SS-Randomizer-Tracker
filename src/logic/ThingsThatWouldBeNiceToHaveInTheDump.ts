@@ -79,14 +79,14 @@ export const swordsToAdd = {
     'True Master Sword': 6,
 };
 
-const s3RacingBannedGossipStones = [
+const racingBannedGossipStones = [
     'Gossip Stone in Shipyard',
     'Gossip Stone in Temple of Time Area',
     'Gossip Stone in Lower Platform Cave',
     'Gossip Stone in Upper Platform Cave',
 ];
-const isS3RacingGossipStone = (stoneId: string) =>
-    !s3RacingBannedGossipStones.some((s) => stoneId.includes(s));
+const isRacingGossipStone = (stoneId: string) =>
+    !racingBannedGossipStones.some((s) => stoneId.includes(s));
 
 export const doesHintDistroUseGossipStone: Record<
     string,
@@ -97,9 +97,10 @@ export const doesHintDistroUseGossipStone: Record<
     'Dowsing & Fi Hints': stubFalse,
     'Remlits Tournament': stubFalse,
     'Strong Dowsing All Dungeons': stubFalse,
-    'Pre-S3 Base': isS3RacingGossipStone,
-    'Pre-S3 Variant': isS3RacingGossipStone,
-    'Season 3 Tournament': isS3RacingGossipStone,
+    'Pre-S3 Base': isRacingGossipStone,
+    'Pre-S3 Variant': isRacingGossipStone,
+    'Season 3 Tournament': isRacingGossipStone,
+    'Co-op Season 2 Tournament': isRacingGossipStone,
 };
 
 // These requirements are populated based on required dungeons
