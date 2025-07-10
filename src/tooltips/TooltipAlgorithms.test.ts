@@ -65,20 +65,21 @@ test('simplify1', () => {
 // But the second one is the most readable because our tooltips turn a top-level AND into multiple
 // bullet points.
 // The co-kernel-cube matrix looks something like this:
-// |           | Mitts | Bow | Clawshots | Slingshot | Beetle | Bomb |
-// |-----------|-------|-----|-----------|-----------|--------|------|
-// | Bow       | 1     | 1   |           |           |        |      |
-// | Mitts     |       |     | 1         | 1         | 1      | 1    |
-// | Slingshot | 1     | 1   |           |           |        |      |
-// | Bomb      |       |     | 1         |           | 1      |      |
+// |           | Mitts | Bomb | Bow | Clawshots | Slingshot | Beetle |
+// |-----------|-------|------|-----|-----------|-----------|--------|
+// | Bow       | 1     | 1    |     |           |           |        |
+// | Mitts     |       |      | 1   | 1         | 1         | 1      |
+// | Slingshot | 1     | 1    |     |           |           |        |
+// | Bomb      |       |      | 1   |           | 1         |        |
 //
 // The prime rectangles here are:
-// [Bow, Slingshot] x [Mitts, Bow]
-// [Mitts, Bomb] x [Clawshots, Beetle]
-// [Mitts] x [Clawshots, Slingshot, Beetle, Bomb]
+// [Bow, Slingshot] x [Mitts, Bomb]
+// [Mitts, Bomb] x [Bow, Slingshot]
+// [Mitts] x [Bow, Clawshots, Slingshot, Beetle]
 // Clawshots and Beetle don't have rows because they don't correspond to a co-kernel since
-// there's only one term that mentions them. So pulling `(Bow | Clawshots | Slingshot | Beetle)`
-// out first is not something our algorithm knows how to do.
+// there's only one term that mentions them. But since our algorithm always performs a division,
+// the resulting term will always look like `remainder | (divisor & quotient)`, which makes it
+// hard to produce a top-level AND.
 test('simplify2', () => {
     expect(
         simplify(
