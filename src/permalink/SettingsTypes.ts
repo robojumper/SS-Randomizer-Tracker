@@ -49,7 +49,11 @@ export type OptionsCommand = keyof AllTypedOptions;
 export interface AllTypedOptions
     extends Omit<
         GeneratedOptions,
-        'rupeesanity' | 'shopsanity' | 'randomize-entrances' | 'logic-mode'
+        | 'rupeesanity'
+        | 'shopsanity'
+        | 'randomize-entrances'
+        | 'logic-mode'
+        | 'open-et'
     > {
     rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
 
@@ -85,6 +89,14 @@ export interface AllTypedOptions
         | 'Normal'
         | 'Beatable Only'
         | 'Beatable Then Banned';
+
+    // Option to shuffle Key Pieces in Eldin Volcano Only
+    // https://github.com/ssrando/ssrando/pull/621
+    'open-et':
+        | GeneratedOptions['open-et']
+        | 'Open'
+        | 'Shuffled (Eldin Volcano)'
+        | 'Shuffled (Anywhere)';
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOption>;
