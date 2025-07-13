@@ -62,7 +62,8 @@ export default function DungeonTracker({
     ) as HintRegion<DungeonNameType>[];
     const silentRealms = areas.filter((a) => a.name.includes('Silent Realm'));
 
-    const hideEtKeyPieces = useSelector(settingSelector('open-et'));
+    const openEtSetting = useSelector(settingSelector('open-et'));
+    const hideEtKeyPieces = openEtSetting === true || openEtSetting === 'Open';
 
     const colspan2 = (atCol: number): CSSProperties => ({
         gridColumn: `${atCol + 1} / span 2`,
