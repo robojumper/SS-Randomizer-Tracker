@@ -128,7 +128,7 @@ const wellKnownRemotes: {
     },
     {
         prettyName: 'Co-Op Tournament Season 2',
-        remoteName: 'alkalineace/Co-op-S2-Tournament',
+        remoteName: 'YourAverageLink/co-op-s2-revision',
     },
     {
         prettyName: 'Latest Development Build',
