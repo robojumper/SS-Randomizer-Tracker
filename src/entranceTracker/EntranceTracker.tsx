@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { List, type RowComponentProps } from 'react-window';
+import {
+    FixedSizeList as List,
+    type ListChildComponentProps,
+} from 'react-window';
 import { Checkbox } from '../additionalComponents/Checkbox';
 import { Dialog } from '../additionalComponents/Dialog';
 import { Select, type SelectValue } from '../additionalComponents/Select';
@@ -79,7 +82,7 @@ function EntranceTracker({
         );
     });
 
-    const row = ({ index, style }: RowComponentProps) => {
+    const row = ({ index, style }: ListChildComponentProps) => {
         const exit = filteredRows[index];
         return (
             <div
@@ -183,14 +186,14 @@ function EntranceTracker({
                 />
                 <label htmlFor="clickthrough">Clickthrough</label>
             </div>
-            <div style={{ height: 600 }}>
-                <List
-                    rowHeight={60}
-                    rowCount={filteredRows.length}
-                    rowComponent={row}
-                    rowProps={{}}
-                />
-            </div>
+            <List
+                itemCount={filteredRows.length}
+                height={600}
+                width=""
+                itemSize={60}
+            >
+                {row}
+            </List>
         </Dialog>
     );
 }
