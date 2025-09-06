@@ -6,7 +6,7 @@ import { setHintsText } from '../tracker/Slice';
 import styles from './HintsTracker.module.css';
 import { ItemAssignmentStatus } from './ItemAssignmentStatus';
 
-const hintsPlaceholder = $FEATURE_FLAG_HINTS_PARSER
+const hintsPlaceholder = __FEATURE_FLAG_HINTS_PARSER__
     ? 'Track hints here! Examples:\nUpper Barren\nFaron -> ET\nFloria -> G2\nTriforce in Boko'
     : 'Track hints here!';
 

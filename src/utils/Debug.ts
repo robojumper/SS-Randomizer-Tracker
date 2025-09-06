@@ -2,7 +2,7 @@
  * Print a message to the browser console, but only in dev mode.
  */
 export function appDebug(msg: string, ...args: unknown[]) {
-    if ($DEBUG_PRINTS) {
+    if (__DEBUG_PRINTS__) {
         console.log(msg, ...args);
     }
 }
@@ -11,7 +11,7 @@ export function appDebug(msg: string, ...args: unknown[]) {
  * Print a warning to the browser console, but only in dev mode.
  */
 export function appWarn(msg: string, ...args: unknown[]) {
-    if ($DEBUG_PRINTS) {
+    if (__DEBUG_PRINTS__) {
         console.warn(msg, ...args);
     }
 }
@@ -21,7 +21,7 @@ export function appWarn(msg: string, ...args: unknown[]) {
  */
 export function appError(msg: string, ...args: unknown[]) {
     console.error(msg, ...args);
-    if ($FATAL_APPERROR) {
+    if (__FATAL_APPERROR__) {
         throw new Error('fatal error ' + msg);
     }
 }

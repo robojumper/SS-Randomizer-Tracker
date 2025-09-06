@@ -31,10 +31,10 @@ export default defineConfig(({ mode }) => {
         },
         define: {
             // Keep in sync with global.d.ts
-            $PUBLIC_URL: JSON.stringify(baseUrl),
-            $FEATURE_FLAG_HINTS_PARSER: JSON.stringify(!isProd),
-            $DEBUG_PRINTS: JSON.stringify(mode === 'development'),
-            $FATAL_APPERROR: JSON.stringify(mode === 'test'),
+            __PUBLIC_URL__: JSON.stringify(baseUrl),
+            __FEATURE_FLAG_HINTS_PARSER__: JSON.stringify(!isProd),
+            __DEBUG_PRINTS__: JSON.stringify(mode === 'development'),
+            __FATAL_APPERROR__: JSON.stringify(mode === 'test'),
         },
         plugins: [
             sassDts({

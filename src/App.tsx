@@ -97,7 +97,7 @@ function App() {
 
     return (
         <ErrorBoundary FallbackComponent={ErrorPage}>
-            <RouterProvider basepath={$PUBLIC_URL} router={router} />
+            <RouterProvider basepath={__PUBLIC_URL__} router={router} />
         </ErrorBoundary>
     );
 }

@@ -1,5 +1,5 @@
 // Keep in sync with vite.config.js
-declare const $PUBLIC_URL: string;
-declare const $FEATURE_FLAG_HINTS_PARSER: boolean;
-declare const $DEBUG_PRINTS: boolean;
-declare const $FATAL_APPERROR: boolean;
+declare const __PUBLIC_URL__: string;
+declare const __FEATURE_FLAG_HINTS_PARSER__: boolean;
+declare const __DEBUG_PRINTS__: boolean;
+declare const __FATAL_APPERROR__: boolean;
