@@ -153,6 +153,8 @@ export default tseslint.config(
             ],
 
             'import/no-cycle': ['error', { ignoreExternal: true }],
+            // for some reason eslint/plugin-import doesn't like ESM packages
+            'import/no-unresolved': [2, { caseSensitive: true, ignore: ['^react-error-boundary$', '^uuid$'] }],
 
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
