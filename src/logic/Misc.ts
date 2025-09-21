@@ -1,9 +1,6 @@
 import type { InventoryItem } from './Inventory';
 import type { Logic } from './Logic';
-import {
-    cubeCheckToCubeCollected,
-    dungeonCompletionItems,
-} from './TrackerModifications';
+import { dungeonCompletionItems } from './TrackerModifications';
 
 export function getNumLooseGratitudeCrystals(
     logic: Logic,
@@ -36,7 +33,7 @@ export function getAdditionalItems(
     // If this is a goddess cube check, mark the requirement as checked
     // since this is the requirement used by the goddess chests.
     for (const check of checkedChecks) {
-        const cubeCollectedItem = cubeCheckToCubeCollected[check];
+        const cubeCollectedItem = logic.cubes.cubeCheckToCubeCollected[check];
         if (cubeCollectedItem) {
             result[cubeCollectedItem] = 1;
         }

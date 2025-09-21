@@ -49,7 +49,7 @@ export function mapSettings(
             (typeof expect === 'function' ? expect(val) : expect === val);
         if (match) {
             appDebug('setting', item);
-            b.set(item, b.true());
+            b.trySet(item, b.true());
         }
     }
 

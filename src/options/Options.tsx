@@ -97,6 +97,7 @@ const optionCategorization_ = {
         'required-dungeon-count',
         'triforce-required',
         'triforce-shuffle',
+        'demise-count',
     ],
     Miscellaneous: [
         'logic-mode',

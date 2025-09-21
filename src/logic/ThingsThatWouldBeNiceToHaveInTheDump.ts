@@ -63,6 +63,9 @@ export const runtimeOptions: OptionMapping[] = [
         'Unrequired Dungeons Only',
     ),
     m('Default Dungeon Behavior option', 'open-shortcuts', 'None'),
+
+    // https://github.com/ssrando/ssrando/pull/625
+    m('One Demise', 'demise-count', 1),
 ];
 
 export const impaSongCheck =

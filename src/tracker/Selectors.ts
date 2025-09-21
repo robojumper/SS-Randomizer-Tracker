@@ -41,11 +41,7 @@ import {
     getVisibleTricksEnabledRequirements,
 } from '../logic/SemiLogic';
 import { doesHintDistroUseGossipStone } from '../logic/ThingsThatWouldBeNiceToHaveInTheDump';
-import {
-    cubeCheckToGoddessChestCheck,
-    dungeonCompletionItems,
-    goddessChestCheckToCubeCheck,
-} from '../logic/TrackerModifications';
+import { dungeonCompletionItems } from '../logic/TrackerModifications';
 import {
     computeLeastFixedPoint,
     mergeRequirements,
@@ -447,13 +443,15 @@ export const isCheckBannedSelector = createSelector(
             return (
                 check.type === 'tr_cube' &&
                 bannedChecks.has(
-                    logic.checks[cubeCheckToGoddessChestCheck[checkId]].name,
+                    logic.checks[
+                        logic.cubes.cubeCheckToGoddessChestCheck[checkId]
+                    ].name,
                 )
             );
         };
 
         const isBannedChestViaCube = (checkId: string) => {
-            const cube = goddessChestCheckToCubeCheck[checkId];
+            const cube = logic.cubes.goddessChestCheckToCubeCheck[checkId];
             return cube && areaNonprogress(logic.checks[cube].area!);
         };
 

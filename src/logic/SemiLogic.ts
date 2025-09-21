@@ -5,7 +5,6 @@ import { type Logic, isRegularItemCheck } from './Logic';
 import { LogicBuilder } from './LogicBuilder';
 import { mapInventory } from './Mappers';
 import { getAdditionalItems } from './Misc';
-import { cubeCheckToCubeCollected } from './TrackerModifications';
 import {
     type Requirements,
     computeLeastFixedPoint,
@@ -173,7 +172,7 @@ function semiLogicStep(
         }
     }
 
-    for (const cubeCheck of Object.keys(cubeCheckToCubeCollected)) {
+    for (const cubeCheck of Object.keys(logic.cubes.cubeCheckToCubeCollected)) {
         if (
             state.semiLogicBits.test(logic.itemBits[cubeCheck]) &&
             !state.assumedChecks.has(cubeCheck)
