@@ -1,5 +1,3 @@
-import { invert } from 'es-toolkit';
-import goddessCubesList_ from '../data/goddessCubes2.json';
 import type { OptionDefs, TypedOptions } from '../permalink/SettingsTypes';
 import type { TrackerState } from '../tracker/Slice';
 import { appError } from '../utils/Debug';
@@ -10,24 +8,7 @@ import type { Logic } from './Logic';
 import { swordsToAdd } from './ThingsThatWouldBeNiceToHaveInTheDump';
 
 const collectedCubeSuffix = '_TR_Cube_Collected';
-
-export const goddessChestCheckToCubeCheck = Object.fromEntries(
-    goddessCubesList_.map(([chest, cube]) => [chest, cube]),
-);
-export const cubeCheckToGoddessChestCheck = invert<string, string>(
-    goddessChestCheckToCubeCheck,
-);
-export const cubeCollectedToCubeCheck = Object.fromEntries(
-    Object.keys(cubeCheckToGoddessChestCheck).map((check) => [
-        mapToCubeCollectedRequirement(check),
-        check,
-    ]),
-);
-export const cubeCheckToCubeCollected = invert<string, string>(
-    cubeCollectedToCubeCheck,
-);
-
-function mapToCubeCollectedRequirement(check: string) {
+export function mapToCubeCollectedRequirement(check: string) {
     return `${check}${collectedCubeSuffix}`;
 }
 
@@ -172,7 +153,9 @@ export function getTooltipOpaqueBits(
     }
 
     // Goddess chest tooltips should show the corresponding goddess cube.
-    for (const cubeItem of Object.values(cubeCheckToCubeCollected)) {
+    for (const cubeItem of Object.values(
+        logic.cubes.cubeCheckToCubeCollected,
+    )) {
         set(cubeItem);
     }
 

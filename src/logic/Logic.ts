@@ -1,4 +1,5 @@
-import { groupBy, last } from 'es-toolkit';
+import { compact, groupBy, invert, last } from 'es-toolkit';
+import goddessCubesList_ from '../data/goddessCubes2.json';
 import { isEmpty, mapValues } from '../utils/Collections';
 import { chainComparators, compareBy } from '../utils/Compare';
 import { appDebug, appWarn } from '../utils/Debug';
@@ -20,9 +21,8 @@ import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
 import { TimeOfDay, type TTimeOfDay } from './Mappers';
 import {
-    cubeCheckToCubeCollected,
-    cubeCollectedToCubeCheck,
     dungeonCompletionItems,
+    mapToCubeCollectedRequirement,
 } from './TrackerModifications';
 import type {
     RawArea,
@@ -53,6 +53,32 @@ export interface Logic {
     checksByHintRegion: Record<string, string[]>;
     exitsByHintRegion: Record<string, string[]>;
     dungeonCompletionRequirements: { [dungeon: string]: string };
+    cubes: CubeChestData;
+}
+
+/**
+ * In the rando, cubes and goddess chests aren't really connected in a meaningful sense.
+ * A goddess chest requires the corresponding cube to be activated, but this is directly
+ * implemented in the logic (e.g. Southwest Triple Island Upper Goddess Chest requires
+ * Goddess Cube at Eldin Entrance). The tracker would follow these requirements and show
+ * the requirements for the cube (Ruby Tablet AND Goddess Sword) when hovering over the chest.
+ *
+ * This is not desirable, since we want to model cubes as a separate check and mention the cube
+ * in the chest tooltip. So we need to hack the logic a bit and split up these requirements:
+ *
+ * 1. We turn the logic-internal "Goddess Cube events" into actual user-facing checks
+ * 2. Every cube check gives you a separate "Cube Collected" item
+ * 3. The goddess chest check requires the associated "Cube Collected" item
+ */
+export interface CubeChestData {
+    /** E.g. Southwest Triple Island Upper Goddess Chest -> Goddess Cube at Eldin Entrance */
+    goddessChestCheckToCubeCheck: Record<string, string>;
+    /** E.g. Goddess Cube at Eldin Entrance -> Southwest Triple Island Upper Goddess Chest */
+    cubeCheckToGoddessChestCheck: Record<string, string>;
+    /** E.g. Collected Goddess Cube at Eldin Entrance -> Goddess Cube at Eldin Entrance */
+    cubeCollectedToCubeCheck: Record<string, string>;
+    /** E.g. Goddess Cube at Eldin Entrance -> Collected Goddess Cube at Eldin Entrance */
+    cubeCheckToCubeCollected: Record<string, string>;
 }
 
 export interface LogicalCheck {
@@ -318,15 +344,47 @@ function preprocessItems(raw: string[]): {
     return { newItems, impliedBy, implies };
 }
 
+function buildCubeData(rawItemIds: Set<string>): CubeChestData {
+    const goddessChestCheckToCubeCheck = Object.fromEntries(
+        compact(
+            goddessCubesList_.map(([chest, cube]) =>
+                rawItemIds.has(chest) && rawItemIds.has(cube)
+                    ? [chest, cube]
+                    : undefined,
+            ),
+        ),
+    );
+    const cubeCheckToGoddessChestCheck = invert<string, string>(
+        goddessChestCheckToCubeCheck,
+    );
+    const cubeCollectedToCubeCheck = Object.fromEntries(
+        Object.keys(cubeCheckToGoddessChestCheck).map((check) => [
+            mapToCubeCollectedRequirement(check),
+            check,
+        ]),
+    );
+    const cubeCheckToCubeCollected = invert<string, string>(
+        cubeCollectedToCubeCheck,
+    );
+
+    return {
+        goddessChestCheckToCubeCheck,
+        cubeCheckToCubeCollected,
+        cubeCollectedToCubeCheck,
+        cubeCheckToGoddessChestCheck,
+    };
+}
+
 const checkAreaPlaceholder = 'filled-in-later';
 
 export function parseLogic(raw: RawLogic): Logic {
     const start = performance.now();
 
     const { newItems, impliedBy, implies } = preprocessItems(raw.items);
+    const cubes = buildCubeData(new Set(raw.items));
     const rawItems = [
         ...newItems,
-        ...Object.keys(cubeCollectedToCubeCheck),
+        ...Object.keys(cubes.cubeCollectedToCubeCheck),
         ...Object.values(dungeonCompletionItems),
     ];
 
@@ -349,7 +407,7 @@ export function parseLogic(raw: RawLogic): Logic {
     });
 
     for (const [cubeItem, cubeCheck] of Object.entries(
-        cubeCollectedToCubeCheck,
+        cubes.cubeCollectedToCubeCheck,
     )) {
         checks[cubeCheck] = {
             type: 'tr_cube',
@@ -425,7 +483,7 @@ export function parseLogic(raw: RawLogic): Logic {
                     );
                 }
                 // If an expression looks at "goddess cube in X", require the actual item instead.
-                const actualItem = cubeCheckToCubeCollected[item] ?? item;
+                const actualItem = cubes.cubeCheckToCubeCollected[item] ?? item;
                 return itemBits[actualItem];
             },
         );
@@ -962,6 +1020,7 @@ export function parseLogic(raw: RawLogic): Logic {
         exitsByHintRegion,
         dungeonCompletionRequirements: raw.dungeon_completion_requirements,
         areaGraph,
+        cubes,
     };
 }
 
