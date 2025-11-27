@@ -29,19 +29,19 @@ Ran into a bug? Bugs found in the production instance should be reported [here o
 Building and running an instance of the tracker locally requires Node v20 and npm.
 
 1. Clone the repository
-2. Install dependcies
+2. Install dependencies - first, install https://pnpm.io/
 ```
-npm install
+pnpm install
 ```
 3. Build and serve the application
 ```
-npm start
+pnpm start
 ```
 4. Access the application at http://localhost:5173/
 
 ## Contributing
 
-Run `npm run prepare` once to set up a convenient pre-commit hook that automatically formats your code.
+Run `pnpm run prepare` once to set up a convenient pre-commit hook that automatically formats your code.
 
 ## Shoutouts
 
