@@ -17,15 +17,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+    - uses: pnpm/action-setup@v4
+      name: Install pnpm
+      with:
+        run_install: false
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm install
-    - run: npm run build
-    - run: npm run test
-    - run: npm run lint
+        cache: 'pnpm'
+
+    - run: pnpm install
+    - run: pnpm run build
+    - run: pnpm run test
+    - run: pnpm run lint
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -40,13 +46,19 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/new-logic-tracker'
     steps:
       - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
       - name: Use Node.js 23.x
         uses: actions/setup-node@v4
         with:
           node-version: 23.x
-          cache: 'npm'
-      - run: npm install
-      - run: npm run build
+          cache: 'pnpm'
+
+      - run: pnpm install
+      - run: pnpm run build
       # All paths should resolve to index.html, but on GitHub
       # Pages our only workaround is serving the app from 404 too
       - run: cp build/index.html build/404.html
