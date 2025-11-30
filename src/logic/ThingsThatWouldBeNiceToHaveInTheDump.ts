@@ -104,6 +104,7 @@ export const doesHintDistroUseGossipStone: Record<
     'Pre-S3 Variant': isRacingGossipStone,
     'Season 3 Tournament': isRacingGossipStone,
     'Co-op Season 2 Tournament': isRacingGossipStone,
+    'Season 4 Tournament': isRacingGossipStone,
 };
 
 // These requirements are populated based on required dungeons
