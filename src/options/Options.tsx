@@ -124,8 +124,8 @@ const wellKnownRemotes: {
         remoteName: LATEST_STRING,
     },
     {
-        prettyName: 'Racing Season 3',
-        remoteName: 'alkalineace/season-3',
+        prettyName: 'Racing Season 4',
+        remoteName: 'alkalineace/Season-4-Tournament-Build',
     },
     {
         prettyName: 'Co-Op Tournament Season 2',
