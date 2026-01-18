@@ -137,6 +137,8 @@ function PresetRow({
     onHide: () => void;
     isRemotePreset?: boolean;
 }) {
+    const [confirmMode, setConfirmMode] = useState(false);
+
     const appDispatch = useAppDispatch();
     return (
         <div
@@ -149,7 +151,7 @@ function PresetRow({
                 });
                 onHide();
             }}
-            className={styles.presetRow}
+            className={clsx(styles.presetRow, styles.button)}
         >
             <div className={styles.header}>
                 {preset.name}
@@ -157,19 +159,22 @@ function PresetRow({
                     <div>
                         <button
                             type="button"
-                            className="tracker-button"
+                            className={clsx('tracker-button', {
+                                ['tracker-button-danger']: confirmMode,
+                            })}
+                            onMouseLeave={() => {
+                                setConfirmMode(false);
+                            }}
                             onClick={(e) => {
-                                if (
-                                    window.confirm(
-                                        `Delete Preset ${preset.name}?`,
-                                    )
-                                ) {
+                                if (confirmMode) {
                                     appDispatch(removePreset(preset.id));
+                                } else {
+                                    setConfirmMode(true);
                                 }
                                 e.stopPropagation();
                             }}
                         >
-                            🗑️
+                            {confirmMode ? 'Confirm' : 'Delete'}
                         </button>
                     </div>
                 )}
@@ -193,29 +198,36 @@ function AddPresetRow({
     currentSettings: AllTypedOptions;
 }) {
     const dispatch = useDispatch();
+    const [input, setInput] = useState('');
     return (
-        <div
-            role="button"
-            onClick={() => {
-                const name = window.prompt('Enter preset name');
-                if (!name) {
-                    return;
-                }
-                dispatch(
-                    addPreset({
-                        name,
-                        remote: permaifyRelease(currentLogic),
-                        settings: currentSettings,
-                        visualPermalink: encodePermalink(
-                            currentLogic.options,
-                            currentSettings,
-                        ),
-                    }),
-                );
-            }}
-            className={styles.presetRow}
-        >
-            +
+        <div className={clsx(styles.presetRow, styles.addRow)}>
+            <input
+                className="tracker-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Enter Preset Name"
+            />
+            <button
+                type="button"
+                className="tracker-button"
+                disabled={input === ''}
+                onClick={() => {
+                    dispatch(
+                        addPreset({
+                            name: input,
+                            remote: permaifyRelease(currentLogic),
+                            settings: currentSettings,
+                            visualPermalink: encodePermalink(
+                                currentLogic.options,
+                                currentSettings,
+                            ),
+                        }),
+                    );
+                    setInput('');
+                }}
+            >
+                Add Preset
+            </button>
         </div>
     );
 }

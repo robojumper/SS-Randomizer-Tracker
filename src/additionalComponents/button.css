@@ -28,5 +28,17 @@
                 background-color: var(--scheme-interact);
             }
         }
+
+        &.tracker-button-secondary {
+            color: var(--scheme-text);
+            border-color: var(--scheme-interact);
+            background-color: var(--scheme-background);
+        }
+
+        &.tracker-button-danger {
+            color: white;
+            border-color: red;
+            background-color: red;
+        }
     }
 }

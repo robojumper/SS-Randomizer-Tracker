@@ -11,6 +11,7 @@ import React, {
 } from 'react';
 import semverSatisfies from 'semver/functions/satisfies';
 import { Checkbox } from '../additionalComponents/Checkbox';
+import { AlertDialog } from '../additionalComponents/Dialog';
 import DiscordButton from '../additionalComponents/DiscordButton';
 import {
     MultiSelect,
@@ -211,6 +212,28 @@ export default function Options() {
     );
 }
 
+function LaunchConfirmDialog({
+    open,
+    onClose,
+}: {
+    open: boolean;
+    onClose: (ok: boolean) => void;
+}) {
+    return (
+        <AlertDialog
+            open={open}
+            onOpenChange={(open: boolean, ok?: boolean) => {
+                if (!open) {
+                    onClose(ok!);
+                }
+            }}
+            title="Launch New Tracker?"
+        >
+            Reset your tracker and start a new run?
+        </AlertDialog>
+    );
+}
+
 function LaunchButtons({
     loaded,
     hasChanges,
@@ -233,16 +256,26 @@ function LaunchButtons({
     const canStart = loaded;
     const canResume = loaded && Boolean(counters);
 
+    const [isConfirmLaunchOpen, setIsConfirmLaunchOpen] = useState(false);
+
+    const onLaunchConfirmed = useCallback(
+        (ok: boolean) => {
+            if (ok) {
+                launch(true);
+            }
+            setIsConfirmLaunchOpen(false);
+        },
+        [launch],
+    );
+
     const confirmLaunch = useCallback(
         (shouldReset?: boolean) => {
-            const allow =
-                !shouldReset ||
-                (canStart &&
-                    (!canResume ||
-                        window.confirm(
-                            'Reset your tracker and start a new run?',
-                        )));
-            if (allow) {
+            if (!canStart) {
+                return;
+            }
+            if (shouldReset && canResume) {
+                setIsConfirmLaunchOpen(true);
+            } else {
                 launch(shouldReset);
             }
         },
@@ -250,50 +283,60 @@ function LaunchButtons({
     );
 
     return (
-        <div className={styles.launchButtons}>
-            <button
-                type="button"
-                className="tracker-button"
-                disabled={!canResume}
-                onClick={() => confirmLaunch()}
-            >
-                <div className={styles.continueButton}>
-                    <span>Continue Tracker</span>
-                    <span className={styles.counters}>
-                        {counters &&
-                            `${counters.numChecked}/${counters.numRemaining}`}
-                    </span>
-                </div>
-            </button>
-            <button
-                type="button"
-                className="tracker-button"
-                disabled={!canStart}
-                onClick={() => confirmLaunch(true)}
-            >
-                Launch New Tracker
-            </button>
-            <ImportButton
-                setLogicBranch={(remote) =>
-                    dispatch({ type: 'selectRemote', remote, viaImport: true })
-                }
+        <>
+            <LaunchConfirmDialog
+                open={isConfirmLaunchOpen}
+                onClose={onLaunchConfirmed}
             />
-            <button
-                type="button"
-                className="tracker-button"
-                disabled={!hasChanges}
-                onClick={() => dispatch({ type: 'revertChanges' })}
-            >
-                Undo Changes
-            </button>
+            <div className={styles.launchButtons}>
+                <button
+                    type="button"
+                    className="tracker-button"
+                    disabled={!canResume}
+                    onClick={() => confirmLaunch()}
+                >
+                    <div className={styles.continueButton}>
+                        <span>Continue Tracker</span>
+                        <span className={styles.counters}>
+                            {counters &&
+                                `${counters.numChecked}/${counters.numRemaining}`}
+                        </span>
+                    </div>
+                </button>
+                <button
+                    type="button"
+                    className="tracker-button"
+                    disabled={!canStart}
+                    onClick={() => confirmLaunch(true)}
+                >
+                    Launch New Tracker
+                </button>
+                <ImportButton
+                    setLogicBranch={(remote) =>
+                        dispatch({
+                            type: 'selectRemote',
+                            remote,
+                            viaImport: true,
+                        })
+                    }
+                />
+                <button
+                    type="button"
+                    className="tracker-button"
+                    disabled={!hasChanges}
+                    onClick={() => dispatch({ type: 'revertChanges' })}
+                >
+                    Undo Changes
+                </button>
 
-            <OptionsPresets
-                className={styles.presetButton}
-                dispatch={dispatch}
-                currentLogic={currentLogic}
-                currentSettings={currentSettings}
-            />
-        </div>
+                <OptionsPresets
+                    className={styles.presetButton}
+                    dispatch={dispatch}
+                    currentLogic={currentLogic}
+                    currentSettings={currentSettings}
+                />
+            </div>
+        </>
     );
 }
 
