@@ -77,6 +77,7 @@ const colors: { key: keyof ColorScheme; name: string }[] = [
 function importCustomLayout(): ThunkResult {
     return (dispatch, getState) => {
         const existingLayout = getState().customization.customLayout;
+        // TODO avoid window.prompt... use a normal input field maybe
         const newLayout =
             window.prompt(
                 'Paste custom layout here (empty to clear)',

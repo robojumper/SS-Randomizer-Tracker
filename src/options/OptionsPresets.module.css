@@ -10,18 +10,30 @@
     width: 100%;
     padding: 4px;
     user-select: none;
-    cursor: pointer;
-
-    &:hover {
-        background-color: var(--scheme-interact);
-        color: var(--scheme-background);
-    }
 
     .header {
         display: flex;
         flex-flow: row nowrap;
 
         > div {
+            margin-left: auto;
+        }
+    }
+
+    &.button {
+        cursor: pointer;
+
+        &:hover {
+            background-color: var(--scheme-interact);
+            color: var(--scheme-background);
+        }
+    }
+
+    &.addRow {
+        padding: 6px;
+        display: flex;
+        flex-flow: row nowrap;
+        > button {
             margin-left: auto;
         }
     }
