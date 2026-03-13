@@ -10,6 +10,25 @@
     :global(.item-container) {
         margin: auto;
     }
+
+    .swordCell {
+        grid-row: 1 / span 2;
+        display: flex;
+        justify-content: right;
+        position: relative;
+
+        .flamesContainer {
+            position: absolute;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+
+            > * {
+                flex: 1;
+            }
+        }
+    }
 }
 
 .cavesKey {

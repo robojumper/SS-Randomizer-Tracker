@@ -9,6 +9,7 @@ import {
 } from '../tracker/Selectors';
 import { clickItem } from '../tracker/Slice';
 import styles from './GridTracker.module.css';
+import allImages from './Images';
 import Item from './Item';
 import { CounterItem } from './items/CounterItem';
 import { GratitudeCrystals } from './items/sidequest/GratitudeCrystals';
@@ -59,7 +60,35 @@ export default function GridTracker({ width }: { width: number }) {
 
     return (
         <div className={styles.itemGrid}>
-            <div style={{ gridRow: '1 / span 2' }}>
+            <div className={styles.swordCell}>
+                <div
+                    className={styles.flamesContainer}
+                    style={{
+                        height: imgWidth * 1.5,
+                    }}
+                >
+                    <div>
+                        <Item
+                            itemName="Progressive Sword"
+                            images={allImages["Din's Flame"]}
+                            imgWidth={imgWidth * 0.3}
+                        />
+                    </div>
+                    <div>
+                        <Item
+                            itemName="Progressive Sword"
+                            images={allImages["Nayru's Flame"]}
+                            imgWidth={imgWidth * 0.3}
+                        />
+                    </div>
+                    <div>
+                        <Item
+                            itemName="Progressive Sword"
+                            images={allImages["Farore's Flame"]}
+                            imgWidth={imgWidth * 0.3}
+                        />
+                    </div>
+                </div>
                 <Item itemName="Progressive Sword" imgWidth={imgWidth} />
             </div>
             <div>
