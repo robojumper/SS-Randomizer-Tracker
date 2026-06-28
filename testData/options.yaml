@@ -575,9 +575,17 @@
   ui: option_sword_dungeon_reward
 - name: Open Earth Temple
   command: open-et
-  type: boolean
-  default: false
-  help: "If enabled, the Earth Temple door (requiring 5 key pieces to unlock) is opened at the start of the game."
+  type: singlechoice
+  bits: 2
+  choices:
+    - Open
+    - Shuffled (Eldin Volcano)
+    - Shuffled (Anywhere)
+  default: Shuffled (Anywhere)
+  help: "Determines how to place the pieces of the key opening the dungeon entrance in Eldin Volcano.
+        **Open**: The Earth Temple door is opened at the start of the game and Key Pieces are removed from the item pool.
+        **Shuffled (Eldin Volcano)**: The five Key Pieces will be shuffled in Eldin Volcano.
+        **Shuffled (Anywhere)**: The five Key Pieces will be shuffled anywhere in the world."
   ui: option_open_et
 - name: Demise Count
   command: demise-count
@@ -919,7 +927,8 @@
   default: false
   help: "Gives you a random progression item at the start of the game in addition to any starting items.
         This includes: Bow, Beetle, Slingshot, Digging Mitts, Pouch, Bomb Bag, Clawshots, Whip, Gust Bellows,
-        Water Dragon's Scale, Fireshield Earrings, Goddess's Harp and Spiral Charge."
+        Water Dragon's Scale, Fireshield Earrings, Goddess's Harp, Ballad of the Goddess, and Spiral Charge.
+        The item chosen is guaranteed to unlock at least one extra location at the start."
   ui: option_random_starting_item
 - name: Starting Empty Bottles
   command: starting-bottles
@@ -1042,6 +1051,14 @@
   bits: 3
   help: "How many times you need to talk to Peatrice before she calls you \"darling\" and you can start Peater's quest."
   ui: option_peatrice_conversations
+- name: Skip Harp Playing
+  command: skip-harp-playing
+  type: boolean
+  default: false
+  help: "If enabled, trial gates will automatically open up when both the harp and associated song have been collected.
+         If a trial gate opens up while you're on the stage it resides in, it may be invisible until you reload the map.
+         However it will still be accessible despite being invisible."
+  ui: option_skip_harp_playing
 # Player customisation stuff
 - name: Selected Player Model Pack
   command: selected-player-model-pack

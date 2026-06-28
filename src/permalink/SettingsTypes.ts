@@ -55,6 +55,9 @@ export interface AllTypedOptions
         | 'logic-mode'
         | 'open-et'
     > {
+    // <= 2.2.0 open-et is a boolean
+    'open-et': GeneratedOptions['open-et'] | boolean;
+
     rupeesanity: GeneratedOptions['rupeesanity'] | 'Vanilla';
 
     // Bizzare Bazaar splits Shopsanity into three settings
@@ -89,14 +92,6 @@ export interface AllTypedOptions
         | 'Normal'
         | 'Beatable Only'
         | 'Beatable Then Banned';
-
-    // Option to shuffle Key Pieces in Eldin Volcano Only
-    // https://github.com/ssrando/ssrando/pull/621
-    'open-et':
-        | GeneratedOptions['open-et']
-        | 'Open'
-        | 'Shuffled (Eldin Volcano)'
-        | 'Shuffled (Anywhere)';
 }
 
 export type TypedOptions = Pick<AllTypedOptions, LogicOption>;

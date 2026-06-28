@@ -69,7 +69,7 @@ export interface GeneratedOptions {
     /** Force Sword Dungeon Reward */
     'sword-dungeon-reward': 'None' | 'Heart Container' | 'Final Check';
     /** Open Earth Temple */
-    'open-et': boolean;
+    'open-et': 'Open' | 'Shuffled (Eldin Volcano)' | 'Shuffled (Anywhere)';
     /** Demise Count */
     'demise-count': number;
     /** Separate Cube SotS */
@@ -130,6 +130,8 @@ export interface GeneratedOptions {
     'fs-lava-flow': boolean;
     /** Peatrice Conversations */
     'peatrice-conversations': number;
+    /** Skip Harp Playing */
+    'skip-harp-playing': boolean;
     /** Random Starting Spawn */
     'random-start-entrance': 'Vanilla' | 'Bird Statues' | 'Any Surface Region' | 'Any';
     /** Limit Starting Location */
