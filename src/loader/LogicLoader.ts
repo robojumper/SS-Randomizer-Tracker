@@ -9,7 +9,7 @@ import { getLatestRelease } from './ReleasesLoader';
 
 export const LATEST_STRING = 'Latest';
 // Fallback in case the GitHub API is unreachable or rate limited
-const LATEST_KNOWN_RELEASE = 'v2.2.0';
+const LATEST_KNOWN_RELEASE = 'v2.3.0';
 
 export type RemoteReference =
     | {
