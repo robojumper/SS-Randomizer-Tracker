@@ -20,6 +20,7 @@ import { itemName } from './Inventory';
 import { dungeonNames } from './Locations';
 import { LogicBuilder } from './LogicBuilder';
 import { TimeOfDay, type TTimeOfDay } from './Mappers';
+import { defeatDemiseLocation } from './ThingsThatWouldBeNiceToHaveInTheDump';
 import {
     dungeonCompletionItems,
     mapToCubeCollectedRequirement,
@@ -92,6 +93,7 @@ export interface LogicalCheck {
         | 'beedle_shop'
         | 'gear_shop'
         | 'potion_shop'
+        | 'tr_demise'
         | 'tr_cube'
         | 'tr_dummy';
     name: string;
@@ -127,6 +129,7 @@ export function isRegularItemCheck(type: LogicalCheck['type']) {
         case 'loose_crystal':
         case 'gossip_stone':
         case 'tr_cube':
+        case 'tr_demise':
         case 'tr_dummy':
             return false;
     }
@@ -406,6 +409,13 @@ export function parseLogic(raw: RawLogic): Logic {
         } as const;
     });
 
+    checks[defeatDemiseLocation] = {
+        type: 'tr_demise',
+        area: checkAreaPlaceholder,
+        name: 'Defeat Demise',
+        originalItem: undefined,
+    };
+
     for (const [cubeItem, cubeCheck] of Object.entries(
         cubes.cubeCollectedToCubeCheck,
     )) {
@@ -431,15 +441,6 @@ export function parseLogic(raw: RawLogic): Logic {
             name: gossipStoneName,
             originalItem: undefined,
             area: checkAreaPlaceholder,
-        };
-    }
-
-    for (const [dungeon, req] of Object.entries(dungeonCompletionItems)) {
-        checks[req] = {
-            name: `${dungeon} Completed`,
-            type: 'tr_dummy',
-            originalItem: undefined,
-            area: undefined,
         };
     }
 

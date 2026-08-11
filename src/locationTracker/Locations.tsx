@@ -19,7 +19,13 @@ export function Locations({
                 locations={hintRegion.checks.list}
             />
             {(
-                ['loose_crystal', 'tr_cube', 'gossip_stone', 'exits'] as const
+                [
+                    'tr_demise',
+                    'loose_crystal',
+                    'tr_cube',
+                    'gossip_stone',
+                    'exits',
+                ] as const
             ).map(
                 (type) =>
                     Boolean(hintRegion.extraLocations[type]?.list.length) && (

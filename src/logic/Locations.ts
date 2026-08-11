@@ -26,6 +26,7 @@ export interface HintRegion<N extends string = string> {
     checks: CheckGroup;
     extraLocations: {
         tr_cube?: CheckGroup;
+        tr_demise?: CheckGroup;
         loose_crystal?: CheckGroup;
         gossip_stone?: CheckGroup;
         exits?: CheckGroup;

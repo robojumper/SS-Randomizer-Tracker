@@ -111,6 +111,9 @@ export function createTestLogic() {
                 ) ??
                 area.extraLocations.gossip_stone?.list.find((c) =>
                     c.includes(checkName),
+                ) ??
+                area.extraLocations.tr_demise?.list.find((c) =>
+                    c.includes(checkName),
                 )
             );
         },

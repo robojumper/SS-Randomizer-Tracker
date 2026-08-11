@@ -112,3 +112,6 @@ export const doesHintDistroUseGossipStone: Record<
 export const gotOpeningReq = 'GoT Opening Requirement';
 export const gotRaisingReq = 'GoT Raising Requirement';
 export const hordeDoorReq = 'Horde Door Requirement';
+
+export const defeatDemiseLocation =
+    "\\Faron\\Sealed Grounds\\Hylia's Temple\\Defeat Demise";
